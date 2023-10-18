@@ -1,0 +1,35 @@
+input: # files to use, set FD to null for binary classification
+    prompt: /data/shared/Ds_optimization/AO2D_Merge_MC_1.root
+    FD: null
+    data: /data/shared/Ds_optimization/AO2D_Merge_Data_1.root
+    treename: O2hfcanddsfull
+    merged: False
+
+output:
+    leg_labels: # legend labels, keep the right number of classes
+        Bkg: Background
+        Prompt: Prompt D$^+$
+        FD: null
+    out_labels: # output labels, keep the right number of classes
+        Bkg: Bkg
+        Prompt: Prompt
+        FD: null
+    dir: /home/fchinu/Run3/Ds_pp_13TeV/DatasetComparison # output dir
+
+pt_ranges: # ranges in pt to split the data in the ml training and testing
+    min: [2,4,6,8,12] # list 
+    max: [4,6,8,12,50] # list 
+
+data_prep:
+    filt_bkg_mass: fM < 1.832 or fM > 2.142 # pandas query to select bkg candidates
+    dataset_opt: max_signal # change how the dataset is built, options available: 'equal', 'max_signal'
+                            # 'equal' -> same number of prompt/FD/bkg (not using all the signal available)
+                            # 'max_signal' -> try to use all the signal (prompt and FD) + add n_bkg = bkg_mult * (n_prompt + n_FD)
+    bkg_mult: [1,1,0.44,0.12,0.036,0.024] # list of multipliers for (nPrompt + nFD) used to determine nCandBkg in the 'max_signal' option
+    seed_split: 42 # seed used for train_test_split(...)
+    test_fraction: 0.2 # fraction of data used for test set and efficiencies --> set to 1. if you want to apply the model to the full dataframes  
+    
+plots:
+    plotting_columns: ['fIndexBCs', 'fNumContrib', 'fPosX', 'fPosY', 'fPosZ', 'fPtProng0', 'fPProng0', 'fPtProng1', 'fPProng1', 'fPtProng2', 'fPProng2', 'fPxProng0', 'fPyProng0', 'fPzProng0', 'fPxProng1', 'fPyProng1', 'fPzProng1', 'fPxProng2', 'fPyProng2', 'fPzProng2', 'fImpactParameter0', 'fImpactParameter1', 'fImpactParameter2', 'fNSigTpcPi0', 'fNSigTpcKa0', 'fNSigTofPi0', 'fNSigTofKa0', 'fNSigTpcPi1', 'fNSigTpcKa1', 'fNSigTofPi1', 'fNSigTofKa1', 'fNSigTpcPi2', 'fNSigTpcKa2', 'fNSigTofPi2', 'fNSigTofKa2', 'fIsSelDsToKKPi', 'fIsSelDsToPiKK', 'fXSecondaryVertex', 'fYSecondaryVertex', 'fZSecondaryVertex', 'fM', 'fPt', 'fP', 'fCt', 'fEta', 'fPhi', 'fY', 'fE', 'fDecayLength', 'fDecayLengthXY', 'fDecayLengthNormalised', 'fDecayLengthXYNormalised', 'fCpa', 'fCpaXY', 'fMaxNormalisedDeltaIP', 'fImpactParameterXY', 'fDeltaMassPhi', 'fAbsCos3PiK', 'fChi2PCA', 'fFlagMcMatchRec', 'fOriginMcRec']
+                       # list of variables to plot
+    train_test_log: True # use log scale for plots of train and test distributions
