@@ -1,0 +1,83 @@
+input: # files to use, set FD to null for binary classification
+    prompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/o2_MC_big_Rebecca_Merged_Ds.parquet
+    FD: null
+    data: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/o2_Data_AO2D_Merged.parquet
+    treename: null
+    merged: True
+    MCFlag: null #0: bkg, 1:DplusToPiKPi, 2:LcToPKPi, 4:DsToKKPi, 8:XicToPKPi
+
+output:
+    leg_labels: # legend labels, keep the right number of classes
+        Bkg: Background
+        Prompt: Prompt D$^+$
+        FD: null
+    out_labels: # output labels, keep the right number of classes
+        Bkg: Bkg
+        Prompt: Prompt
+        FD: null
+    dir: /home/fchinu/Run3/Ds_pp_13TeV/ML/output # output dir
+
+pt_ranges: # ranges in pt to split the data in the ml training and testing
+    min: [2,4,6,8,12] # list 
+    max: [4,6,8,12,50] # list 
+
+data_prep:
+    filt_bkg_mass: fM < 1.832 or fM > 2.012 # pandas query to select bkg candidates
+    dataset_opt: max_signal # change how the dataset is built, options available: 'equal', 'max_signal'
+                            # 'equal' -> same number of prompt/FD/bkg (not using all the signal available)
+                            # 'max_signal' -> try to use all the signal (prompt and FD) + add n_bkg = bkg_mult * (n_prompt + n_FD)
+    bkg_mult: [0.5, 0.5, 0.5, 0.5, 0.5] # list of multipliers for (nPrompt + nFD) used to determine nCandBkg in the 'max_signal' option
+    seed_split: 42 # seed used for train_test_split(...)
+    test_fraction: 0.2 # fraction of data used for test set and efficiencies --> set to 1. if you want to apply the model to the full dataframes  
+    
+ml:
+    raw_output: False # use raw_output (True) of probability (False) as output of the model
+    roc_auc_average: 'macro' # 'macro' or 'weighted'
+    roc_auc_approach: 'ovo'  # 'ovo' or 'ovr'
+    training_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fDeltaMassPhi, fImpactParameterXY, fAbsCos3PiK,
+                       fMaxNormalisedDeltaIP] 
+                       # list of training variables
+                        #Not found from run 2: sig_vert, delta_mass_KK, cos3PiK (only Abs), max_norm_d0d0exp (is it equal to fMaxNormalisedDeltaIP?)
+                        # nsigComb_Pi_0, nsigComb_Pi_1, nsigComb_Pi_2, nsigComb_K_0, nsigComb_K_1, nsigComb_K_2
+
+    hyper_par: [{'max_depth':8, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist},
+    {'max_depth':8, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist},
+    {'max_depth':8, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist},
+    {'max_depth':8, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist},
+    {'max_depth':8, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist},
+    {'max_depth':8, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist}
+                ]
+               # list of dicts of hyperparameters (one for each pT bin)
+
+    hyper_par_opt:
+      do_hyp_opt: True # whether to do the parameter optimization
+      njobs: 8 # number of parallel jobs used in hyper-parameter optimization, -1. to use all
+      nfolds: 5 # number of folds used in cross validation
+      initpoints: 10 # steps of random exploration you want to perform
+      n_trials: 15 # steps for bayesian optimization
+      timeout: null
+      opt_tuna_config: {'max_depth': !!python/tuple [3, 8], 
+                        'learning_rate': !!python/tuple [0.01, 0.1],
+                        'n_estimators': !!python/tuple [300, 1500], 
+                        'min_child_weight': !!python/tuple [1, 10],
+                        'subsample': !!python/tuple [0.8, 1.], 
+                        'colsample_bytree': !!python/tuple [0.8, 1.]}
+                        # configuration dictionary for optimize_params_bayes()
+
+    saved_models: [
+                  ] 
+                   # list of saved ModelHandler (path+file), compatible with the pt bins
+
+plots:
+    plotting_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fDecayLengthXYNormalised, fImpactParameterXY, fAbsCos3PiK,
+                       fMaxNormalisedDeltaIP, 'fM', 'fPt'] 
+                       # list of variables to plot
+    train_test_log: True # use log scale for plots of train and test distributions
+
+appl: 
+    column_to_save_list: ['fM', 'fPt'] # list of variables saved in the dataframes with the applied models
+
+standalone_appl:
+    inputs: [] # list of parquet files for the model application
+    output_names: [] # names for the outputs (one for each file)
+    output_dir: null # output directory
