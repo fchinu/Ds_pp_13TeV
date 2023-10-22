@@ -69,7 +69,7 @@ ml:
                    # list of saved ModelHandler (path+file), compatible with the pt bins
 
 plots:
-    plotting_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fDecayLengthXYNormalised, fImpactParameterXY, fAbsCos3PiK,
+    plotting_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fDeltaMassPhi, fImpactParameterXY, fAbsCos3PiK,
                        fMaxNormalisedDeltaIP, 'fM', 'fPt'] 
                        # list of variables to plot
     train_test_log: True # use log scale for plots of train and test distributions
