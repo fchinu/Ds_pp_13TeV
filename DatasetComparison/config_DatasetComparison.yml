@@ -1,27 +1,28 @@
 input: # files to use, set FD to null for binary classification
-    prompt: /data/shared/Ds_optimization/AO2D_Merge_MC_1.root
-    FD: null
-    data: /data/shared/Ds_optimization/AO2D_Merge_Data_1.root
+    prompt: /home/fchinu/Run3/Ds_pp_13TeV/ML/output/dataset/o2_LHC22b1b_small_train127823_AO2D_Merged.root
+    FD: /home/fchinu/Run3/Ds_pp_13TeV/ML/output/dataset/o2_LHC22b1a_small_train127822_AO2D_Merged.root
+    data: /home/fchinu/Run3/Ds_pp_13TeV/ML/output/dataset/o2_Data_AO2D_Merged.root
     treename: O2hfcanddsfull
     merged: False
+    MCFlag: [4] #0: bkg, 1:DplusToPiKPi, 2:LcToPKPi, 4:DsToKKPi, 8:XicToPKPi
 
 output:
     leg_labels: # legend labels, keep the right number of classes
         Bkg: Background
-        Prompt: Prompt D$^+$
-        FD: null
+        Prompt: Prompt D$_s^+$
+        FD: Feed-down D$_s^+$
     out_labels: # output labels, keep the right number of classes
         Bkg: Bkg
         Prompt: Prompt
-        FD: null
-    dir: /home/fchinu/Run3/Ds_pp_13TeV/DatasetComparison # output dir
+        FD: FD
+    dir: /home/fchinu/Run3/Ds_pp_13TeV/DatasetComparison/Ds # output dir
 
 pt_ranges: # ranges in pt to split the data in the ml training and testing
     min: [2,4,6,8,12] # list 
     max: [4,6,8,12,50] # list 
 
 data_prep:
-    filt_bkg_mass: fM < 1.832 or fM > 2.142 # pandas query to select bkg candidates
+    filt_bkg_mass: fM < 1.82 or fM > 2.142 # pandas query to select bkg candidates
     dataset_opt: max_signal # change how the dataset is built, options available: 'equal', 'max_signal'
                             # 'equal' -> same number of prompt/FD/bkg (not using all the signal available)
                             # 'max_signal' -> try to use all the signal (prompt and FD) + add n_bkg = bkg_mult * (n_prompt + n_FD)

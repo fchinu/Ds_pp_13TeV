@@ -158,8 +158,8 @@ def main(): #pylint: disable=too-many-statements
     print('Loading analysis configuration: Done!')
 
     print('Loading and preparing data files: ...', end='\r')
-    
-    if not inputCfg['input']['merged']:
+
+    if not inputCfg['input']['merged']:   
         DataFileName = inputCfg['input']['data']
         DataFile = TFile(DataFileName,'READ')
         DirIter = DataFile.GetListOfKeys()
@@ -167,9 +167,9 @@ def main(): #pylint: disable=too-many-statements
         DataFileName = [DataFileName] * len(DataDirNames)
         DataTreeName = inputCfg['input']['treename']
         DataTreeName = [DataTreeName] * len(DataDirNames)
-        DataFileName = DataFileName[:10]
-        DataDirNames = DataDirNames[:10]
-        DataTreeName = DataTreeName[:10]
+        DataFileName = DataFileName[:3]
+        DataDirNames = DataDirNames[:3]
+        DataTreeName = DataTreeName[:3]
 
         PromptFileName = inputCfg['input']['prompt']
         PromptFile = TFile(PromptFileName,'READ')
@@ -178,9 +178,9 @@ def main(): #pylint: disable=too-many-statements
         PromptFileName = [PromptFileName] * len(PromptDirNames)
         PromptTreeName = inputCfg['input']['treename']
         PromptTreeName = [PromptTreeName] * len(PromptDirNames)
-        PromptFileName = PromptFileName[:10]
-        PromptDirNames = PromptDirNames[:10]
-        PromptTreeName = PromptTreeName[:10]
+        PromptFileName = PromptFileName[:]
+        PromptDirNames = PromptDirNames[:]
+        PromptTreeName = PromptTreeName[:]
 
         if inputCfg['input']['FD'] is not None:
             FDFileName = inputCfg['input']['FD']
@@ -190,10 +190,10 @@ def main(): #pylint: disable=too-many-statements
             FDFileName = [FDFileName] * len(FDDirNames)
             FDTreeName = inputCfg['input']['treename']
             FDTreeName = [FDTreeName] * len(FDDirNames)
+            FDFileName = FDFileName[:]
+            FDDirNames = FDDirNames[:]
+            FDTreeName = FDTreeName[:]
             FDDf = LoadDfFromRootOrParquet(FDFileName, FDDirNames, FDTreeName)
-            FDFileName = FDFileName[:10]
-            FDDirNames = FDDirNames[:10]
-            FDTreeName = FDTreeName[:10]
         else:
             FDDf = None
 
@@ -213,7 +213,7 @@ def main(): #pylint: disable=too-many-statements
 
         print('Loading and preparing data files: Done!')
         for iBin, PtBin in enumerate(PtBins):
-            print(f'\n\033[94mStarting ML analysis --- {PtBin[0]} < pT < {PtBin[1]} GeV/c\033[0m')
+            print(f'\n\033[94mStarting dataset analysis --- {PtBin[0]} < pT < {PtBin[1]} GeV/c\033[0m')
 
             OutPutDirPt = os.path.join(os.path.expanduser(inputCfg['output']['dir']), f'pt{PtBin[0]}_{PtBin[1]}')
             if os.path.isdir(OutPutDirPt):
@@ -224,11 +224,26 @@ def main(): #pylint: disable=too-many-statements
 
             # data preparation
             #_____________________________________________
-            FDDfPt = pd.DataFrame() if FDDf is None else FDDf.query(f'{PtBin[0]} < fPt < {PtBin[1]} and (fFlagMcMatchRec == 0)')
-            TrainTestData, PromptDfSelForEff, FDDfSelForEff = data_prep(inputCfg, iBin, PtBin, OutPutDirPt,
-                                                                        PromptDf.query(f'{PtBin[0]} < fPt < {PtBin[1]} and (fFlagMcMatchRec == 0)'), FDDfPt,
-                                                                        DataDf.query(f'{PtBin[0]} < fPt < {PtBin[1]}'))
+            MCFlag = inputCfg['input']['MCFlag'] 
+            if MCFlag is not None:
+                MCFlagQuery = ''
+                for idx, flag in enumerate(MCFlag):
+                    if idx == 0:
+                        MCFlagQuery = MCFlagQuery + f'fFlagMcMatchRec == {flag}'
+                    else:
+                        MCFlagQuery = MCFlagQuery + f' or fFlagMcMatchRec == {flag}'
+                print(MCFlagQuery)
 
+                FDDfPt = pd.DataFrame() if FDDf is None else FDDf.query(f'{PtBin[0]} < fPt < {PtBin[1]} and ({MCFlagQuery})')
+                TrainTestData, PromptDfSelForEff, FDDfSelForEff = data_prep(inputCfg, iBin, PtBin, OutPutDirPt,
+                                                                            PromptDf.query(f'{PtBin[0]} < fPt < {PtBin[1]} and ({MCFlagQuery})'), FDDfPt,
+                                                                            DataDf.query(f'{PtBin[0]} < fPt < {PtBin[1]}'))
+            
+            else:
+                FDDfPt = pd.DataFrame() if FDDf is None else FDDf.query(f'{PtBin[0]} < fPt < {PtBin[1]}')
+                TrainTestData, PromptDfSelForEff, FDDfSelForEff = data_prep(inputCfg, iBin, PtBin, OutPutDirPt,
+                                                                            PromptDf.query(f'{PtBin[0]} < fPt < {PtBin[1]}'), FDDfPt,
+                                                                            DataDf.query(f'{PtBin[0]} < fPt < {PtBin[1]}'))
 
     else:
         PromptHandler = TreeHandler(inputCfg['input']['prompt'], inputCfg['input']['treename'])
