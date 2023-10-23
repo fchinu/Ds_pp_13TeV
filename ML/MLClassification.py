@@ -465,7 +465,7 @@ def main(): #pylint: disable=too-many-statements
             DataHandler = DataHandler.get_subset(inputCfg['data_prep']['filt_bkg_mass'], frac=1.,
                                                 rndm_state=inputCfg['data_prep']['seed_split'])
         else:
-            BkgHandler = DataHandler
+            DataHandler = DataHandler
 
         PtBins = [[a, b] for a, b in zip(inputCfg['pt_ranges']['min'], inputCfg['pt_ranges']['max'])]
         PromptHandler.slice_data_frame('fPt', PtBins, True)

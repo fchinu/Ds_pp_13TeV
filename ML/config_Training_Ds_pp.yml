@@ -9,13 +9,13 @@ input: # files to use, set FD to null for binary classification
 output:
     leg_labels: # legend labels, keep the right number of classes
         Bkg: Background
-        Prompt: Prompt D$^+$
+        Prompt: Prompt D$_s^+$
         FD: null
     out_labels: # output labels, keep the right number of classes
         Bkg: Bkg
         Prompt: Prompt
         FD: null
-    dir: /home/fchinu/Run3/Ds_pp_13TeV/ML/output # output dir
+    dir: /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/Training_corrected # output dir
 
 pt_ranges: # ranges in pt to split the data in the ml training and testing
     min: [2,4,6,8,12] # list 
@@ -26,7 +26,7 @@ data_prep:
     dataset_opt: max_signal # change how the dataset is built, options available: 'equal', 'max_signal'
                             # 'equal' -> same number of prompt/FD/bkg (not using all the signal available)
                             # 'max_signal' -> try to use all the signal (prompt and FD) + add n_bkg = bkg_mult * (n_prompt + n_FD)
-    bkg_mult: [0.5, 0.5, 0.5, 0.5, 0.5] # list of multipliers for (nPrompt + nFD) used to determine nCandBkg in the 'max_signal' option
+    bkg_mult: [1, 1, 1, 1, 1] # list of multipliers for (nPrompt + nFD) used to determine nCandBkg in the 'max_signal' option
     seed_split: 42 # seed used for train_test_split(...)
     test_fraction: 0.2 # fraction of data used for test set and efficiencies --> set to 1. if you want to apply the model to the full dataframes  
     
