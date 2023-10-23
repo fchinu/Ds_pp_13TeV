@@ -1,10 +1,10 @@
 Number of finished trials: 15
 Best trial:
-Value: 0.9955931212595658
+Value: 0.9959690588012267
 Params: 
-    max_depth: 4
-    learning_rate: 0.03744965077894956
-    n_estimators: 437
-    min_child_weight: 3
-    subsample: 0.9108200444391731
-    colsample_bytree: 0.9816735920800785
+    max_depth: 3
+    learning_rate: 0.04236198011629312
+    n_estimators: 404
+    min_child_weight: 8
+    subsample: 0.9683449520506803
+    colsample_bytree: 0.8015074356516632
