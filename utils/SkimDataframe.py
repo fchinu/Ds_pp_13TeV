@@ -3,7 +3,7 @@ import pandas as pd
 inputfiles = ["/home/fchinu/Run3/Ds_pp_13TeV/Datasets/o2_MC_big_Rebecca_Merged_Ds.parquet",
                 "/home/fchinu/Run3/Ds_pp_13TeV/Datasets/o2_Data_AO2D_Merged.parquet"]
 
-query = "fCpa > 0.85 and fCpaXY > 0.85 and fDecayLengthXY < 0.04 and abs(fMaxNormalisedDeltaIP)<200"
+query = "fCpa > 0.85 and fCpaXY > 0.85 and fDecayLengthXY < 0.04 and abs(fMaxNormalisedDeltaIP)<200 and fDeltaMassPhi < 0.015"
 
 for file in inputfiles:
     df = pd.read_parquet(file)
