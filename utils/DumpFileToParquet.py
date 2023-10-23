@@ -4,14 +4,14 @@ import sys
 sys.path.append('/home/fchinu/DmesonAnalysis/utils')
 from DfUtils import LoadDfFromRootOrParquet
 
-# Define the input and output file paths
-input_file_path = "/home/fchinu/Run3/Ds_pp_13TeV/ML/output/dataset/o2_Data_AO2D_Merged.root"
-output_file_path = "/home/fchinu/Run3/Ds_pp_13TeV/ML/output/dataset/o2_Data_AO2D_Merged"   #No extension
-treename = "O2hfcanddsfull"
+def split_list(alist, wanted_parts=1):
+    length = len(alist)
+    return [ alist[i*length // wanted_parts: (i+1)*length // wanted_parts] 
+             for i in range(wanted_parts) ]
 
-def PickleFromRoot(input_file_path, output_file_path, treename):
+def ParquetFromRoot(input_file_path, output_file_path, treename, n_parts=2):
     '''
-    This function takes as input a root file and converts it to a pickle file.
+    This function takes as input a root file and converts it to a parquet file.
     '''
     # Process the first half of the file
     InputFile = TFile(input_file_path,'READ')
@@ -20,23 +20,18 @@ def PickleFromRoot(input_file_path, output_file_path, treename):
     FileName = [input_file_path] * len(DirNames)
     TreeName = treename
     TreeName = [TreeName] * len(DirNames)
-    df = pd.DataFrame()
-    for i in range(len(DirNames)):
-        print("Processing file " + str(i) + " of " + str(len(DirNames)), end='\r')
-        df_temp = LoadDfFromRootOrParquet(FileName[i], [DirNames[i]], TreeName[i])
-        df = pd.concat([df, df_temp], ignore_index=True)
-        del df_temp
-    df.to_parquet(output_file_path + "_1.parquet")
-
-    # Process the second half of the file
-    start = len(DirNames)//2
-    df = pd.DataFrame()
-    for i in range(len(DirNames)//2):
-        print("Processing file " + str(i) + " of " + str(len(DirNames)//2), end='\r')
-        df_temp = LoadDfFromRootOrParquet(FileName[start + i], [DirNames[start + i]], TreeName[start + i])
-        df = pd.concat([df, df_temp], ignore_index=True)
-        del df_temp
-    df.to_parquet(output_file_path + "_2.parquet")
+    InputFile.Close()
+    for idx, (FileNamePart, DirNamesPart, TreeNamePart) in enumerate(zip(split_list(FileName, n_parts), split_list(DirNames, n_parts), split_list(TreeName, n_parts))):
+        print("Processing part " + str(idx+1) + " of " + str(n_parts))
+        df = pd.DataFrame()
+        for i in range(len(DirNamesPart)):
+            print("Processing file " + str(i) + " of " + str(len(DirNamesPart)), end='\r')
+            df_temp = LoadDfFromRootOrParquet(FileNamePart[i], [DirNamesPart[i]], TreeNamePart[i])
+            df = pd.concat([df, df_temp], ignore_index=True)
+            del df_temp
+        df.to_parquet(output_file_path + f"_{idx}.parquet")
+        del df
+        print("Processing part " + str(idx+1) + " of " + str(n_parts) + " done!")
 
 
 def DivideIntoDsAndDplus(input_file_path, output_file_path):
@@ -56,23 +51,26 @@ def DivideIntoDsAndDplus(input_file_path, output_file_path):
 
 def MergeDataframes(input_file_paths, output_file_path):
     '''
-    This function takes as input two pickle files and merges them into a single one.
+    This function takes as input a list of pickle files and merges them into a single one.
     '''
     Df = pd.concat([pd.read_parquet(path) for path in input_file_paths] , ignore_index=True)
     Df.to_parquet(output_file_path)
     del Df
 
-# Merge the Ds and Dplus dataframes
-#print("Processing Ds")
-#DsDf = pd.concat([pd.read_parquet(output_file_path + "_Ds_1.parquet"), pd.read_parquet(output_file_path + "_Ds_2.parquet")] , ignore_index=True)
-#DsDf.to_parquet(output_file_path + "_Ds.parquet")
-#del DsDf
-#print("Processing Dplus")
-#DplusDf = pd.concat([pd.read_parquet(output_file_path + "_Dplus_1.parquet"), pd.read_parquet(output_file_path + "_Dplus_2.parquet")] , ignore_index=True)
-#DplusDf.to_parquet(output_file_path + "_Dplus.parquet")
-#del DplusDf
+if __name__ == "__main__":
+    # Define the input and output file paths
+    input_file_path = "/home/fchinu/Run3/Ds_pp_13TeV/Datasets/o2_MC_big_Rebecca_Merged.root"
+    output_file_path = "/home/fchinu/Run3/Ds_pp_13TeV/Datasets/o2_MC_big_Rebecca_Merged"   #No extension
+    treename = "O2hfcanddsfull"
+    n_divisions = 3
+    isMC = False
 
-#PickleFromRoot(input_file_path, output_file_path, treename)
-#DivideIntoDsAndDplus(output_file_path + "_1.parquet", output_file_path)
-#DivideIntoDsAndDplus(output_file_path + "_2.parquet", output_file_path)
-MergeDataframes([output_file_path + "_1.parquet", output_file_path + "_2.parquet"], output_file_path + ".parquet")
+
+    #ParquetFromRoot(input_file_path, output_file_path, treename, n_parts=n_divisions)
+    if isMC:
+        for i in range (n_divisions):
+            DivideIntoDsAndDplus(output_file_path + f"_{i}.parquet", output_file_path + f"_{i}")
+        MergeDataframes([output_file_path + f"_{i}_Ds.parquet" for i in range(n_divisions)], output_file_path + "_Ds.parquet")
+        MergeDataframes([output_file_path + f"_{i}_Dplus.parquet" for i in range(n_divisions)], output_file_path + "_Dplus.parquet")
+    else:
+        MergeDataframes([output_file_path + f"_{i}.parquet" for i in range(n_divisions)], output_file_path + ".parquet")
