@@ -335,191 +335,71 @@ def main(): #pylint: disable=too-many-statements
     print('Loading analysis configuration: Done!')
 
     print('Loading and preparing data files: ...', end='\r')
+                                                                
+    PromptHandler = TreeHandler(inputCfg['input']['prompt'], inputCfg['input']['treename'])
+    FDHandler = None if inputCfg['input']['FD'] is None else TreeHandler(inputCfg['input']['FD'],
+                                                                        inputCfg['input']['treename'])
+    DataHandler = TreeHandler(inputCfg['input']['data'], inputCfg['input']['treename'])
 
-    if not inputCfg['input']['merged']:   
-        DataFileName = inputCfg['input']['data']
-        DataFile = TFile(DataFileName,'READ')
-        DirIter = DataFile.GetListOfKeys()
-        DataDirNames = [i.GetName() for i in DirIter if "parentFiles" not in i.GetName()]
-        DataFileName = [DataFileName] * len(DataDirNames)
-        DataTreeName = inputCfg['input']['treename']
-        DataTreeName = [DataTreeName] * len(DataDirNames)
-        DataFileName = DataFileName[:5]
-        DataDirNames = DataDirNames[:5]
-        DataTreeName = DataTreeName[:5]
-        DataDf = LoadDfFromRootOrParquet(DataFileName, DataDirNames, DataTreeName)
+    if inputCfg['data_prep']['filt_bkg_mass']:
+        DataHandler = DataHandler.get_subset(inputCfg['data_prep']['filt_bkg_mass'], frac=1.,
+                                            rndm_state=inputCfg['data_prep']['seed_split'])
+    else:
+        DataHandler = DataHandler
 
-        PromptFileName = inputCfg['input']['prompt']
-        PromptFile = TFile(PromptFileName,'READ')
-        DirIter = PromptFile.GetListOfKeys()
-        PromptDirNames = [i.GetName() for i in DirIter if "parentFiles" not in i.GetName()]
-        PromptFileName = [PromptFileName] * len(PromptDirNames)
-        PromptTreeName = inputCfg['input']['treename']
-        PromptTreeName = [PromptTreeName] * len(PromptDirNames)
-        PromptFileName = PromptFileName[:]
-        PromptDirNames = PromptDirNames[:]
-        PromptTreeName = PromptTreeName[:]
-        PromptDf = LoadDfFromRootOrParquet(PromptFileName, PromptDirNames, PromptTreeName)
+    PtBins = [[a, b] for a, b in zip(inputCfg['pt_ranges']['min'], inputCfg['pt_ranges']['max'])]
+    PromptHandler.slice_data_frame('fPt', PtBins, True)
+    if FDHandler is not None:
+        FDHandler.slice_data_frame('fPt', PtBins, True)
+    DataHandler.slice_data_frame('fPt', PtBins, True)
+    #DataHandler.slice_data_frame('fPt', PtBins, True)
+    print('Loading and preparing data files: Done!')
 
-        #PromptDf = pd.read_pickle(inputCfg['input']['prompt'])
+    for iBin, PtBin in enumerate(PtBins):
+        print(f'\n\033[94mStarting ML analysis --- {PtBin[0]} < pT < {PtBin[1]} GeV/c\033[0m')
 
-        with open(inputCfg['input']['prompt'].replace('.root','.pkl'), "wb") as output_file:
-            pickle.dump(PromptDf, output_file)
-
-        if inputCfg['input']['FD'] is not None:
-            FDFileName = inputCfg['input']['FD']
-            FDFile = TFile(FDFileName,'READ')
-            DirIter = FDFile.GetListOfKeys()
-            FDDirNames = [i.GetName() for i in DirIter if "parentFiles" not in i.GetName()]
-            FDFileName = [FDFileName] * len(FDDirNames)
-            FDTreeName = inputCfg['input']['treename']
-            FDTreeName = [FDTreeName] * len(FDDirNames)
-            FDFileName = FDFileName[:]
-            FDDirNames = FDDirNames[:]
-            FDTreeName = FDTreeName[:]
-            FDDf = LoadDfFromRootOrParquet(FDFileName, FDDirNames, FDTreeName)
-            with open(inputCfg['input']['FD'].replace('.root','.pkl'), "wb") as output_file:
-                pickle.dump(FDDf, output_file)
+        OutPutDirPt = os.path.join(os.path.expanduser(inputCfg['output']['dir']), f'pt{PtBin[0]}_{PtBin[1]}')
+        if os.path.isdir(OutPutDirPt):
+            print((f'\033[93mWARNING: Output directory \'{OutPutDirPt}\' already exists,'
+                ' overwrites possibly ongoing!\033[0m'))
         else:
-            FDDf = None
+            os.makedirs(OutPutDirPt)
 
-        #PromptDf = PromptDf.query('fFlagMcMatchRec == 4')
+        # data preparation
+        #_____________________________________________
+        FDDfPt = pd.DataFrame() if FDHandler is None else FDHandler.get_slice(iBin)
+        TrainTestData, PromptDfSelForEff, FDDfSelForEff = data_prep(inputCfg, iBin, PtBin, OutPutDirPt,
+                                                                    PromptHandler.get_slice(iBin), FDDfPt,
+                                                                    DataHandler.get_slice(iBin))
 
-        if inputCfg['data_prep']['filt_bkg_mass']:
-            BkgDf = DataDf.query(inputCfg['data_prep']['filt_bkg_mass'])
+                                                                    
+        if args.apply and inputCfg['data_prep']['test_fraction'] < 1.:
+            print('\033[93mWARNING: Using only a fraction of the MC for the application! Are you sure?\033[0m')
 
-        #print(PromptDf.query(f'{PtBin[0]} < fPt < {PtBin[1]}'))
-
-        PtBins = [[a, b] for a, b in zip(inputCfg['pt_ranges']['min'], inputCfg['pt_ranges']['max'])]
-
-        print('Loading and preparing data files: Done!')
-        for iBin, PtBin in enumerate(PtBins):
-            print(f'\n\033[94mStarting ML analysis --- {PtBin[0]} < pT < {PtBin[1]} GeV/c\033[0m')
-
-            OutPutDirPt = os.path.join(os.path.expanduser(inputCfg['output']['dir']), f'pt{PtBin[0]}_{PtBin[1]}')
-            if os.path.isdir(OutPutDirPt):
-                print((f'\033[93mWARNING: Output directory \'{OutPutDirPt}\' already exists,'
-                    ' overwrites possibly ongoing!\033[0m'))
-            else:
-                os.makedirs(OutPutDirPt)
-
-            # data preparation
-            #_____________________________________________
-            MCFlag = inputCfg['input']['MCFlag'] 
-            if MCFlag is not None:
-                MCFlagQuery = ''
-                for idx, flag in enumerate(MCFlag):
-                    if idx == 0:
-                        MCFlagQuery = MCFlagQuery + f'fFlagMcMatchRec == {flag}'
-                    else:
-                        MCFlagQuery = MCFlagQuery + f' or fFlagMcMatchRec == {flag}'
-                print(MCFlagQuery)
-
-                FDDfPt = pd.DataFrame() if FDDf is None else FDDf.query(f'{PtBin[0]} < fPt < {PtBin[1]} and ({MCFlagQuery})')
-                TrainTestData, PromptDfSelForEff, FDDfSelForEff = data_prep(inputCfg, iBin, PtBin, OutPutDirPt,
-                                                                            PromptDf.query(f'{PtBin[0]} < fPt < {PtBin[1]} and ({MCFlagQuery})'), FDDfPt,
-                                                                            DataDf.query(f'{PtBin[0]} < fPt < {PtBin[1]}'))
-            
-            else:
-                FDDfPt = pd.DataFrame() if FDDf is None else FDDf.query(f'{PtBin[0]} < fPt < {PtBin[1]}')
-                TrainTestData, PromptDfSelForEff, FDDfSelForEff = data_prep(inputCfg, iBin, PtBin, OutPutDirPt,
-                                                                            PromptDf.query(f'{PtBin[0]} < fPt < {PtBin[1]}'), FDDfPt,
-                                                                            DataDf.query(f'{PtBin[0]} < fPt < {PtBin[1]}'))
-
-            if args.apply and inputCfg['data_prep']['test_fraction'] < 1.:
-                print('\033[93mWARNING: Using only a fraction of the MC for the application! Are you sure?\033[0m')
-
-            # training, testing
-            #_____________________________________________
-            if not args.apply:
-                ModelHandl = train_test(inputCfg, PtBin, OutPutDirPt, TrainTestData, iBin)
-            else:
-                ModelList = inputCfg['ml']['saved_models']
-                ModelPath = ModelList[iBin]
-                if not isinstance(ModelPath, str):
-                    print('\033[91mERROR: path to model not correctly defined!\033[0m')
-                    sys.exit()
-                ModelPath = os.path.expanduser(ModelPath)
-                print(f'Loaded saved model: {ModelPath}')
-                ModelHandl = ModelHandler()
-                ModelHandl.load_model_handler(ModelPath)
-
-            # model application
-            #_____________________________________________
-            if not args.train:
-                appl(inputCfg, PtBin, OutPutDirPt, ModelHandl, BkgDf.query(f'{PtBin[0]} < fPt < {PtBin[1]}'),
-                        PromptDfSelForEff, FDDfSelForEff)
-
-            # delete dataframes to release memory
-            for data in TrainTestData:
-                del data
-            del PromptDfSelForEff, FDDfSelForEff
-
-    else:                                                                    
-        PromptHandler = TreeHandler(inputCfg['input']['prompt'], inputCfg['input']['treename'])
-        FDHandler = None if inputCfg['input']['FD'] is None else TreeHandler(inputCfg['input']['FD'],
-                                                                            inputCfg['input']['treename'])
-        DataHandler = TreeHandler(inputCfg['input']['data'], inputCfg['input']['treename'])
-
-        if inputCfg['data_prep']['filt_bkg_mass']:
-            DataHandler = DataHandler.get_subset(inputCfg['data_prep']['filt_bkg_mass'], frac=1.,
-                                                rndm_state=inputCfg['data_prep']['seed_split'])
+        # training, testing
+        #_____________________________________________
+        if not args.apply:
+            ModelHandl = train_test(inputCfg, PtBin, OutPutDirPt, TrainTestData, iBin)
         else:
-            DataHandler = DataHandler
+            ModelList = inputCfg['ml']['saved_models']
+            ModelPath = ModelList[iBin]
+            if not isinstance(ModelPath, str):
+                print('\033[91mERROR: path to model not correctly defined!\033[0m')
+                sys.exit()
+            ModelPath = os.path.expanduser(ModelPath)
+            print(f'Loaded saved model: {ModelPath}')
+            ModelHandl = ModelHandler()
+            ModelHandl.load_model_handler(ModelPath)
 
-        PtBins = [[a, b] for a, b in zip(inputCfg['pt_ranges']['min'], inputCfg['pt_ranges']['max'])]
-        PromptHandler.slice_data_frame('fPt', PtBins, True)
-        if FDHandler is not None:
-            FDHandler.slice_data_frame('fPt', PtBins, True)
-        DataHandler.slice_data_frame('fPt', PtBins, True)
-        #DataHandler.slice_data_frame('fPt', PtBins, True)
-        print('Loading and preparing data files: Done!')
+        # model application
+        #_____________________________________________
+        if not args.train:
+            appl(inputCfg, PtBin, OutPutDirPt, ModelHandl, DataHandler.get_slice(iBin),
+                    PromptDfSelForEff, FDDfSelForEff)
 
-        for iBin, PtBin in enumerate(PtBins):
-            print(f'\n\033[94mStarting ML analysis --- {PtBin[0]} < pT < {PtBin[1]} GeV/c\033[0m')
-
-            OutPutDirPt = os.path.join(os.path.expanduser(inputCfg['output']['dir']), f'pt{PtBin[0]}_{PtBin[1]}')
-            if os.path.isdir(OutPutDirPt):
-                print((f'\033[93mWARNING: Output directory \'{OutPutDirPt}\' already exists,'
-                    ' overwrites possibly ongoing!\033[0m'))
-            else:
-                os.makedirs(OutPutDirPt)
-
-            # data preparation
-            #_____________________________________________
-            FDDfPt = pd.DataFrame() if FDHandler is None else FDHandler.get_slice(iBin)
-            TrainTestData, PromptDfSelForEff, FDDfSelForEff = data_prep(inputCfg, iBin, PtBin, OutPutDirPt,
-                                                                        PromptHandler.get_slice(iBin), FDDfPt,
-                                                                        DataHandler.get_slice(iBin))
-
-                                                                        
-            if args.apply and inputCfg['data_prep']['test_fraction'] < 1.:
-                print('\033[93mWARNING: Using only a fraction of the MC for the application! Are you sure?\033[0m')
-
-            # training, testing
-            #_____________________________________________
-            if not args.apply:
-                ModelHandl = train_test(inputCfg, PtBin, OutPutDirPt, TrainTestData, iBin)
-            else:
-                ModelList = inputCfg['ml']['saved_models']
-                ModelPath = ModelList[iBin]
-                if not isinstance(ModelPath, str):
-                    print('\033[91mERROR: path to model not correctly defined!\033[0m')
-                    sys.exit()
-                ModelPath = os.path.expanduser(ModelPath)
-                print(f'Loaded saved model: {ModelPath}')
-                ModelHandl = ModelHandler()
-                ModelHandl.load_model_handler(ModelPath)
-
-            # model application
-            #_____________________________________________
-            if not args.train:
-                appl(inputCfg, PtBin, OutPutDirPt, ModelHandl, DataHandler.get_slice(iBin),
-                        PromptDfSelForEff, FDDfSelForEff)
-
-            # delete dataframes to release memory
-            for data in TrainTestData:
-                del data
-            del PromptDfSelForEff, FDDfSelForEff
+        # delete dataframes to release memory
+        for data in TrainTestData:
+            del data
+        del PromptDfSelForEff, FDDfSelForEff
 
 main()
