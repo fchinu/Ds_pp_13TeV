@@ -201,7 +201,7 @@ def train_test(inputCfg, PtBin, OutPutDirPt, TrainTestData, iBin): #pylint: disa
         OutFileHypPars = open(f'{OutPutDirPt}/HyperParOpt_pT_{PtBin[0]}_{PtBin[1]}.txt', 'wt')
         sys.stdout = OutFileHypPars
 
-        ModelHandl.optimize_params_optuna(TrainTestData, OptTunaConfig, cross_val_scoring='roc_auc', timeout=inputCfg['ml']['hyper_par_opt']['timeout'],
+        ModelHandl.optimize_params_optuna(TrainTestData, OptTunaConfig, cross_val_scoring=metric, timeout=inputCfg['ml']['hyper_par_opt']['timeout'],
                                  n_jobs=inputCfg['ml']['hyper_par_opt']['njobs'], 
                                  n_trials=inputCfg['ml']['hyper_par_opt']['n_trials'],
                                  direction='maximize')
