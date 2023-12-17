@@ -1,6 +1,6 @@
 import ROOT
 from ROOT import AliHFInvMassFitter, AliVertexingHFUtils
-from ROOT import TH1D, TH2F, TFile, TCanvas, TMath, TObject, TH1F, TKey, TIter, TDatabasePDG
+from ROOT import TH1D, TH2F, TFile, TCanvas, TMath, TObject, TH1F, TKey, TIter, TDatabasePDG, gStyle, kDarkBodyRadiator
 import pandas as pd
 import numpy as np
 import ctypes
@@ -44,6 +44,7 @@ massDplus = TDatabasePDG.Instance().GetParticle(411).Mass()
 
 
 #Start the loop
+gStyle.SetPalette(kDarkBodyRadiator, 0)
 
 outputFile = TFile.Open(outputFileName,"RECREATE")
 for iPt, (minPt,maxPt) in enumerate(PtEdges):
@@ -58,6 +59,8 @@ for iPt, (minPt,maxPt) in enumerate(PtEdges):
     BDT_prompt_cuts = np.arange(BDT_prompt_mins[iPt],BDT_prompt_maxs[iPt],stepBDT)
     BDT_bkg_cuts = np.arange(BDT_bkg_mins[iPt],BDT_bkg_maxs[iPt],stepBDT)
 
+    #Draw the significance scan
+    hSignificanceScan = TH2F(f"hSignificanceScan_{minPt}_{maxPt}",f"hSignificanceScan_{minPt}_{maxPt};ML output bkg;ML output prompt",len(BDT_bkg_cuts),BDT_bkg_mins[iPt]-stepBDT/2,BDT_bkg_maxs[iPt]+stepBDT/2,len(BDT_prompt_cuts),BDT_prompt_mins[iPt]-stepBDT/2,BDT_prompt_maxs[iPt]+stepBDT/2)
     #Loop over the histograms
     for (BDT_prompt_cut, BDT_bkg_cut)  in itertools.product(BDT_prompt_cuts,BDT_bkg_cuts):
         dfSel = df.query(f"ML_output_Prompt > {BDT_prompt_cut} and ML_output_Bkg < {BDT_bkg_cut}")
@@ -80,12 +83,10 @@ for iPt, (minPt,maxPt) in enumerate(PtEdges):
         significanceerr.append(signiferr.value)
         signal.append(sgn.value)
         signalerr.append(sgnerr.value)
+        hSignificanceScan.SetBinContent(hSignificanceScan.FindBin(BDT_bkg_cut,BDT_prompt_cut),signif.value)
     outputFile.cd()
 
-    #Draw the significance scan
-    hSignificanceScan = TH2F(f"hSignificanceScan_{minPt}_{maxPt}",f"hSignificanceScan_{minPt}_{maxPt}",len(BDT_prompt_cuts),BDT_prompt_mins[iPt]-stepBDT/2,BDT_prompt_maxs[iPt]+stepBDT/2,len(BDT_bkg_cuts),BDT_bkg_mins[iPt]-stepBDT/2,BDT_bkg_maxs[iPt]+stepBDT/2)
-    for i in range(len(significance)):
-        hSignificanceScan.SetBinContent(hSignificanceScan.FindBin(BDT_prompt_cuts[i//len(BDT_bkg_cuts)],BDT_bkg_cuts[i%len(BDT_bkg_cuts)]),significance[i])
+    hSignificanceScan.SetDrawOption("colz")
     hSignificanceScan.Write()
     
 
