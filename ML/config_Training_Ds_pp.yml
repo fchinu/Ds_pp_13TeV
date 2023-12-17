@@ -22,7 +22,7 @@ pt_ranges: # ranges in pt to split the data in the ml training and testing
     max: [4,6,8,12,50] # list 
 
 data_prep:
-    filt_bkg_mass: fM < 1.75 or fM > 2.2 # pandas query to select bkg candidates
+    filt_bkg_mass: 1.7 < fM < 1.8 or  2.1 < fM < 2.2 # pandas query to select bkg candidates
     dataset_opt: max_signal # change how the dataset is built, options available: 'equal', 'max_signal'
                             # 'equal' -> same number of prompt/FD/bkg (not using all the signal available)
                             # 'max_signal' -> try to use all the signal (prompt and FD) + add n_bkg = bkg_mult * (n_prompt + n_FD)

@@ -44,6 +44,14 @@ def main(): #pylint: disable=too-many-statements, too-many-branches
     for inputFile, outName in zip(inputCfg['standalone_appl']['inputs'], inputCfg['standalone_appl']['output_names']):
         print(f'Loading and preparing data file {inputFile}: ...', end='\r')
         DataHandler = TreeHandler(inputFile)
+        if inputCfg["data_prep"]["filt_bkg_mass"]:
+                DataHandler = DataHandler.get_subset(inputCfg['data_prep']['filt_bkg_mass'], frac=1.,
+                                            rndm_state=inputCfg['data_prep']['seed_split'])
+        if inputCfg["data_prep"]["test_fraction"]:
+                DataHandler = DataHandler.get_subset(frac=inputCfg["data_prep"]["test_fraction"],
+                                            rndm_state=inputCfg['data_prep']['seed_split'])
+
+        print(DataHandler.get_n_cand())
         DataHandler.slice_data_frame('fPt', PtBins, True)
         print(f'Loading and preparing data files {inputFile}: Done!')
 
