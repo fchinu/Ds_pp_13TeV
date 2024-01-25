@@ -7,9 +7,17 @@ import os
 import sys
 import argparse
 import yaml
+import numpy as np
 
 from hipe4ml.model_handler import ModelHandler
 from hipe4ml.tree_handler import TreeHandler
+
+def GetNsigComb(row, particle, num):
+    if not row[f'fNSigTpc{particle}{num}']:
+        return row[f'fNSigTof{particle}{num}']
+    if not row[f'fNSigTpc{particle}{num}']:
+        return row[f'fNSigTof{particle}{num}']
+    return np.sqrt((row[f'fNSigTpc{particle}{num}']**2 + row[f'fNSigTof{particle}{num}']**2)/2)
 
 def main(): #pylint: disable=too-many-statements, too-many-branches
     # read config file
@@ -65,6 +73,12 @@ def main(): #pylint: disable=too-many-statements, too-many-branches
             else:
                 os.makedirs(OutPutDirPt)
             DataDfPtSel = DataHandler.get_slice(iBin)
+            DataDfPtSel["fNSigCombPi0"] = DataDfPtSel.apply(lambda row: GetNsigComb(row, "Pi", 0), axis=1)
+            DataDfPtSel["fNSigCombPi1"] = DataDfPtSel.apply(lambda row: GetNsigComb(row, "Pi", 1), axis=1)
+            DataDfPtSel["fNSigCombPi2"] = DataDfPtSel.apply(lambda row: GetNsigComb(row, "Pi", 2), axis=1)
+            DataDfPtSel["fNSigCombKa0"] = DataDfPtSel.apply(lambda row: GetNsigComb(row, "Ka", 0), axis=1)
+            DataDfPtSel["fNSigCombKa1"] = DataDfPtSel.apply(lambda row: GetNsigComb(row, "Ka", 1), axis=1)
+            DataDfPtSel["fNSigCombKa2"] = DataDfPtSel.apply(lambda row: GetNsigComb(row, "Ka", 2), axis=1)
             yPred = ModelHandls[iBin].predict(DataDfPtSel, inputCfg['ml']['raw_output'])
             ColumnsToSaveFinal = ColumnsToSave
             if not isinstance(ColumnsToSaveFinal, list):

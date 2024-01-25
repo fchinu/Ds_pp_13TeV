@@ -23,6 +23,13 @@ from hipe4ml import plot_utils
 from hipe4ml.model_handler import ModelHandler
 from hipe4ml.tree_handler import TreeHandler
 
+def GetNsigComb(row, particle, num):
+    if not row[f'fNSigTpc{particle}{num}']:
+        return row[f'fNSigTof{particle}{num}']
+    if not row[f'fNSigTpc{particle}{num}']:
+        return row[f'fNSigTof{particle}{num}']
+    return np.sqrt((row[f'fNSigTpc{particle}{num}']**2 + row[f'fNSigTof{particle}{num}']**2)/2)
+
 def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylint: disable=too-many-statements, too-many-branches
     '''
     function for data preparation
@@ -61,6 +68,12 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
                    'efficiency together with test set'))
 
         TotDf = pd.concat([BkgDf.iloc[:nCandToKeep], PromptDf.iloc[:nCandToKeep], FDDf.iloc[:nCandToKeep]], sort=True)
+        TotDf["fNSigCombPi0"] = TotDf.apply(lambda row: GetNsigComb(row, "Pi", 0), axis=1)
+        TotDf["fNSigCombPi1"] = TotDf.apply(lambda row: GetNsigComb(row, "Pi", 1), axis=1)
+        TotDf["fNSigCombPi2"] = TotDf.apply(lambda row: GetNsigComb(row, "Pi", 2), axis=1)
+        TotDf["fNSigCombKa0"] = TotDf.apply(lambda row: GetNsigComb(row, "Ka", 0), axis=1)
+        TotDf["fNSigCombKa1"] = TotDf.apply(lambda row: GetNsigComb(row, "Ka", 1), axis=1)
+        TotDf["fNSigCombKa2"] = TotDf.apply(lambda row: GetNsigComb(row, "Ka", 2), axis=1)
         if FDDf.empty:
             LabelsArray = np.array([0]*nCandToKeep + [1]*nCandToKeep)
         else:
@@ -93,6 +106,12 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
         print(f'Fraction of real data candidates used for ML: {nCandBkg/nBkg:.5f}')
 
         TotDf = pd.concat([BkgDf.iloc[:nCandBkg], PromptDf, FDDf], sort=True)
+        TotDf["fNSigCombPi0"] = TotDf.apply(lambda row: GetNsigComb(row, "Pi", 0), axis=1)
+        TotDf["fNSigCombPi1"] = TotDf.apply(lambda row: GetNsigComb(row, "Pi", 1), axis=1)
+        TotDf["fNSigCombPi2"] = TotDf.apply(lambda row: GetNsigComb(row, "Pi", 2), axis=1)
+        TotDf["fNSigCombKa0"] = TotDf.apply(lambda row: GetNsigComb(row, "Ka", 0), axis=1)
+        TotDf["fNSigCombKa1"] = TotDf.apply(lambda row: GetNsigComb(row, "Ka", 1), axis=1)
+        TotDf["fNSigCombKa2"] = TotDf.apply(lambda row: GetNsigComb(row, "Ka", 2), axis=1)
         if FDDf.empty:
             LabelsArray = np.array([0]*nCandBkg + [1]*nPrompt)
         else:

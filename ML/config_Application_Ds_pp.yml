@@ -22,7 +22,7 @@ pt_ranges: # ranges in pt to split the data in the ml training and testing
     max: [4,6,8,12,50] # list 
 
 data_prep:
-    filt_bkg_mass:  1.7 < fM < 2.1 # pandas query to select bkg candidates
+    filt_bkg_mass:  1.7 < fM < 2.2 # pandas query to select bkg candidates
     dataset_opt: equal # change how the dataset is built, options available: 'equal', 'max_signal'
                             # 'equal' -> same number of prompt/FD/bkg (not using all the signal available)
                             # 'max_signal' -> try to use all the signal (prompt and FD) + add n_bkg = bkg_mult * (n_prompt + n_FD)
@@ -34,8 +34,8 @@ ml:
     raw_output: False # use raw_output (True) of probability (False) as output of the model
     roc_auc_average: 'macro' # 'macro' or 'weighted'
     roc_auc_approach: 'ovo'  # 'ovo' or 'ovr'
-    training_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fDeltaMassPhi, fImpactParameterXY, fAbsCos3PiK,
-                       fMaxNormalisedDeltaIP] 
+    training_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fImpactParameterXY, fAbsCos3PiK,
+                       fNSigCombPi0, fNSigCombPi1, fNSigCombPi2, fNSigCombKa0, fNSigCombKa1, fNSigCombKa2] 
                        # list of training variables
                         #Not found from run 2: sig_vert, delta_mass_KK, cos3PiK (only Abs), max_norm_d0d0exp (is it equal to fMaxNormalisedDeltaIP?)
                         # nsigComb_Pi_0, nsigComb_Pi_1, nsigComb_Pi_2, nsigComb_K_0, nsigComb_K_1, nsigComb_K_2
@@ -79,7 +79,7 @@ plots:
     train_test_log: True # use log scale for plots of train and test distributions
 
 appl: 
-    column_to_save_list: ['fM', 'fPt'] # list of variables saved in the dataframes with the applied models
+    column_to_save_list: ['fM', 'fPt']  # list of variables saved in the dataframes with the applied models
 
 standalone_appl:
     inputs: [  #/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/skimmed_data/Merged_LHC22b1b_Train128761_AO2D_Prompt_Ds_Skimmed.parquet,
