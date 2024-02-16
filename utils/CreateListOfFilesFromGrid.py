@@ -4,8 +4,8 @@ import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Create list of files from grid')
-    parser.add_argument('--input', default="/home/fchinu/Run3/Dplus_PbPb_QC/utils/AODsForDownload.txt", help='Input file name')
-    parser.add_argument('--output', default="/home/fchinu/Run3/Dplus_PbPb_QC/utils/outfile.txt", help='Output file name')
+    parser.add_argument('--input', default="/home/fchinu/Run3/Ds_pp_13TeV/utils/AODsForDownload.txt", help='Input file name')
+    parser.add_argument('--output', default="/home/fchinu/Run3/Ds_pp_13TeV/utils/fileList.txt", help='Output file name')
 
     args = parser.parse_args()
     inputfilename = args.input

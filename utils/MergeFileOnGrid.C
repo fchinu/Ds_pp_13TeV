@@ -12,7 +12,7 @@
 void MergeFileOnGrid()
 {
     //std::ifstream file("/home/fchinu/Run3/Ds_pp_13TeV/utils/fileList.txt");
-    std::ifstream file("/home/fchinu/Run3/Ds_pp_13TeV/utils/fileList130748.txt");
+    std::ifstream file("/home/fchinu/Run3/Ds_pp_13TeV/utils/fileList165701.txt");
     std::string str; 
     int nFilesMax = 60;
 
@@ -31,9 +31,9 @@ void MergeFileOnGrid()
         mergeAnalysisResults->AddFile(Form("alien://%s/AnalysisResults.root",str.c_str()));
     }
     //mergeAOD->OutputFile(Form("LHC22b1a_Train128762_AO2D.root"), "RECREATE");
-    mergeAOD->OutputFile(Form("/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/LHC22o_Train130748_AO2D.root"), "RECREATE");
+    mergeAOD->OutputFile(Form("/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train165701/LHC22b1a_Train165701_AO2D.root"), "RECREATE");
     mergeAOD->Merge();
-    mergeAnalysisResults->OutputFile(Form("/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/LHC22o_Train130748_AnalysisResults.root"), "RECREATE");
+    mergeAnalysisResults->OutputFile(Form("/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train165701/LHC22b1a_Train165701_AnalysisResults.root"), "RECREATE");
     mergeAnalysisResults->Merge();
 }
 
