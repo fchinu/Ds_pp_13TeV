@@ -68,12 +68,6 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
                    'efficiency together with test set'))
 
         TotDf = pd.concat([BkgDf.iloc[:nCandToKeep], PromptDf.iloc[:nCandToKeep], FDDf.iloc[:nCandToKeep]], sort=True)
-        TotDf["fNSigCombPi0"] = TotDf.apply(lambda row: GetNsigComb(row, "Pi", 0), axis=1)
-        TotDf["fNSigCombPi1"] = TotDf.apply(lambda row: GetNsigComb(row, "Pi", 1), axis=1)
-        TotDf["fNSigCombPi2"] = TotDf.apply(lambda row: GetNsigComb(row, "Pi", 2), axis=1)
-        TotDf["fNSigCombKa0"] = TotDf.apply(lambda row: GetNsigComb(row, "Ka", 0), axis=1)
-        TotDf["fNSigCombKa1"] = TotDf.apply(lambda row: GetNsigComb(row, "Ka", 1), axis=1)
-        TotDf["fNSigCombKa2"] = TotDf.apply(lambda row: GetNsigComb(row, "Ka", 2), axis=1)
         if FDDf.empty:
             LabelsArray = np.array([0]*nCandToKeep + [1]*nCandToKeep)
         else:
@@ -88,11 +82,11 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
             yTest = LabelsArray.copy()
 
         TrainTestData = [TrainSet, yTrain, TestSet, yTest]
-        PromptDfSelForEff = pd.concat([PromptDf.iloc[nCandToKeep:], TestSet[pd.Series(yTest).array == 1]], sort=False)
+        PromptDfSelForEff = pd.concat([PromptDf.iloc[nCandToKeep:], TestSet[np.array(yTest) == 1]], sort=False)
         if FDDf.empty:
             FDDfSelForEff = pd.DataFrame()
         else:
-            FDDfSelForEff = pd.concat([FDDf.iloc[nCandToKeep:], TestSet[pd.Series(yTest).array == 2]], sort=False)
+            FDDfSelForEff = pd.concat([FDDf.iloc[nCandToKeep:], TestSet[np.array(yTest) == 2]], sort=False)
         del TotDf
 
     elif dataset_opt == 'max_signal':
@@ -106,12 +100,6 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
         print(f'Fraction of real data candidates used for ML: {nCandBkg/nBkg:.5f}')
 
         TotDf = pd.concat([BkgDf.iloc[:nCandBkg], PromptDf, FDDf], sort=True)
-        TotDf["fNSigCombPi0"] = TotDf.apply(lambda row: GetNsigComb(row, "Pi", 0), axis=1)
-        TotDf["fNSigCombPi1"] = TotDf.apply(lambda row: GetNsigComb(row, "Pi", 1), axis=1)
-        TotDf["fNSigCombPi2"] = TotDf.apply(lambda row: GetNsigComb(row, "Pi", 2), axis=1)
-        TotDf["fNSigCombKa0"] = TotDf.apply(lambda row: GetNsigComb(row, "Ka", 0), axis=1)
-        TotDf["fNSigCombKa1"] = TotDf.apply(lambda row: GetNsigComb(row, "Ka", 1), axis=1)
-        TotDf["fNSigCombKa2"] = TotDf.apply(lambda row: GetNsigComb(row, "Ka", 2), axis=1)
         if FDDf.empty:
             LabelsArray = np.array([0]*nCandBkg + [1]*nPrompt)
         else:
@@ -126,8 +114,8 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
             yTest = LabelsArray.copy()
 
         TrainTestData = [TrainSet, yTrain, TestSet, yTest]
-        PromptDfSelForEff = TestSet[pd.Series(yTest).array == 1]
-        FDDfSelForEff = pd.DataFrame() if FDDf.empty else TestSet[pd.Series(yTest).array == 2]
+        PromptDfSelForEff = TestSet[np.array(yTest) == 1]
+        FDDfSelForEff = pd.DataFrame() if FDDf.empty else TestSet[np.array(yTest) == 2]
         del TotDf
 
     else:
