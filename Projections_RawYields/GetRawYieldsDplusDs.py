@@ -349,6 +349,9 @@ massFitter = []
 for iPt, (hM, ptMin, ptMax, reb, sgnEnum, bkgEnum, secPeak, massMin, massMax) in enumerate(
         zip(hMass, ptMins, ptMaxs, fitConfig[cent]['Rebin'], SgnFunc, BkgFunc, inclSecPeak, fitConfig[cent]['MassMin'],
             fitConfig[cent]['MassMax'])):
+    print("\033[91m")  # Set text color to red
+    print(f"{ptMin:0.1f} < pT < {ptMax:0.1f} GeV/c")
+    print("\033[0m")  # Reset text color
     iCanv = int(np.floor(iPt / nMaxCanvases))
     hMassForFit.append(TH1F())
     AliVertexingHFUtils.RebinHisto(hM, reb).Copy(hMassForFit[iPt]) #to cast TH1D to TH1F
@@ -504,7 +507,7 @@ for iPt, (hM, ptMin, ptMax, reb, sgnEnum, bkgEnum, secPeak, massMin, massMax) in
         if secPeak and particleName == 'Ds':
             if hSigmaToFixSecPeak:
                 sigmaToFix = hSigmaToFixSecPeak.GetBinContent(iPt+1) * fitConfig[cent]['SigmaMultFactorSecPeak']
-                massFitter[iPt].IncludeSecondGausPeak(massDplus, False, sigmaToFix, True)
+                massFitter[iPt].IncludeSecondGausPeak(massDplus, True, sigmaToFix, False)
                 if fitConfig[cent]['FixSigmaToFirstPeak']:
                     # fix D+ peak to sigmaMC(D+)/sigmaMC(Ds+)*sigmaData(Ds+)
                     massFitter[iPt].MassFitter(False)
@@ -512,7 +515,7 @@ for iPt, (hM, ptMin, ptMax, reb, sgnEnum, bkgEnum, secPeak, massMin, massMax) in
                     sigmaRatioMC = hSigmaToFixSecPeak.GetBinContent(iPt+1) / hSigmaFirstPeakMC.GetBinContent(iPt+1)
                     massFitter[iPt].IncludeSecondGausPeak(massDplus, False, sigmaRatioMC * sigmaFirstPeak, fitConfig[cent]['FixSigmaSecPeak'][iPt])
             else:
-                massFitter[iPt].IncludeSecondGausPeak(massDplus, False, fitConfig[cent]['SigmaSecPeak'][iPt], fitConfig[cent]['FixSigmaSecPeak'][iPt])
+                massFitter[iPt].IncludeSecondGausPeak(massDplus, True, fitConfig[cent]['SigmaSecPeak'][iPt], fitConfig[cent]['FixSigmaSecPeak'][iPt])
         if enableRef:
             rOverS = hMassForSig[iPt].Integral(
                 hMassForSig[iPt].FindBin(massMin * 1.0001),
