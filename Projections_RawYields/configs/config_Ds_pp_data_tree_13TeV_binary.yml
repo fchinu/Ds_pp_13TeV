@@ -35,7 +35,7 @@ tree:
             /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt5.5_6/Data_pT_5.5_6_ModelApplied.parquet.gzip,
             /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt6_8/Data_pT_6_8_ModelApplied.parquet.gzip,
             /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt8_12/Data_pT_8_12_ModelApplied.parquet.gzip,
-            /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt12_50/Data_pT_12_50_ModelApplied.parquet.gzip
+            /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt12_24/Data_pT_12_24_ModelApplied.parquet.gzip
 ] #not needed for MC
     filenamePrompt: null
     filenameFD: null

@@ -41,6 +41,10 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
         out = f'\n     Signal: {nPrompt}\n     Bkg: {nBkg}'
     else:
         out = f'\n     Prompt: {nPrompt}\n     FD: {nFD}\n     Bkg: {nBkg}'
+    OutFileCands = open(f'{OutPutDirPt}/NCands.txt', 'wt')
+    sys.stdout = OutFileCands
+    print(f'Number of available candidates in {PtBin[0]} < pT < {PtBin[1]} GeV/c:{out}')
+    sys.stdout = sys.__stdout__
     print(f'Number of available candidates in {PtBin[0]} < pT < {PtBin[1]} GeV/c:{out}')
 
     dataset_opt = inputCfg['data_prep']['dataset_opt']

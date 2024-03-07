@@ -5,19 +5,19 @@ pp13TeVPrompt:
     SigmaMultFactor: 1.
     FixMean: 0
     MeanFile: ''
-    PtMin: [2, 2.5, 3, 3.5, 4, 4.5,  5.5, 6, 8, 12] 
-    PtMax: [2.5, 3, 3.5, 4, 4.5, 5,  6, 8, 12, 24]
+    PtMin: [2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12] 
+    PtMax: [2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12, 24]
     MassMin: [1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7]    
     MassMax: [2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1]
-    Rebin: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+    Rebin: [4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8]
     InclSecPeak: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     SigmaSecPeak: [0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.013,  0.013, 0.015, 0.02, 0.02]
-    FixSigmaSecPeak: [False, False, False, False, False, False, False, False, False, True, False]
+    FixSigmaSecPeak: [False, False, False, False, False, False, False, False, False, False, False]
     SigmaFileSecPeak: ''
     SigmaMultFactorSecPeak: 1.
     FixSigmaToFirstPeak: 0
     UseLikelihood: 1
-    BkgFunc: ['kPol2', 'kPol2', 'kExpo', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2']
+    BkgFunc: ['kPol2', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo']
     SgnFunc: ['kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus']
     FixSigmaRatio: 0 # used only if SgnFunc = k2GausSigmaRatioPar
     SigmaRatioFile: ""

@@ -1,0 +1,4 @@
+Number of available candidates in 12 < pT < 50 GeV/c:
+     Prompt: 10983
+     FD: 43009
+     Bkg: 10421
