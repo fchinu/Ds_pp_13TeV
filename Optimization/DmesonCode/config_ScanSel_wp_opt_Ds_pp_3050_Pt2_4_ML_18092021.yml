@@ -1,20 +1,35 @@
 infiles:
     signal:
         prompt:
-            filename: [/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_4/Prompt_pT_2_4_ModelApplied.parquet.gzip,
-                        /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt4_6/Prompt_pT_4_6_ModelApplied.parquet.gzip,
-                        /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt6_8/Prompt_pT_6_8_ModelApplied.parquet.gzip,
-                        /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt8_12/Prompt_pT_8_12_ModelApplied.parquet.gzip,
-                        /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt12_50/Prompt_pT_12_50_ModelApplied.parquet.gzip
+            filename: [     #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0_2/DsPrompt_pT_0_2_ModelApplied.parquet.gzip",
+                            #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_2.5/DsPrompt_pT_2_2.5_ModelApplied.parquet.gzip",
+                            #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2.5_3/DsPrompt_pT_2.5_3_ModelApplied.parquet.gzip",
+                            #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3_3.5/DsPrompt_pT_3_3.5_ModelApplied.parquet.gzip",
+                            #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3.5_4/DsPrompt_pT_3.5_4_ModelApplied.parquet.gzip",
+                            #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt4_4.5/DsPrompt_pT_4_4.5_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt4.5_5/DsPrompt_pT_4.5_5_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt5_5.5/DsPrompt_pT_5_5.5_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt5.5_6/DsPrompt_pT_5.5_6_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt6_8/DsPrompt_pT_6_8_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt8_12/DsPrompt_pT_8_12_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt12_24/DsPrompt_pT_12_24_ModelApplied.parquet.gzip"
                         ]
             dirname: null
             treename: null
         feeddown:
-            filename: [/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_4/FD_pT_2_4_ModelApplied.parquet.gzip,
-                        /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt4_6/FD_pT_4_6_ModelApplied.parquet.gzip,
-                        /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt6_8/FD_pT_6_8_ModelApplied.parquet.gzip,
-                        /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt8_12/FD_pT_8_12_ModelApplied.parquet.gzip,
-                        /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt12_50/FD_pT_12_50_ModelApplied.parquet.gzip]
+            filename: [     #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0_2/DsFD_pT_0_2_ModelApplied.parquet.gzip",
+                            #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_2.5/DsFD_pT_2_2.5_ModelApplied.parquet.gzip",
+                            #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2.5_3/DsFD_pT_2.5_3_ModelApplied.parquet.gzip",
+                            #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3_3.5/DsFD_pT_3_3.5_ModelApplied.parquet.gzip",
+                            #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3.5_4/DsFD_pT_3.5_4_ModelApplied.parquet.gzip",
+                            #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt4_4.5/DsFD_pT_4_4.5_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt4.5_5/DsFD_pT_4.5_5_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt5_5.5/DsFD_pT_5_5.5_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt5.5_6/DsFD_pT_5.5_6_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt6_8/DsFD_pT_6_8_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt8_12/DsFD_pT_8_12_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt12_24/DsFD_pT_12_24_ModelApplied.parquet.gzip"
+                    ]
                        
             dirname: null
             treename: null
@@ -30,15 +45,23 @@ infiles:
         mean: 1.87 # fixed values of mean and sigma, used if histogram is not provided
         sigma: 0.008
     background:
-        filename: [/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_4/Data_pT_2_4_ModelApplied.parquet.gzip,
-                        /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt4_6/Data_pT_4_6_ModelApplied.parquet.gzip,
-                        /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt6_8/Data_pT_6_8_ModelApplied.parquet.gzip,
-                        /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt8_12/Data_pT_8_12_ModelApplied.parquet.gzip,
-                        /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt12_50/Data_pT_12_50_ModelApplied.parquet.gzip]
+        filename: [ #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0_2/Data_pT_0_2_ModelApplied.parquet.gzip",
+                    #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_2.5/Data_pT_2_2.5_ModelApplied.parquet.gzip",
+                    #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2.5_3/Data_pT_2.5_3_ModelApplied.parquet.gzip",
+                    #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3_3.5/Data_pT_3_3.5_ModelApplied.parquet.gzip",
+                    #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3.5_4/Data_pT_3.5_4_ModelApplied.parquet.gzip",
+                    #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt4_4.5/Data_pT_4_4.5_ModelApplied.parquet.gzip",
+                    "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt4.5_5/Data_pT_4.5_5_ModelApplied.parquet.gzip",
+                    "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt5_5.5/Data_pT_5_5.5_ModelApplied.parquet.gzip",
+                    "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt5.5_6/Data_pT_5.5_6_ModelApplied.parquet.gzip",
+                    "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt6_8/Data_pT_6_8_ModelApplied.parquet.gzip",
+                    "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt8_12/Data_pT_8_12_ModelApplied.parquet.gzip",
+                    "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt12_24/Data_pT_12_24_ModelApplied.parquet.gzip"
+                    ]
         dirname: null
         treename: null
-        nEvents: 3169950379 # number of events for bkg in dataframe (~85M divided by rejection factor: 1)
-        fractiontokeep: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
+        nEvents: 3293136619 # number of events for bkg in dataframe (~85M divided by rejection factor: 1)
+        fractiontokeep: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
         isMC: false # if false bkg from SB
         fitFunc: expo # fit function for bkg from SB, e.g. pol1, pol2, expo
         nSigma: 4 # number of sigma from signal region, used to select SB
@@ -47,10 +70,10 @@ infiles:
             histoname: null
 
     preseleff: 
-        filename: /home/fchinu/Run3/Ds_pp_13TeV/Optimization/FilesForScan/PreselEffAtOneFile.root
+        filename: /home/fchinu/Run3/Ds_pp_13TeV/Optimization/DmesonCode/FilesForScan/PreselEffAtOneFile.root
         prompthistoname: hEffPrompt
         feeddownhistoname: hEffFD
-    acceptance:  /home/fchinu/Run3/Ds_pp_13TeV/Optimization/FilesForScan/AcceptanceAtOneFile.root 
+    acceptance:  /home/fchinu/Run3/Ds_pp_13TeV/Optimization/DmesonCode/FilesForScan/AcceptanceAtOneFile.root
 
 predictions:
     crosssec:
@@ -63,7 +86,7 @@ predictions:
         feeddown: 1. # can either be a fixed value or a text file
         model: 
 
-nExpectedEvents: 3169950379
+nExpectedEvents: 82328415475
 sigmaMB: 57.95e+9 #pb
 Taa: 1.
 
@@ -76,8 +99,8 @@ BkgCorrFactor:
 minMass: null
 maxMass: null
 
-ptmin: [2,4,6,8,12] # list 
-ptmax: [4,6,8,12,50] # list 
+ptmin: [4.5,5,5.5,6,8,12]  # [0,2,2.5,3,3.5,4,4.5,5,5.5,6,8,12]  # list 
+ptmax: [5,5.5,6,8,12,24] # [2,2.5,3,3.5,4,4.5,5,5.5,6,8,12,24]  # list 
 
 dfparametercuts:
     name: null 
@@ -87,17 +110,12 @@ dfparametercuts:
 
 cutvars:
     ML_output_Bkg:
-        min: [0.1,0.1,0.2,0.2,0.1] #[0.004,0.01,0.011,0.1,0.011]
-        max: [0.3,0.4,0.6,0.6,0.3] #[0.02,0.1,0.2,0.2,0.6]
-        step: [0.01,0.01,0.01,0.01,0.01] #[0.002, 0.01, 0.01, 0.01, 0.01]
+        min: [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
+        max: [0.2, 0.2, 0.2, 0.2, 0.2, 0.2,0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
+        step: [0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005]
         upperlowercut: Upper
-    #ML_output_FD:
-    #    min: 0.5
-    #    max: 0.99
-    #    step: 0.005
-    #    upperlowercut: Lower
     ML_output_Prompt:
-        min: [0.1,0.05,0.05,0.05,0.05]
-        max: [0.5,0.3,0.3,0.3,0.3]
-        step: [0.05, 0.01, 0.01, 0.01, 0.01]
+        min: [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        max: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
+        step: [0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02]
         upperlowercut: Lower
