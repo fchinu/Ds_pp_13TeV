@@ -1,0 +1,22 @@
+input_files: [/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train180204/LHC22b1a_PromptDs_Eff.parquet,
+              /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train180204/LHC22b1a_PromptDplus_Eff.parquet]
+particles: ["Ds", "Dplus"]
+
+pt_bins:
+  mins: [1., 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12] 
+  maxs: [2., 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12, 24]
+preselections: [null, null, null, null, null, null, null, null, null, null, null, null]
+model_handlers: [ 
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt1_2/ModelHandler_pT_1_2.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt2_2.5/ModelHandler_pT_2_2.5.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt2.5_3/ModelHandler_pT_2.5_3.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt3_3.5/ModelHandler_pT_3_3.5.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt3.5_4/ModelHandler_pT_3.5_4.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt4_4.5/ModelHandler_pT_4_4.5.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt4.5_5/ModelHandler_pT_4.5_5.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt5_5.5/ModelHandler_pT_5_5.5.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt5.5_6/ModelHandler_pT_5.5_6.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt6_8/ModelHandler_pT_6_8.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt8_12/ModelHandler_pT_8_12.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt12_24/ModelHandler_pT_12_24.pickle]
+output_file: "/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiencies.root"
