@@ -1,7 +1,7 @@
 input: # files to use, set FD to null for binary classification
-    prompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train165702/Merged_LHC22b1b_Train165702_DsPrompt_Train.parquet
-    FD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train165701/Merged_LHC22b1a_Train165701_DsFD_Train.parquet
-    data: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train162788/LHC22o_Train162788_Train.parquet
+    prompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train177754/LHC22b1b_PromptDs_Train.parquet
+    FD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train177753/LHC22b1a_NonPromptDs_Train.parquet
+    data: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train175550/LHC22o_pass6_small.parquet
     treename: null
     merged: True
     MCFlag: null #0: bkg, 1:DplusToPiKPi, 2:LcToPKPi, 4:DsToKKPi, 8:XicToPKPi
@@ -18,11 +18,11 @@ output:
     dir: /home/fchinu/Run3/Ds_pp_13TeV/ML/Training # output dir
 
 pt_ranges: # ranges in pt to split the data in the ml training and testing
-    min: [0,2,2.5,3,3.5,4,4.5,5,5.5,6,8,12] # list 
+    min: [1,2,2.5,3,3.5,4,4.5,5,5.5,6,8,12] # list 
     max: [2,2.5,3,3.5,4,4.5,5,5.5,6,8,12,24] # list 
 
 data_prep:
-    filt_bkg_mass: 1.7 < fM < 1.8 or  2.05 < fM < 2.15 # pandas query to select bkg candidates
+    filt_bkg_mass: 1.7 < fM < 1.75 or  2.1 < fM < 2.15 # pandas query to select bkg candidates
     dataset_opt: equal # change how the dataset is built, options available: 'equal', 'max_signal'
                             # 'equal' -> same number of prompt/FD/bkg (not using all the signal available)
                             # 'max_signal' -> try to use all the signal (prompt and FD) + add n_bkg = bkg_mult * (n_prompt + n_FD)

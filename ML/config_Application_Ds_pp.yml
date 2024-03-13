@@ -18,7 +18,7 @@ output:
     dir: /home/fchinu/Run3/Ds_pp_13TeV/ML/Application # output dir
 
 pt_ranges: # ranges in pt to split the data in the ml training and testing
-    min: [0,2,2.5,3,3.5,4,4.5,5,5.5,6,8,12] # list 
+    min: [1,2,2.5,3,3.5,4,4.5,5,5.5,6,8,12] # list 
     max: [2,2.5,3,3.5,4,4.5,5,5.5,6,8,12,24] # list
 
 data_prep:
@@ -64,7 +64,7 @@ ml:
                         'colsample_bytree': !!python/tuple [0.8, 1.]}
                         # configuration dictionary for optimize_params_bayes()
 
-    saved_models: [/home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt0_2/ModelHandler_pT_0_2.pickle,
+    saved_models: [/home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt1_2/ModelHandler_pT_1_2.pickle,
                     /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt2_2.5/ModelHandler_pT_2_2.5.pickle,
                     /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt2.5_3/ModelHandler_pT_2.5_3.pickle,
                     /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt3_3.5/ModelHandler_pT_3_3.5.pickle,
@@ -89,10 +89,10 @@ appl:
     column_to_save_list: ['fM', 'fPt']  # list of variables saved in the dataframes with the applied models
 
 standalone_appl:
-    inputs: [  /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train162788/LHC22o_Train162788.parquet,
-    /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train165701/Merged_LHC22b1a_Train165701_DsFD_Eff.parquet,
-    /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train165702/Merged_LHC22b1b_Train165702_DsPrompt_Eff.parquet,
-    /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train165702/Merged_LHC22b1b_Train165702_DplusPrompt.parquet,
-    /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train165701/Merged_LHC22b1a_Train165701_DplusFD.parquet] # list of parquet files for the model application
-    output_names: [Data, DsFD, DsPrompt, DplusPrompt, DplusFD] # names for the outputs (one for each file)
+    inputs: [  /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train175550/LHC22o_pass6_small.parquet,
+    /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train177753/LHC22b1a_NonPromptDs_Eff.parquet,
+    /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train177754/LHC22b1b_PromptDs_Eff.parquet,
+    /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train177753/LHC22b1a_NonPromptDplus_Eff.parquet,
+    /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train177754/LHC22b1b_PromptDplus_Eff.parquet] # list of parquet files for the model application
+    output_names: [Data, DsFD, DsPrompt, DplusFD, DplusPrompt] # names for the outputs (one for each file)
     output_dir: /home/fchinu/Run3/Ds_pp_13TeV/ML/Application # output directory

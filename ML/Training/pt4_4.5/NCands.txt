@@ -1,4 +1,4 @@
 Number of available candidates in 4 < pT < 4.5 GeV/c:
-     Prompt: 26044
-     FD: 79711
-     Bkg: 593658
+     Prompt: 26426
+     FD: 79292
+     Bkg: 334128
