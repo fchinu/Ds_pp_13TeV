@@ -220,9 +220,9 @@ hSigmaToFixSecPeak = None
 infileSigmaSecPeak = None
 if fitConfig[cent]['SigmaFileSecPeak']:
     infileSigmaSecPeak = TFile.Open(fitConfig[cent]['SigmaFileSecPeak'])
-if fitConfig[cent]['FixSigmaToFirstPeak'] and not infileSigmaSecPeak:
-    print(f'ERROR: file "{fitConfig[cent]["SigmaFileSecPeak"]}" cannot be opened! Exit!')
-    sys.exit()
+#if fitConfig[cent]['FixSigmaToFirstPeak'] and not infileSigmaSecPeak:
+#    print(f'ERROR: file "{fitConfig[cent]["SigmaFileSecPeak"]}" cannot be opened! Exit!')
+#    sys.exit()
 if infileSigmaSecPeak:
     hSigmaFirstPeakMC = infileSigmaSecPeak.Get("hRawYieldsSigma")
     hSigmaToFixSecPeak = infileSigmaSecPeak.Get("hRawYieldsSigmaSecondPeak")
@@ -515,6 +515,11 @@ for iPt, (hM, ptMin, ptMax, reb, sgnEnum, bkgEnum, secPeak, massMin, massMax) in
                     sigmaFirstPeak = massFitter[iPt].GetSigma()
                     sigmaRatioMC = hSigmaToFixSecPeak.GetBinContent(iPt+1) / hSigmaFirstPeakMC.GetBinContent(iPt+1)
                     massFitter[iPt].IncludeSecondGausPeak(massDplus, False, sigmaRatioMC * sigmaFirstPeak, fitConfig[cent]['FixSigmaSecPeak'][iPt])
+            elif fitConfig[cent]['FixSigmaToFirstPeak']:
+                massFitter[iPt].IncludeSecondGausPeak(massDplus, False, fitConfig[cent]['SigmaSecPeak'][iPt], False)
+                massFitter[iPt].MassFitter(False)
+                sigmaFirstPeak = massFitter[iPt].GetSigma()
+                massFitter[iPt].IncludeSecondGausPeak(massDplus, False, fitConfig[cent]['SigmaMultFactorSecPeak'] * sigmaFirstPeak, True)
             else:
                 massFitter[iPt].IncludeSecondGausPeak(massDplus, True, fitConfig[cent]['SigmaSecPeak'][iPt], fitConfig[cent]['FixSigmaSecPeak'][iPt])
         if enableRef:
