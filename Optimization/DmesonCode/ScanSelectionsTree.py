@@ -487,7 +487,7 @@ for iPt, (ptMin, ptMax) in enumerate(zip(ptMins, ptMaxs)):
             outDirPlotsPt[iPt].cd(f'{ParCutsName}{ParCutMin}-{ParCutMax}')
             cEstimVsCut[counter].Write()
 
-            cEstimVsCut[counter].Print(f'/home/fchinu/Run3/Ds_pp_13TeV/Optimization/scan_pT{ptMin}_{ptMax}.pdf', 'pdf')
+            cEstimVsCut[counter].Print(f'/home/fchinu/Run3/Ds_pp_13TeV/Optimization/DmesonCode/scan_pT{ptMin}_{ptMax}.pdf', 'pdf')
         counter += 1
 outFile.cd()
 tSignif.Write()
