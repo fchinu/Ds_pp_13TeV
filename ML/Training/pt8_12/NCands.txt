@@ -1,4 +1,4 @@
 Number of available candidates in 8 < pT < 12 GeV/c:
-     Prompt: 32578
-     FD: 108923
-     Bkg: 30148
+     Prompt: 24642
+     FD: 81880
+     Bkg: 10155

@@ -23,7 +23,7 @@ input_data:
     fill_alpha: 0.5
     normalize: false
     draw_option: 'pe'
-  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/DsOverDplus.root'
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/DsOverDplus_FixSigmaDplusToDs.root'
     histogram: 'hRatio'
     color: 'kRed'
     marker_style: 'kFullCircle'
@@ -92,4 +92,4 @@ horizontal_line:
   line_style: 9  # Use appropriate ROOT line style constant
 
 
-output_file: '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/Compare_to_Run2.pdf'
+output_file: '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/Compare_to_Run2__FixSigmaDplusToDs.pdf'

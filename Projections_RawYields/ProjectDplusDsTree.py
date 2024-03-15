@@ -138,10 +138,13 @@ outFile = TFile(args.outFileName, 'recreate')
 
 # define pT binning (from gen sparses if MC)
 if isMC:
-    nPtBins = sparseGen['GenPrompt'].GetAxis(0).GetNbins()
-    ptLimLow = sparseGen['GenPrompt'].GetAxis(0).GetBinLowEdge(1)
-    ptLimHigh = sparseGen['GenPrompt'].GetAxis(0).GetBinLowEdge(nPtBins) + \
-        sparseGen['GenPrompt'].GetAxis(0).GetBinWidth(nPtBins)
+    #nPtBins = sparseGen['GenPrompt'].GetAxis(0).GetNbins()
+    #ptLimLow = sparseGen['GenPrompt'].GetAxis(0).GetBinLowEdge(1)
+    #ptLimHigh = sparseGen['GenPrompt'].GetAxis(0).GetBinLowEdge(nPtBins) + \
+    #    sparseGen['GenPrompt'].GetAxis(0).GetBinWidth(nPtBins)
+    nPtBins = 500
+    ptLimLow = 0.
+    ptLimHigh = 50.
 else:
     nPtBins = 500
     ptLimLow = 0.
@@ -208,10 +211,10 @@ if isMC:
         ptHighLabel = ptMax * 10
 
         # gen histos from sparses
-        binGenMin = sparseGen['GenPrompt'].GetAxis(0).FindBin(ptMin * 1.0001)
-        binGenMax = sparseGen['GenPrompt'].GetAxis(0).FindBin(ptMax * 0.9999)
-        sparseGen['GenPrompt'].GetAxis(0).SetRange(binGenMin, binGenMax)
-        sparseGen['GenFD'].GetAxis(0).SetRange(binGenMin, binGenMax)
+        #binGenMin = sparseGen['GenPrompt'].GetAxis(0).FindBin(ptMin * 1.0001)
+        #binGenMax = sparseGen['GenPrompt'].GetAxis(0).FindBin(ptMax * 0.9999)
+        #sparseGen['GenPrompt'].GetAxis(0).SetRange(binGenMin, binGenMax)
+        #sparseGen['GenFD'].GetAxis(0).SetRange(binGenMin, binGenMax)
         if args.LctopKpireso:
             sparseGen['GenPrompt'].GetAxis(2).SetRange(args.LctopKpireso+1, args.LctopKpireso+1) # "+1" applied to fix the discrepancy between the reso channel and the filled bin
             sparseGen['GenFD'].GetAxis(3).SetRange(args.LctopKpireso+1, args.LctopKpireso+1) # "+1" applied to fix the discrepancy between the reso channel and the filled bin
@@ -252,31 +255,31 @@ if isMC:
                     hMultVsGenPtFD.SetBinError(iPtD, iMult, error)
             hGenPtFD = hMultVsGenPtFD.ProjectionX(f'hFDGenPt_{ptLowLabel:.0f}_{ptHighLabel:.0f}',
                                                   0, hMultVsGenPtFD.GetYaxis().GetNbins()+1, 'e')
-        else:
-            hGenPtPrompt = sparseGen['GenPrompt'].Projection(0)
-            hGenPtPrompt.Sumw2()
-            if args.ptweights:
-                for iPt in range(1, hGenPtPrompt.GetNbinsX()+1):
-                    if hGenPtPrompt.GetBinContent(iPt) > 0:
-                        relStatUnc = hGenPtPrompt.GetBinError(iPt) / hGenPtPrompt.GetBinContent(iPt)
-                        ptCent = hGenPtPrompt.GetBinCenter(iPt)
-                        hGenPtPrompt.SetBinContent(iPt, hGenPtPrompt.GetBinContent(iPt) * sPtWeights(ptCent))
-                        hGenPtPrompt.SetBinError(iPt, hGenPtPrompt.GetBinContent(iPt) * relStatUnc)
-            hGenPtPrompt.SetName(f'hPromptGenPt_{ptLowLabel:.0f}_{ptHighLabel:.0f}')
+        #else:
+            #hGenPtPrompt = sparseGen['GenPrompt'].Projection(0)
+            #hGenPtPrompt.Sumw2()
+            #if args.ptweights:
+            #    for iPt in range(1, hGenPtPrompt.GetNbinsX()+1):
+            #        if hGenPtPrompt.GetBinContent(iPt) > 0:
+            #            relStatUnc = hGenPtPrompt.GetBinError(iPt) / hGenPtPrompt.GetBinContent(iPt)
+            #            ptCent = hGenPtPrompt.GetBinCenter(iPt)
+            #            hGenPtPrompt.SetBinContent(iPt, hGenPtPrompt.GetBinContent(iPt) * sPtWeights(ptCent))
+            #            hGenPtPrompt.SetBinError(iPt, hGenPtPrompt.GetBinContent(iPt) * relStatUnc)
+            #hGenPtPrompt.SetName(f'hPromptGenPt_{ptLowLabel:.0f}_{ptHighLabel:.0f}')
+#
+            #hGenPtFD = sparseGen['GenFD'].Projection(0)
+            #hGenPtFD.Sumw2()
+            #if args.ptweights or args.ptweightsB:
+            #    for iPt in range(1, hGenPtFD.GetNbinsX()+1):
+            #        if hGenPtFD.GetBinContent(iPt) > 0:
+            #            relStatUnc = hGenPtFD.GetBinError(iPt) / hGenPtFD.GetBinContent(iPt)
+            #            ptCent = hGenPtFD.GetBinCenter(iPt)
+            #            hGenPtFD.SetBinContent(iPt, hGenPtFD.GetBinContent(iPt) * sPtWeightsDfromB(ptCent))
+            #            hGenPtFD.SetBinError(iPt, hGenPtFD.GetBinContent(iPt) * relStatUnc)
+            #hGenPtFD.SetName(f'hFDGenPt_{ptLowLabel:.0f}_{ptHighLabel:.0f}')
 
-            hGenPtFD = sparseGen['GenFD'].Projection(0)
-            hGenPtFD.Sumw2()
-            if args.ptweights or args.ptweightsB:
-                for iPt in range(1, hGenPtFD.GetNbinsX()+1):
-                    if hGenPtFD.GetBinContent(iPt) > 0:
-                        relStatUnc = hGenPtFD.GetBinError(iPt) / hGenPtFD.GetBinContent(iPt)
-                        ptCent = hGenPtFD.GetBinCenter(iPt)
-                        hGenPtFD.SetBinContent(iPt, hGenPtFD.GetBinContent(iPt) * sPtWeightsDfromB(ptCent))
-                        hGenPtFD.SetBinError(iPt, hGenPtFD.GetBinContent(iPt) * relStatUnc)
-            hGenPtFD.SetName(f'hFDGenPt_{ptLowLabel:.0f}_{ptHighLabel:.0f}')
-
-        promptGenList.append(hGenPtPrompt)
-        FDGenList.append(hGenPtFD)
+        #promptGenList.append(hGenPtPrompt)
+        #FDGenList.append(hGenPtFD)
 
         # reco histos from trees
         dataFramePromptSel = dataFramePrompt.astype(float).query(cuts)
@@ -332,8 +335,8 @@ if isMC:
         FDDict['InvMass'].append(hInvMassFD)
         FDDict['Pt'].append(hPtFD)
         outFile.cd()
-        hGenPtPrompt.Write()
-        hGenPtFD.Write()
+        #hGenPtPrompt.Write()
+        #hGenPtFD.Write()
         hPtPrompt.Write()
         hInvMassPrompt.Write()
         hPtFD.Write()
@@ -351,12 +354,12 @@ if isMC:
             hFDMerged = MergeHists([FDDict['Pt'][iPt], FDDict['Pt'][iPt+1]])
             hFDMerged.SetName(f'hFD{varName}_{ptLowLabel:.0f}_{ptHighLabel:.0f}')
             hFDMerged.Write()
-        hPtPromptGenMerged = MergeHists([promptGenList[iPt], promptGenList[iPt+1]])
-        hPtPromptGenMerged.SetName(f'hPromptGenPt_{ptLowLabel:.0f}_{ptHighLabel:.0f}')
-        hPtPromptGenMerged.Write()
-        hPtFDGenMerged = MergeHists([FDGenList[iPt], FDGenList[iPt+1]])
-        hPtFDGenMerged.SetName(f'hFDGenPt_{ptLowLabel:.0f}_{ptHighLabel:.0f}')
-        hPtFDGenMerged.Write()
+        #hPtPromptGenMerged = MergeHists([promptGenList[iPt], promptGenList[iPt+1]])
+        #hPtPromptGenMerged.SetName(f'hPromptGenPt_{ptLowLabel:.0f}_{ptHighLabel:.0f}')
+        #hPtPromptGenMerged.Write()
+        #hPtFDGenMerged = MergeHists([FDGenList[iPt], FDGenList[iPt+1]])
+        #hPtFDGenMerged.SetName(f'hFDGenPt_{ptLowLabel:.0f}_{ptHighLabel:.0f}')
+        #hPtFDGenMerged.Write()
 
 else:
     dataFrame = LoadDfFromRootOrParquet(inputCfg['tree']['filenameAll'], inputCfg['tree']['dirname'],
@@ -410,13 +413,13 @@ for iVar in ('InvMass', 'Pt'):
         hFDMergedAllPt = MergeHists(FDDict[iVar])
         hFDMergedAllPt.SetName(f'hFD{varName}_{ptLowLabel:.0f}_{ptHighLabel:.0f}')
         hFDMergedAllPt.Write()
-if isMC:
-    hPromptGenMergedAllPt = MergeHists(promptGenList)
-    hPromptGenMergedAllPt.SetName(f'hPromptGenPt_{ptLowLabel:.0f}_{ptHighLabel:.0f}')
-    hPromptGenMergedAllPt.Write()
-    hFDGenMergedAllPt = MergeHists(FDGenList)
-    hFDGenMergedAllPt.SetName(f'hFDGenPt_{ptLowLabel:.0f}_{ptHighLabel:.0f}')
-    hFDGenMergedAllPt.Write()
+#if isMC:
+#    hPromptGenMergedAllPt = MergeHists(promptGenList)
+#    hPromptGenMergedAllPt.SetName(f'hPromptGenPt_{ptLowLabel:.0f}_{ptHighLabel:.0f}')
+#    hPromptGenMergedAllPt.Write()
+#    hFDGenMergedAllPt = MergeHists(FDGenList)
+#    hFDGenMergedAllPt.SetName(f'hFDGenPt_{ptLowLabel:.0f}_{ptHighLabel:.0f}')
+#    hFDGenMergedAllPt.Write()
 
 # normalisation
 #hEvForNorm = TH1F("hEvForNorm", ";;Number of events", 2, 0., 2.)

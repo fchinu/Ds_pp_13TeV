@@ -1,7 +1,8 @@
 infiles:
     signal:
         prompt:
-            filename: [     "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_2/DsPrompt_pT_1_2_ModelApplied.parquet.gzip",
+            filename: [     "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_1.5/DsPrompt_pT_1_1.5_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1.5_2/DsPrompt_pT_1.5_2_ModelApplied.parquet.gzip",
                             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_2.5/DsPrompt_pT_2_2.5_ModelApplied.parquet.gzip",
                             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2.5_3/DsPrompt_pT_2.5_3_ModelApplied.parquet.gzip",
                             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3_3.5/DsPrompt_pT_3_3.5_ModelApplied.parquet.gzip",
@@ -17,7 +18,8 @@ infiles:
             dirname: null
             treename: null
         feeddown:
-            filename: [     "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_2/DsFD_pT_1_2_ModelApplied.parquet.gzip",
+            filename: [     "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_1.5/DsFD_pT_1_1.5_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1.5_2/DsFD_pT_1.5_2_ModelApplied.parquet.gzip",
                             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_2.5/DsFD_pT_2_2.5_ModelApplied.parquet.gzip",
                             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2.5_3/DsFD_pT_2.5_3_ModelApplied.parquet.gzip",
                             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3_3.5/DsFD_pT_3_3.5_ModelApplied.parquet.gzip",
@@ -45,7 +47,8 @@ infiles:
         mean: 1.87 # fixed values of mean and sigma, used if histogram is not provided
         sigma: 0.008
     background:
-        filename: [ "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_2/Data_pT_1_2_ModelApplied.parquet.gzip",
+        filename: [ "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_1.5/Data_pT_1_1.5_ModelApplied.parquet.gzip",
+                    "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1.5_2/Data_pT_1.5_2_ModelApplied.parquet.gzip",
                     "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_2.5/Data_pT_2_2.5_ModelApplied.parquet.gzip",
                     "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2.5_3/Data_pT_2.5_3_ModelApplied.parquet.gzip",
                     "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3_3.5/Data_pT_3_3.5_ModelApplied.parquet.gzip",
@@ -99,8 +102,8 @@ BkgCorrFactor:
 minMass: null
 maxMass: null
 
-ptmin: [1,2,2.5,3,3.5,4,4.5,5,5.5,6,8,12]  # list 
-ptmax: [2,2.5,3,3.5,4,4.5,5,5.5,6,8,12,24]  # list 
+ptmin: [1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,8,12]  # list 
+ptmax: [1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,8,12,24]  # list 
 
 dfparametercuts:
     name: null 
@@ -110,12 +113,12 @@ dfparametercuts:
 
 cutvars:
     ML_output_Bkg:
-        min: [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
-        max: [0.2, 0.2, 0.2, 0.2, 0.2, 0.2,0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
-        step: [0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005]
+        min: [0.01, 0.01, 0.01, 0.01, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
+        max: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+        step: [0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01]
         upperlowercut: Upper
     ML_output_Prompt:
-        min: [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
-        max: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
-        step: [0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02]
+        min: [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
+        max: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
+        step: [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
         upperlowercut: Lower

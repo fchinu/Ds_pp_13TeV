@@ -2,9 +2,9 @@ from ROOT import TFile, TCanvas, TH1F
 import pandas as pd
 import numpy as np
 
-RawYieldsFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/RawYields_Data.root"
+RawYieldsFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/Data/RawYields_Data_FixSigmaDplusToDs.root"
 EffFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiencies.root"
-outputFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Ratios/DsOverDplus.root"
+outputFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Ratios/DsOverDplus_FixSigmaDplusToDs.root"
 
 RawYieldsFile = TFile.Open(RawYieldsFileName)
 EffFile = TFile.Open(EffFileName)

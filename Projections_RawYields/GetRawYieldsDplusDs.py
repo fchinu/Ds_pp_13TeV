@@ -232,6 +232,16 @@ if infileSigmaSecPeak:
         print('WARNING: Different number of bins for this analysis and histoss for fix mean')
     infileSigmaSecPeak.Close()
 
+infileSigmaRatioSecPeak = None
+hSigmaRatioToFixSecPeak = None
+if fitConfig[cent]['FixSigmaRatioSecPeak']:
+    infileSigmaRatioSecPeak = TFile.Open(fitConfig[cent]['SigmaRatioSecPeakFile'])
+    hSigmaRatioToFixSecPeak = infileSigmaRatioSecPeak.Get('hSigmaDsOverDplus')
+    hSigmaRatioToFixSecPeak.SetDirectory(0)
+    if hSigmaRatioToFixSecPeak.GetNbinsX() != nPtBins:
+        print('WARNING: Different number of bins for this analysis and histo for fix sigma ratio')
+    infileSigmaRatioSecPeak.Close()
+
 ptBinsArr = np.asarray(ptLims, 'd')
 ptTit = '#it{p}_{T} (GeV/#it{c})'
 
@@ -515,6 +525,16 @@ for iPt, (hM, ptMin, ptMax, reb, sgnEnum, bkgEnum, secPeak, massMin, massMax) in
                     sigmaFirstPeak = massFitter[iPt].GetSigma()
                     sigmaRatioMC = hSigmaToFixSecPeak.GetBinContent(iPt+1) / hSigmaFirstPeakMC.GetBinContent(iPt+1)
                     massFitter[iPt].IncludeSecondGausPeak(massDplus, False, sigmaRatioMC * sigmaFirstPeak, fitConfig[cent]['FixSigmaSecPeak'][iPt])
+            elif hSigmaRatioToFixSecPeak:
+                massFitter[iPt].IncludeSecondGausPeak(massDplus, False, fitConfig[cent]['SigmaSecPeak'][iPt], True)
+                massFitter[iPt].MassFitter(False)
+                sigmaFirstPeak = massFitter[iPt].GetSigma()
+                sigmaRatioMC = hSigmaRatioToFixSecPeak.GetBinContent(iPt+1)
+                print("///////////////////////////")
+                print("SIGMA RATIO MC: ", sigmaRatioMC)
+                print("///////////////////////////")
+                massFitter[iPt].IncludeSecondGausPeak(massDplus, False, sigmaRatioMC * sigmaFirstPeak, True)
+                
             elif fitConfig[cent]['FixSigmaToFirstPeak']:
                 massFitter[iPt].IncludeSecondGausPeak(massDplus, False, fitConfig[cent]['SigmaSecPeak'][iPt], False)
                 massFitter[iPt].MassFitter(False)
@@ -682,6 +702,7 @@ for fitter, ptLow, ptHigh in zip(massFitter, ptMins, ptMaxs):
     fitter.GetMassFunc().Write()
     fitter.GetSignalFunc().Write()
     fitter.GetBackgroundRecalcFunc().Write()
+    del fitter
 hRawYields.Write()
 hRawYieldsSigma.Write()
 hRawYieldsMean.Write()
