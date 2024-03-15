@@ -2,18 +2,18 @@ from ROOT import TFile, TCanvas, TH1F
 import pandas as pd
 import numpy as np
 
-RawYieldsFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/Data/RawYields_Data_FixSigmaDplusToDs.root"
+RawYieldsFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/Data/RawYields_Data.root"
 EffFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiencies.root"
-outputFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Ratios/DsOverDplus_FixSigmaDplusToDs.root"
+outputFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Ratios/DsOverDplus.root"
 
 RawYieldsFile = TFile.Open(RawYieldsFileName)
 EffFile = TFile.Open(EffFileName)
 outputFile = TFile.Open(outputFileName, "RECREATE")
 
 DsRawYields = RawYieldsFile.Get("hRawYields")
-DsEff = EffFile.Get("Eff_Ds")
+DsEff = EffFile.Get("Eff_DsPrompt")
 DplusRawYields = RawYieldsFile.Get("hRawYieldsSecondPeak")
-DplusEff = EffFile.Get("Eff_Dplus")
+DplusEff = EffFile.Get("Eff_DplusPrompt")
 
 CorrectedDsYields = DsRawYields.Clone("hCorrectedDsYields")
 CorrectedDsYields.Divide(DsEff)

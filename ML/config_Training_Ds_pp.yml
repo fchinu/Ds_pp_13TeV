@@ -18,8 +18,8 @@ output:
     dir: /home/fchinu/Run3/Ds_pp_13TeV/ML/Training # output dir
 
 pt_ranges: # ranges in pt to split the data in the ml training and testing
-    min: [1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,8,12] # list 
-    max: [1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,8,12,24] # list 
+    min: [1,1.5,2,3,4,6,8,12] # list 
+    max: [1.5,2,3,4,6,8,12,24] # list 
 
 data_prep:
     filt_bkg_mass: 1.7 < fM < 1.75 or  2.1 < fM < 2.15 # pandas query to select bkg candidates
@@ -34,7 +34,7 @@ ml:
     raw_output: False # use raw_output (True) of probability (False) as output of the model
     roc_auc_average: 'macro' # 'macro' or 'weighted'
     roc_auc_approach: 'ovo'  # 'ovo' or 'ovr'
-    training_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fImpactParameterXY, fAbsCos3PiK, fChi2PCA,
+    training_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fImpactParameterXY, fAbsCos3PiK, fChi2PCA, fDecayLengthXYNormalised, fDecayLengthNormalised,
                        fNSigTpcTofPi0, fNSigTpcTofKa0, fNSigTpcTofPi1, fNSigTpcTofKa1, fNSigTpcTofPi2, fNSigTpcTofKa2] 
                        # list of training variables
                         #Not found from run 2: sig_vert
@@ -81,8 +81,8 @@ ml:
                    # list of saved ModelHandler (path+file), compatible with the pt bins
 
 plots:
-    plotting_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fImpactParameterXY, fAbsCos3PiK, fChi2PCA,
-                       fNSigTpcPi0, fNSigTpcKa0, fNSigTpcPi1, fNSigTpcKa1, fNSigTpcPi2, fNSigTpcKa2, 'fM', 'fPt'] 
+    plotting_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fImpactParameterXY, fAbsCos3PiK, fChi2PCA, fDecayLengthXYNormalised, fDecayLengthNormalised,
+                       fNSigTpcTofPi0, fNSigTpcTofKa0, fNSigTpcTofPi1, fNSigTpcTofKa1, fNSigTpcTofPi2, fNSigTpcTofKa2, 'fM', 'fPt'] 
                        # list of variables to plot
     train_test_log: True # use log scale for plots of train and test distributions
 

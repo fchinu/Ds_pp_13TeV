@@ -34,7 +34,7 @@ ml:
     raw_output: False # use raw_output (True) of probability (False) as output of the model
     roc_auc_average: 'macro' # 'macro' or 'weighted'
     roc_auc_approach: 'ovo'  # 'ovo' or 'ovr'
-    training_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fImpactParameterXY, fAbsCos3PiK, fChi2PCA,
+    training_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fImpactParameterXY, fAbsCos3PiK, fChi2PCA, fDecayLengthXYNormalised, fDecayLengthNormalised,
                        fNSigTpcTofPi0, fNSigTpcTofKa0, fNSigTpcTofPi1, fNSigTpcTofKa1, fNSigTpcTofPi2, fNSigTpcTofKa2] 
                        # list of training variables
                         #Not found from run 2: sig_vert, delta_mass_KK, cos3PiK (only Abs), max_norm_d0d0exp (is it equal to fMaxNormalisedDeltaIP?)

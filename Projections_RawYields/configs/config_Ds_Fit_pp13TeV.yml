@@ -16,10 +16,10 @@ pp13TeVPrompt:
     SigmaFileSecPeak: ''
     SigmaMultFactorSecPeak: 1.
     SigmaRatioSecPeakFile: '/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/SigmaDsOverDplusMC.root'
-    FixSigmaRatioSecPeak: 1
+    FixSigmaRatioSecPeak: 0
     FixSigmaToFirstPeak: false
     UseLikelihood: 1
-    BkgFunc: ['kPol2', 'kPol2', 'kPol2', 'kExpo', 'kExpo', 'kExpo', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kExpo']
+    BkgFunc: ['kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2']
     SgnFunc: ['kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus']
     FixSigmaRatio: 0 # used only if SgnFunc = k2GausSigmaRatioPar
     SigmaRatioFile: ""
