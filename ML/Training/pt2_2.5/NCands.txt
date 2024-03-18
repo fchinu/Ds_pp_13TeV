@@ -1,4 +1,0 @@
-Number of available candidates in 2 < pT < 2.5 GeV/c:
-     Prompt: 10351
-     FD: 37133
-     Bkg: 69333

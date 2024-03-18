@@ -1,4 +1,0 @@
-Number of available candidates in 5.5 < pT < 6 GeV/c:
-     Prompt: 11119
-     FD: 37467
-     Bkg: 11809

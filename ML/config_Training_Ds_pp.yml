@@ -1,7 +1,7 @@
 input: # files to use, set FD to null for binary classification
     prompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train181243/LHC22b1b_PromptDs_Train.parquet
     FD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train181242/LHC22b1a_NonPromptDs_Train.parquet
-    data: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train181241/LHC22o_pass6_small.parquet
+    data: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train182715/LHC22o_pass6_small.parquet
     treename: null
     merged: True
     MCFlag: null #0: bkg, 1:DplusToPiKPi, 2:LcToPKPi, 4:DsToKKPi, 8:XicToPKPi
@@ -18,8 +18,8 @@ output:
     dir: /home/fchinu/Run3/Ds_pp_13TeV/ML/Training # output dir
 
 pt_ranges: # ranges in pt to split the data in the ml training and testing
-    min: [1,1.5,2,3,4,6,8,12] # list 
-    max: [1.5,2,3,4,6,8,12,24] # list 
+    min: [0.5,1,1.5,2,3,4,5,6,8,12] # list 
+    max: [1,1.5,2,3,4,5,6,8,12,24] # list 
 
 data_prep:
     filt_bkg_mass: 1.7 < fM < 1.75 or  2.1 < fM < 2.15 # pandas query to select bkg candidates
