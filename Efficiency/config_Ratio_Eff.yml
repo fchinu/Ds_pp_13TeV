@@ -50,7 +50,7 @@ options:
         width: 2000
         heigth: 1000
         xaxistitle: '#it{p}_{T} (GeV/#it{c})'
-        yaxistitle: 'Efficiency'
+        yaxistitle: 'Acceptance #times Efficiency'
         xlimits: [0., 24]
         ylimits: [1.e-4, 1]
         ylimitsratio: [0.1, 4]
