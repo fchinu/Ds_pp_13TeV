@@ -22,6 +22,7 @@ from ROOT import TFile
 from hipe4ml import plot_utils
 from hipe4ml.model_handler import ModelHandler
 from hipe4ml.tree_handler import TreeHandler
+from hipe4ml_converter.h4ml_converter import H4MLConverter
 
 def GetNsigComb(row, particle, num):
     if not row[f'fNSigTpc{particle}{num}']:
@@ -233,6 +234,9 @@ def train_test(inputCfg, PtBin, OutPutDirPt, TrainTestData, iBin): #pylint: disa
     # save model handler in pickle
     ModelHandl.dump_model_handler(f'{OutPutDirPt}/ModelHandler_pT_{PtBin[0]}_{PtBin[1]}.pickle')
     ModelHandl.dump_original_model(f'{OutPutDirPt}/XGBoostModel_pT_{PtBin[0]}_{PtBin[1]}.model', True)
+    converter = H4MLConverter(ModelHandl)
+    converter.convert_model_onnx(1)
+    converter.dump_model_onnx(f'{OutPutDirPt}/ModelHandler_pT_{PtBin[0]}_{PtBin[1]}.onnx')
 
     #plots
     LegLabels = [inputCfg['output']['leg_labels']['Bkg'],
