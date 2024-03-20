@@ -24,8 +24,15 @@ CorrectedDplusYields.Divide(DplusEff)
 CorrectedDplusYields.Scale(1/2.69e-3)  #BR https://pdg.lbl.gov/2023/listings/rpp2023-list-D-plus-minus.pdf
 
 Ratio = CorrectedDsYields.Clone("hRatio")
+Ratio.SetTitle(";p_{T} (GeV/c);D_{s}^{+}/D^{+} Ratio")
 Ratio.Divide(CorrectedDplusYields)
+
+UncorrectedRatio = DsRawYields.Clone("hUncorrectedRatio")
+UncorrectedRatio.SetTitle(";p_{T} (GeV/c);D_{s}^{+}/D^{+} Uncorrected ratio")
+UncorrectedRatio.Divide(DplusRawYields)
+UncorrectedRatio.Scale(2.69e-3/2.21e-2)
 
 outputFile.cd()
 Ratio.Write()
+UncorrectedRatio.Write()
 outputFile.Close()
