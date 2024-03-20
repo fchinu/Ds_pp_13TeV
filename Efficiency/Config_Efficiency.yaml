@@ -27,4 +27,3 @@ model_handlers: [
                   /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt6_8/ModelHandler_pT_6_8.pickle,
                   /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt8_12/ModelHandler_pT_8_12.pickle,
                   /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt12_24/ModelHandler_pT_12_24.pickle]
-output_file: "/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiencies.root"
