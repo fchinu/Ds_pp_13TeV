@@ -82,9 +82,9 @@ for iPt, (bkgStr, sgnStr) in enumerate(zip(fitConfig[cent]['BkgFunc'], fitConfig
     elif bkgStr == 'kPol3':
         BkgFunc.append(6)
         degPol[-1] = 3
-        if len(ptMins) > 1 and inclSecPeak[iPt] == 1:
-            print('ERROR: Pol3 and Pol4 fits work only with one bin if you have the secondary peak! Exit!')
-            sys.exit()
+        #if len(ptMins) > 1 and inclSecPeak[iPt] == 1:
+        #    print('ERROR: Pol3 and Pol4 fits work only with one bin if you have the secondary peak! Exit!')
+        #    sys.exit()
     elif bkgStr == 'kPol4':
         BkgFunc.append(6)
         degPol[-1] = 4
@@ -541,7 +541,7 @@ for iPt, (hM, ptMin, ptMax, reb, sgnEnum, bkgEnum, secPeak, massMin, massMax) in
                 sigmaFirstPeak = massFitter[iPt].GetSigma()
                 massFitter[iPt].IncludeSecondGausPeak(massDplus, False, fitConfig[cent]['SigmaMultFactorSecPeak'] * sigmaFirstPeak, True)
             else:
-                massFitter[iPt].IncludeSecondGausPeak(massDplus, True, fitConfig[cent]['SigmaSecPeak'][iPt], fitConfig[cent]['FixSigmaSecPeak'][iPt])
+                massFitter[iPt].IncludeSecondGausPeak(massDplus, False, fitConfig[cent]['SigmaSecPeak'][iPt], fitConfig[cent]['FixSigmaSecPeak'][iPt])
         if enableRef:
             rOverS = hMassForSig[iPt].Integral(
                 hMassForSig[iPt].FindBin(massMin * 1.0001),
