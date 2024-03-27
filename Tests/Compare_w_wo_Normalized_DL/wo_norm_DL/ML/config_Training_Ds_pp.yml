@@ -1,0 +1,95 @@
+input: # files to use, set FD to null for binary classification
+    prompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train181243/LHC22b1b_PromptDs_Train.parquet
+    FD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train181242/LHC22b1a_NonPromptDs_Train.parquet
+    data: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train182715/LHC22o_pass6_small.parquet
+    treename: null
+    merged: True
+    MCFlag: null #0: bkg, 1:DplusToPiKPi, 2:LcToPKPi, 4:DsToKKPi, 8:XicToPKPi
+
+output:
+    leg_labels: # legend labels, keep the right number of classes
+        Bkg: Background
+        Prompt: Prompt D$_s^+$
+        FD: FD D$_s^+$
+    out_labels: # output labels, keep the right number of classes
+        Bkg: Bkg
+        Prompt: Prompt
+        FD: FD
+    dir: /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/wo_norm_DL/ML/Training # output dir
+
+pt_ranges: # ranges in pt to split the data in the ml training and testing
+    min: [1,1.5,2,3,4,5,6,8,12] # list 
+    max: [1.5,2,3,4,5,6,8,12,24] # list 
+
+data_prep:
+    filt_bkg_mass: 1.7 < fM < 1.75 or  2.1 < fM < 2.15 # pandas query to select bkg candidates
+    dataset_opt: equal # change how the dataset is built, options available: 'equal', 'max_signal'
+                            # 'equal' -> same number of prompt/FD/bkg (not using all the signal available)
+                            # 'max_signal' -> try to use all the signal (prompt and FD) + add n_bkg = bkg_mult * (n_prompt + n_FD)
+    bkg_mult: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # list of multipliers for (nPrompt + nFD) used to determine nCandBkg in the 'max_signal' option
+    seed_split: 42 # seed used for train_test_split(...)
+    test_fraction: 0.2 # fraction of data used for test set and efficiencies --> set to 1. if you want to apply the model to the full dataframes  
+    
+ml:
+    raw_output: False # use raw_output (True) of probability (False) as output of the model
+    roc_auc_average: 'macro' # 'macro' or 'weighted'
+    roc_auc_approach: 'ovo'  # 'ovo' or 'ovr'
+    training_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fImpactParameterXY, fAbsCos3PiK, fImpactParameter0, fImpactParameter1,
+                       fImpactParameter2, fNSigTpcTofPi0, fNSigTpcTofKa0, fNSigTpcTofPi1, fNSigTpcTofKa1, fNSigTpcTofPi2, fNSigTpcTofKa2] 
+                       # list of training variables
+                        #Not found from run 2: sig_vert
+                        # nsigComb_Pi_0, nsigComb_Pi_1, nsigComb_Pi_2, nsigComb_K_0, nsigComb_K_1, nsigComb_K_2
+
+    hyper_par: [{'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01},
+    {'max_depth':7, 'learning_rate':0.029, 'n_estimators':500, 'min_child_weight':2.7, 'subsample':0.90, 'colsample_bytree':0.97, 'n_jobs':1, 'tree_method':hist, 'lambda':0.01}
+                ]
+               # list of dicts of hyperparameters (one for each pT bin)
+
+    hyper_par_opt:
+      do_hyp_opt: True # whether to do the parameter optimization
+      njobs: 8 # number of parallel jobs used in hyper-parameter optimization, -1. to use all
+      nfolds: 5 # number of folds used in cross validation
+      initpoints: 10 # steps of random exploration you want to perform
+      n_trials: 15 # steps for bayesian optimization
+      timeout: null
+      opt_tuna_config: {'max_depth': !!python/tuple [1, 3], 
+                        'learning_rate': !!python/tuple [0.01, 0.1],
+                        'n_estimators': !!python/tuple [300, 1500], 
+                        'min_child_weight': !!python/tuple [1, 10],
+                        'subsample': !!python/tuple [0.8, 1.], 
+                        'colsample_bytree': !!python/tuple [0.8, 1.],
+                        'lambda': !!python/tuple [0., 0.001]}
+                        # configuration dictionary for optimize_params_bayes()
+
+    saved_models: [
+                  ] 
+                   # list of saved ModelHandler (path+file), compatible with the pt bins
+
+plots:
+    plotting_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fImpactParameterXY, fAbsCos3PiK, fImpactParameter0, fImpactParameter1,
+                       fImpactParameter2, fNSigTpcTofPi0, fNSigTpcTofKa0, fNSigTpcTofPi1, fNSigTpcTofKa1, fNSigTpcTofPi2, fNSigTpcTofKa2, 'fM', 'fPt'] 
+                       # list of variables to plot
+    train_test_log: True # use log scale for plots of train and test distributions
+
+appl: 
+    column_to_save_list: ['fM', 'fPt'] # list of variables saved in the dataframes with the applied models
+
+standalone_appl:
+    inputs: [] # list of parquet files for the model application
+    output_names: [] # names for the outputs (one for each file)
+    output_dir: null # output directory

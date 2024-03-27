@@ -1,0 +1,44 @@
+isMC: no
+filename: [ /data/shared/Ds_pp_13TeV/data/AnalysisResultsDs_LHC2016_deghjop_train3629.root,
+            /data/shared/Ds_pp_13TeV/data/AnalysisResultsDs_LHC2017_train3631.root,
+            /data/shared/Ds_pp_13TeV/data/AnalysisResultsDs_LHC2016_kl_train3630.root,
+            /data/shared/Ds_pp_13TeV/data/AnalysisResultsDs_LHC2018_train3635.root
+]
+dirname: PWGHF_D2H_InvMassDs_Ds_Loose_kINT7
+listname: coutputDs_Ds_Loose_kINT7
+sparsenameAll: null
+sparsenamePrompt: fnSparseReco_fromC
+sparsenameFD: fnSparseReco_fromB
+sparsenameGenPrompt: fnSparseAcc_fromC
+sparsenameGenFD: fnSparseAcc_fromB
+enableRef: no #reflection for D0
+enableSecPeak: yes
+sparsenamePromptSecPeak: fnSparseRecoDplus_fromC
+sparsenameFDSecPeak: fnSparseRecoDplus_fromB
+sparsenameGenPromptSecPeak: fnSparseAccDplus_fromC
+sparsenameGenFDSecPeak: fnSparseAccDplus_fromB
+normname: NormalizationCounter
+histoevname: hNEvents
+
+#info for trees (files can be different if trees are filtered or with applied ML models)
+tree:
+    particle: Ds #needed to define binning for invariant-mass histo
+    filenameAll: [ 
+            /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Application/pt1_1.5/Data_pT_1_1.5_ModelApplied.parquet.gzip,
+            /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Application/pt1.5_2/Data_pT_1.5_2_ModelApplied.parquet.gzip,
+            /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Application/pt2_2.5/Data_pT_2_2.5_ModelApplied.parquet.gzip,
+            /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Application/pt2.5_3/Data_pT_2.5_3_ModelApplied.parquet.gzip,
+            /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Application/pt3_3.5/Data_pT_3_3.5_ModelApplied.parquet.gzip,
+            /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Application/pt3.5_4/Data_pT_3.5_4_ModelApplied.parquet.gzip,
+            /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Application/pt4_4.5/Data_pT_4_4.5_ModelApplied.parquet.gzip,
+            /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Application/pt4.5_5/Data_pT_4.5_5_ModelApplied.parquet.gzip,
+            /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Application/pt5_5.5/Data_pT_5_5.5_ModelApplied.parquet.gzip,
+            /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Application/pt5.5_6/Data_pT_5.5_6_ModelApplied.parquet.gzip,
+            /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Application/pt6_8/Data_pT_6_8_ModelApplied.parquet.gzip,
+            /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Application/pt8_12/Data_pT_8_12_ModelApplied.parquet.gzip,
+            /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Application/pt12_24/Data_pT_12_24_ModelApplied.parquet.gzip
+] #not needed for MC
+    filenamePrompt: null
+    filenameFD: null
+    dirname: null
+    treename: null

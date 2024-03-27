@@ -1,0 +1,29 @@
+input_files: 
+  DsPrompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train181243/LHC22b1b_PromptDs_Eff.parquet
+  DplusPrompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train181243/LHC22b1b_PromptDplus.parquet
+  DsFD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train181242/LHC22b1a_NonPromptDs_Eff.parquet
+  DplusFD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train181242/LHC22b1a_NonPromptDplus.parquet
+
+dataset_eff_frac: [0.2, 1, 0.2, 1]
+
+analysis_result_file_prompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train181243/LHC22b1b_AnalysisResults.root
+analysis_result_file_FD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train181242/LHC22b1a_AnalysisResults.root
+
+pt_bins:
+  mins: [1., 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12] 
+  maxs: [1.5, 2., 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12, 24]
+preselections: [null, null, null, null, null, null, null, null, null, null, null, null, null]
+model_handlers: [ 
+                  /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Training/pt1_1.5/ModelHandler_pT_1_1.5.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Training/pt1.5_2/ModelHandler_pT_1.5_2.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Training/pt2_3/ModelHandler_pT_2_3.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Training/pt2_3/ModelHandler_pT_2_3.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Training/pt3_4/ModelHandler_pT_3_4.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Training/pt3_4/ModelHandler_pT_3_4.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Training/pt4_5/ModelHandler_pT_4_5.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Training/pt4_5/ModelHandler_pT_4_5.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Training/pt5_6/ModelHandler_pT_5_6.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Training/pt5_6/ModelHandler_pT_5_6.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Training/pt6_8/ModelHandler_pT_6_8.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Training/pt8_12/ModelHandler_pT_8_12.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/Tests/Compare_w_wo_Normalized_DL/w_norm_DL/ML/Training/pt12_24/ModelHandler_pT_12_24.pickle]

@@ -1,0 +1,4 @@
+Number of available candidates in 6 < pT < 8 GeV/c:
+     Prompt: 31589
+     FD: 25668
+     Bkg: 21668
