@@ -1,0 +1,33 @@
+particle: Ds
+
+reffilenames:
+    data: /home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/Data/RawYields_DataFlareFlyFitters.root
+    MC: /home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/MC/RawYields_DsMC.root
+    template: /home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/DplusForTemplateHistos_Train165702.root
+
+output:
+    filename: /home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/RawYieldsSyst.root
+    drawpurity: 0 # 0: False, 1: True
+
+multitrial:
+    ptbins: [1] #list of pt bins, set null if you want to keep them all
+    mins: [1.71, 1.73, 1.75, 1.78] # lower fit limit
+    maxs: [2.06, 2.08, 2.1, 2.12] # upper fit limit
+    rebins: [ 1, 2, 3, 4, 8] # mass rebin values
+    sgnfuncs: [ kGaus] # signal functions of AliHFInvMassFitter
+    bkgfuncs: [ chebpol2, chebpol3] # bkg functions of AliHFInvMassFitter       kExpo, kLin, 
+    sigma: [kFree] # kFree, kFixed
+    # all possibilities: 
+    # kFree, kFixed, kFixedMinus10Perc, kFixedPlus10Perc, kFixedMinus15Perc, kFixedPlus15Perc, kFixedMinus20Perc, kFixedPlus20Perc, kFixedMinusUnc, kFixedPlusUnc
+    # those with variations (Plus/Minus) are exclusive (i.e. it is not possible to run with 10% and 15% variation at the same time)
+    mean: [kFree] # other possibilities: kFixed
+    # all possibilities: 
+    # kFixed, kFree, kFixedMinusUnc, kFixedPlusUnc
+    bincounting:
+        nsigma: [ 3, 5 ] # multi-trial will be repeated for each nsigma value
+    nsigma4purity: 3
+
+quality:
+    chisquare:
+        min: 0.
+        max: 2.
