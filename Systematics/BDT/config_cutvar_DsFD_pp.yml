@@ -1,0 +1,103 @@
+inputs:
+    directory: /home/fchinu/Run3/Ds_pp_13TeV/Systematics/BDT
+    commonfilenames:
+        rawyield: RawYields/RawYields_data_ML_
+        efficiency: Efficiency/Efficiency__ML_
+        ratios: Ratios/Ratio__ML_
+    cutsets: [  _outPrompt_pos00_outBkg_pos00,
+                _outPrompt_pos00_outBkg_neg01,
+                _outPrompt_pos00_outBkg_neg02,
+                _outPrompt_pos00_outBkg_neg03,
+                _outPrompt_pos00_outBkg_neg04,
+                _outPrompt_pos00_outBkg_pos01,
+                _outPrompt_pos00_outBkg_pos02,
+                _outPrompt_pos00_outBkg_pos03,
+                _outPrompt_pos00_outBkg_pos04,
+                _outPrompt_pos01_outBkg_neg01,
+                _outPrompt_pos01_outBkg_neg02,
+                _outPrompt_pos01_outBkg_neg03,
+                _outPrompt_pos01_outBkg_neg04,
+                _outPrompt_pos01_outBkg_pos00,
+                _outPrompt_pos01_outBkg_pos01,
+                _outPrompt_pos01_outBkg_pos02,
+                _outPrompt_pos01_outBkg_pos03,
+                _outPrompt_pos01_outBkg_pos04,
+                _outPrompt_pos02_outBkg_neg01,
+                _outPrompt_pos02_outBkg_neg02,
+                _outPrompt_pos02_outBkg_neg03,
+                _outPrompt_pos02_outBkg_neg04,
+                _outPrompt_pos02_outBkg_pos00,
+                _outPrompt_pos02_outBkg_pos01,
+                _outPrompt_pos02_outBkg_pos02,
+                _outPrompt_pos02_outBkg_pos03,
+                _outPrompt_pos02_outBkg_pos04,
+                _outPrompt_pos03_outBkg_neg01,
+                _outPrompt_pos03_outBkg_neg02,
+                _outPrompt_pos03_outBkg_neg03,
+                _outPrompt_pos03_outBkg_neg04,
+                _outPrompt_pos03_outBkg_pos00,
+                _outPrompt_pos03_outBkg_pos01,
+                _outPrompt_pos03_outBkg_pos02,
+                _outPrompt_pos03_outBkg_pos03,
+                _outPrompt_pos03_outBkg_pos04,
+                _outPrompt_pos04_outBkg_neg01,
+                _outPrompt_pos04_outBkg_neg02,
+                _outPrompt_pos04_outBkg_neg03,
+                _outPrompt_pos04_outBkg_neg04,
+                _outPrompt_pos04_outBkg_pos00,
+                _outPrompt_pos04_outBkg_pos01,
+                _outPrompt_pos04_outBkg_pos02,
+                _outPrompt_pos04_outBkg_pos03,
+                _outPrompt_pos04_outBkg_pos04,
+                _outPrompt_neg01_outBkg_neg01,
+                _outPrompt_neg01_outBkg_neg02,
+                _outPrompt_neg01_outBkg_neg03,
+                _outPrompt_neg01_outBkg_neg04,
+                _outPrompt_neg01_outBkg_pos00,
+                _outPrompt_neg01_outBkg_pos01,
+                _outPrompt_neg01_outBkg_pos02,
+                _outPrompt_neg01_outBkg_pos03,
+                _outPrompt_neg01_outBkg_pos04,
+                _outPrompt_neg02_outBkg_neg01,
+                _outPrompt_neg02_outBkg_neg02,
+                _outPrompt_neg02_outBkg_neg03,
+                _outPrompt_neg02_outBkg_neg04,
+                _outPrompt_neg02_outBkg_pos00,
+                _outPrompt_neg02_outBkg_pos01,
+                _outPrompt_neg02_outBkg_pos02,
+                _outPrompt_neg02_outBkg_pos03,
+                _outPrompt_neg02_outBkg_pos04,
+                _outPrompt_neg03_outBkg_neg01,
+                _outPrompt_neg03_outBkg_neg02,
+                _outPrompt_neg03_outBkg_neg03,
+                _outPrompt_neg03_outBkg_neg04,
+                _outPrompt_neg03_outBkg_pos00,
+                _outPrompt_neg03_outBkg_pos01,
+                _outPrompt_neg03_outBkg_pos02,
+                _outPrompt_neg03_outBkg_pos03,
+                _outPrompt_neg03_outBkg_pos04,
+                _outPrompt_neg04_outBkg_neg01,
+                _outPrompt_neg04_outBkg_neg02,
+                _outPrompt_neg04_outBkg_neg03,
+                _outPrompt_neg04_outBkg_neg04,
+                _outPrompt_neg04_outBkg_pos00,
+                _outPrompt_neg04_outBkg_pos01,
+                _outPrompt_neg04_outBkg_pos02,
+                _outPrompt_neg04_outBkg_pos03,
+                _outPrompt_neg04_outBkg_pos04
+             ] # the first one must be the default
+
+outfilename: /home/fchinu/Run3/Ds_pp_13TeV/Systematics/BDT/output/BDT_syst
+
+quality:
+    maxchisquare: 2.
+    minsignif: 3.
+    minrelsignif: 0.5
+    minreleff: 0.3
+    maxreleff: 2.5
+    fillthrreleff: 0.005
+
+plots:
+    plotrelativevar: 1 # 0 -> false, 1 -> true
+    relassignedsyst: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01] # list of values to be plotted, null if you don't want to plot it
+  
