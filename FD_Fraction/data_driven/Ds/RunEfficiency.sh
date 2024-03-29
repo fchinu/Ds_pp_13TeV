@@ -7,7 +7,7 @@ for filename in ${CutSetsDir}/*.yml; do
 done
 arraylength=${#CutSets[@]}
 
-configFile="/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Config_Efficiency.yaml"
+configFile="/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds/Efficiency/Config_Efficiency.yaml"
 
 for (( iCutSet=0; iCutSet<${arraylength}; iCutSet++ ));
 do
