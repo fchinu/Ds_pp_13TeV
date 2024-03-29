@@ -58,6 +58,7 @@ def load_inputs(input_cfg):
         "D0toKpi",
         "DplustoKpipi",
         "DstoKKpi",
+        "DplustoKKpi",
         "DstartoD0pi",
         "LctopKpi",
         "LctopK0S",
@@ -130,6 +131,7 @@ def load_inputs(input_cfg):
         "D0toKpi": "hD0Kpi",
         "DplustoKpipi": "hDpluskpipi",
         "DstoKKpi": "hDsPhipitoKkpi",
+        "DplustoKKpi": "hDpluskpipi",
         "DstartoD0pi": "hDstarD0pi",
         "LctopKpi": "hLcpkpi",
         "LctopK0S": "hLcK0sp",
@@ -147,6 +149,7 @@ def load_inputs(input_cfg):
             )
             histos["FONLL"]["prompt"][pred].SetDirectory(0)
     infile_fonll.Close()
+    
 
     # load normalisation info from common database
     norm = {}
@@ -250,11 +253,12 @@ def main():
         ptmax_fonll = (
             histos["FONLL"]["nonprompt"]["central"].GetXaxis().FindBin(ptmax * 0.9999)
         )
+        BRFactor = 1.0 if cfg["channel"] != "DplustoKKpi" else 2.69e-3/9.38e-2
         crosssec_nonprompt_fonll = [
             histos["FONLL"]["nonprompt"][pred].Integral(
                 ptmin_fonll, ptmax_fonll, "width"
             )
-            / (ptmax - ptmin)
+            / (ptmax - ptmin) * BRFactor
             for pred in histos["FONLL"]["nonprompt"]
         ]
 
@@ -277,7 +281,7 @@ def main():
                 histos["FONLL"]["prompt"][pred].Integral(
                     ptmin_fonll, ptmax_fonll, "width"
                 )
-                / (ptmax - ptmin)
+                / (ptmax - ptmin) * BRFactor
                 for pred in histos["FONLL"]["prompt"]
             ]
             frac, _ = compute_fraction_fc(
