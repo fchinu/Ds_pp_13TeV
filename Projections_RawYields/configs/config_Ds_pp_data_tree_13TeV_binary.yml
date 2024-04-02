@@ -24,6 +24,8 @@ histoevname: hNEvents
 tree:
     particle: Ds #needed to define binning for invariant-mass histo
     filenameAll: [ 
+            /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0_0.5/Data_pT_0_0.5_ModelApplied.parquet.gzip,
+            /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0.5_1/Data_pT_0.5_1_ModelApplied.parquet.gzip,
             /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_1.5/Data_pT_1_1.5_ModelApplied.parquet.gzip,
             /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1.5_2/Data_pT_1.5_2_ModelApplied.parquet.gzip,
             /home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_2.5/Data_pT_2_2.5_ModelApplied.parquet.gzip,

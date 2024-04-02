@@ -1,7 +1,10 @@
 infiles:
     signal:
         prompt:
-            filename: [     "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_1.5/DsPrompt_pT_1_1.5_ModelApplied.parquet.gzip",
+            filename: [     
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0_0.5/DsPrompt_pT_0_0.5_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0.5_1/DsPrompt_pT_0.5_1_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_1.5/DsPrompt_pT_1_1.5_ModelApplied.parquet.gzip",
                             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1.5_2/DsPrompt_pT_1.5_2_ModelApplied.parquet.gzip",
                             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_2.5/DsPrompt_pT_2_2.5_ModelApplied.parquet.gzip",
                             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2.5_3/DsPrompt_pT_2.5_3_ModelApplied.parquet.gzip",
@@ -18,7 +21,11 @@ infiles:
             dirname: null
             treename: null
         feeddown:
-            filename: [     "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_1.5/DsFD_pT_1_1.5_ModelApplied.parquet.gzip",
+            filename: [     
+                
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0_0.5/DsFD_pT_0_0.5_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0.5_1/DsFD_pT_0.5_1_ModelApplied.parquet.gzip",
+                            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_1.5/DsFD_pT_1_1.5_ModelApplied.parquet.gzip",
                             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1.5_2/DsFD_pT_1.5_2_ModelApplied.parquet.gzip",
                             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_2.5/DsFD_pT_2_2.5_ModelApplied.parquet.gzip",
                             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2.5_3/DsFD_pT_2.5_3_ModelApplied.parquet.gzip",
@@ -47,7 +54,11 @@ infiles:
         mean: 1.87 # fixed values of mean and sigma, used if histogram is not provided
         sigma: 0.008
     background:
-        filename: [ "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_1.5/Data_pT_1_1.5_ModelApplied.parquet.gzip",
+        filename: [ 
+                    
+                    "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0_0.5/Data_pT_0_0.5_ModelApplied.parquet.gzip",
+                    "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0.5_1/Data_pT_0.5_1_ModelApplied.parquet.gzip",
+                    "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_1.5/Data_pT_1_1.5_ModelApplied.parquet.gzip",
                     "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1.5_2/Data_pT_1.5_2_ModelApplied.parquet.gzip",
                     "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_2.5/Data_pT_2_2.5_ModelApplied.parquet.gzip",
                     "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2.5_3/Data_pT_2.5_3_ModelApplied.parquet.gzip",

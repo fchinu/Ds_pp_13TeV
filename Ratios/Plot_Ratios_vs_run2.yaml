@@ -54,7 +54,7 @@ canvas:
       labels:
         size: 0.045
         offset: 0.01
-      range: [1, 24]
+      range: [0, 24]
       log_scale: false
     y:
       title: 
@@ -64,7 +64,7 @@ canvas:
       labels:
         size: 0.045
         offset: 0.01
-      range: [0, 1]
+      range: [0, 1.4]
       log_scale: false
 
 text:
@@ -92,4 +92,4 @@ horizontal_line:
   line_style: 9  # Use appropriate ROOT line style constant
 
 
-output_file: '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/Compare_to_Run2.pdf'
+output_file: '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/Compare_to_Run2.png'

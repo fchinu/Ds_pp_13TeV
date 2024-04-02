@@ -1,7 +1,7 @@
 input: # files to use, set FD to null for binary classification
-    prompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train181243/LHC22b1b_PromptDs_Train.parquet
-    FD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train181242/LHC22b1a_NonPromptDs_Train.parquet
-    data: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train182715/LHC22o_pass6_small.parquet
+    prompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train189890/LHC22b1b_PromptDs_Train.parquet
+    FD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train189892/LHC22b1a_NonPromptDs_Train.parquet
+    data: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Data/Train189072/LHC22o_pass6_small.parquet
     treename: null
     merged: True
     MCFlag: null #0: bkg, 1:DplusToPiKPi, 2:LcToPKPi, 4:DsToKKPi, 8:XicToPKPi
@@ -18,8 +18,8 @@ output:
     dir: /home/fchinu/Run3/Ds_pp_13TeV/ML/Training # output dir
 
 pt_ranges: # ranges in pt to split the data in the ml training and testing
-    min: [0.5,1,1.5,2,3,4,5,6,8,12] # list 
-    max: [1,1.5,2,3,4,5,6,8,12,24] # list 
+    min: [0, 1.5, 2, 3, 4, 5, 6, 8, 12] # list 
+    max: [1.5, 2, 3, 4, 5, 6, 8, 12, 24] # list 
 
 data_prep:
     filt_bkg_mass: 1.7 < fM < 1.75 or  2.1 < fM < 2.15 # pandas query to select bkg candidates
@@ -34,8 +34,8 @@ ml:
     raw_output: False # use raw_output (True) of probability (False) as output of the model
     roc_auc_average: 'macro' # 'macro' or 'weighted'
     roc_auc_approach: 'ovo'  # 'ovo' or 'ovr'
-    training_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fImpactParameterXY, fAbsCos3PiK, fChi2PCA, fDecayLengthXYNormalised, fDecayLengthNormalised,
-                       fNSigTpcTofPi0, fNSigTpcTofKa0, fNSigTpcTofPi1, fNSigTpcTofKa1, fNSigTpcTofPi2, fNSigTpcTofKa2] 
+    training_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fImpactParameterXY, fAbsCos3PiK, fImpactParameter0, fImpactParameter1,
+                       fImpactParameter2, fNSigTpcTofPi0, fNSigTpcTofKa0, fNSigTpcTofPi1, fNSigTpcTofKa1, fNSigTpcTofPi2, fNSigTpcTofKa2] 
                        # list of training variables
                         #Not found from run 2: sig_vert
                         # nsigComb_Pi_0, nsigComb_Pi_1, nsigComb_Pi_2, nsigComb_K_0, nsigComb_K_1, nsigComb_K_2
@@ -81,8 +81,8 @@ ml:
                    # list of saved ModelHandler (path+file), compatible with the pt bins
 
 plots:
-    plotting_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fImpactParameterXY, fAbsCos3PiK, fChi2PCA, fDecayLengthXYNormalised, fDecayLengthNormalised,
-                       fNSigTpcTofPi0, fNSigTpcTofKa0, fNSigTpcTofPi1, fNSigTpcTofKa1, fNSigTpcTofPi2, fNSigTpcTofKa2, 'fM', 'fPt'] 
+    plotting_columns: [fCpa, fCpaXY, fDecayLength, fDecayLengthXY, fImpactParameterXY, fAbsCos3PiK, fImpactParameter0, fImpactParameter1,
+                       fImpactParameter2, fNSigTpcTofPi0, fNSigTpcTofKa0, fNSigTpcTofPi1, fNSigTpcTofKa1, fNSigTpcTofPi2, fNSigTpcTofKa2, 'fM', 'fPt'] 
                        # list of variables to plot
     train_test_log: True # use log scale for plots of train and test distributions
 
