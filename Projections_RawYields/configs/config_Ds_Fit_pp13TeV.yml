@@ -7,7 +7,7 @@ pp13TeVPrompt:
     MeanFile: ''
     PtMin: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12] 
     PtMax: [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12, 24]
-    MassMin: [1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.71, 1.71, 1.71, 1.71, 1.71, 1.71, 1.71]    
+    MassMin: [1.8, 1.8, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.71, 1.71, 1.71, 1.71, 1.71, 1.71, 1.71]    
     MassMax: [2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.15, 2.15, 2.15, 2.15, 2.15, 2.15]
     Rebin: [8, 8, 8, 4, 4, 4, 4, 8, 8, 8, 8, 8, 8, 8, 8]
     InclSecPeak: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
@@ -16,10 +16,11 @@ pp13TeVPrompt:
     SigmaFileSecPeak: ''
     SigmaMultFactorSecPeak: 1.
     SigmaRatioSecPeakFile: '/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/SigmaDsOverDplusMC.root'
+    TemplateFile: /home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/DplusForTemplateHistos_Train165702.root
     FixSigmaRatioSecPeak: 0
     FixSigmaToFirstPeak: false
     UseLikelihood: 1
-    BkgFunc: ['kPol3', 'kPol3', 'kPol3', 'kPol3', 'kPol3', 'kPol3', 'kPol3', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2']
+    BkgFunc: ['kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2']
     SgnFunc: ['kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus']
     FixSigmaRatio: 0 # used only if SgnFunc = k2GausSigmaRatioPar
     SigmaRatioFile: ""
