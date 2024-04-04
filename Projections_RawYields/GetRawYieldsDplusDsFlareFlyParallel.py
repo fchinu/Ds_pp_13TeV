@@ -27,22 +27,28 @@ from concurrent.futures import ProcessPoolExecutor
 zfit.run.set_cpus_explicit(intra=30, inter=30)
 
 
-def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max, **kwargs):
+def fit(input_file, input_file_bkgtempl, output_dir, config, **kwargs):
     """
     Method for fitting
     """
 
+    pt_min = config["pt_min"]
+    pt_max = config["pt_max"]
+    mass_min = config["mass_min"]
+    mass_max = config["mass_max"]
+    rebin = config["rebin"]
+
     data_hdl = DataHandler(data=input_file, var_name="fM",
                            histoname=f'hMass_{pt_min*10:.0f}_{pt_max*10:.0f}',
-                           limits=[1.74,2.10], rebin=2)
+                           limits=[mass_min,mass_max], rebin=rebin)
     data_corr_bkg = DataHandler(data=input_file_bkgtempl, var_name="fM",
                                 histoname=f'hDplusTemplate_{pt_min*10:.0f}_{pt_max*10:.0f}',
-                                limits=[1.74,2.10], rebin=2)
+                                limits=[mass_min,mass_max], rebin=rebin)
 
     fitter = F2MassFitter(data_hdl, name_signal_pdf=["gaussian", "gaussian"],
                           name_background_pdf=["chebpol2", "hist"],
                           name=f"ds_pt{pt_min*10:.0f}_{pt_max*10:.0f}", chi2_loss=False,
-                          verbosity=7, tol=1.e-1)
+                          verbosity=1, tol=1.e-1)
 
     # bkg initialisation
     fitter.set_background_initpar(0, "c0", 0.6)
@@ -65,7 +71,11 @@ def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max, **kwargs):
 
     fit_result = fitter.mass_zfit()
 
-    if fit_result.converged and kwargs.get("save", False):
+    if kwargs.get("nsigma_bc", False):
+        for i, nsigma in enumerate(kwargs.nsigma_bc):
+            fitter.set_signal_initpar(i, "sigma", fitter.get_sigma(i) * nsigma)
+
+    if kwargs.get("save", False):
         loc = ["lower left", "upper left"]
         ax_title = r"$M(\mathrm{KK\pi})$ GeV$/c^2$"
         fig = fitter.plot_mass_fit(style="ATLAS", show_extra_info=True,
@@ -75,8 +85,6 @@ def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max, **kwargs):
                                         extra_info_loc=loc, axis_title=ax_title)
         fig.savefig(f"{output_dir}/ds_mass_pt{pt_min:.1f}_{pt_max:.1f}.pdf")
         figres.savefig(f"{output_dir}/ds_massres_pt{pt_min:.1f}_{pt_max:.1f}.pdf")
-        fitter.dump_to_root(os.path.join(output_dir, "ds_fit.root"), option="recreate",
-                            suffix=f"_ds_pt{pt_min:.1f}_{pt_max:.1f}")
 
     return {"rawyields": [fitter.get_raw_yield(i) for i in range(2)],
             "sigma": [fitter.get_sigma(i) for i in range(2)],
@@ -84,13 +92,16 @@ def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max, **kwargs):
             "chi2": fitter.get_chi2_ndf(),
             "significance": [fitter.get_significance(i) for i in range(2)],
             "signal": [fitter.get_signal(i) for i in range(2)],
-            "background": [fitter.get_background(i) for i in range(2)]}
+            "background": [fitter.get_background(i) for i in range(2)],
+            "converged": fit_result.converged}
+
 
 parser = argparse.ArgumentParser(description='Arguments')
 parser.add_argument('fitConfigFileName', metavar='text', default='config_Ds_Fit.yml')
 parser.add_argument('inFileName', metavar='text', default='')
 parser.add_argument('outFileName', metavar='text', default='')
 parser.add_argument('--batch', help='suppress video output', action='store_true')
+parser.add_argument('--save', help='save fits', action='store_true')
 args = parser.parse_args()
 
 cent = 'pp13TeVPrompt'
@@ -103,6 +114,8 @@ SetGlobalStyle(padleftmargin=0.14, padbottommargin=0.12, padtopmargin=0.12, optt
 
 ptMins = fitConfig[cent]['PtMin']
 ptMaxs = fitConfig[cent]['PtMax']
+massMins = fitConfig[cent]['MassMin']
+massMaxs = fitConfig[cent]['MassMax']
 fixSigma = fitConfig[cent]['FixSigma']
 fixMean = fitConfig[cent]['FixMean']
 ptLims = list(ptMins)
@@ -184,15 +197,17 @@ SetObjectStyle(hRelDiffRawYieldsSecPeakFitTrue, color=kRed, markerstyle=kFullSqu
 
 results = []
 with ProcessPoolExecutor(max_workers=30) as executor:
-    for idx, (ptmin, ptmax) in enumerate(zip(ptMins, ptMaxs)):
+    for idx, (ptmin, ptmax, massmin, massmax) in enumerate(zip(ptMins, ptMaxs, massMins, massMaxs)):
+        config = {'mass_min': massmin, 'mass_max': massmax, 'pt_min': ptmin, 'pt_max': ptmax, 'rebin': 2}
         results.append((executor.submit(fit, args.inFileName, fitConfig[cent]['TemplateFile'],
-            os.path.dirname(args.outFileName) + "/fits", ptmin, ptmax, save=True), idx))
+            os.path.dirname(args.outFileName) + "/fits", config, save=args.save), idx))
 
 for result, iPt in results:
-    redchi2 = result.result()["chi2"]
+#    redchi2 = result.result()["chi2"]
         
     rawyield, rawyielderr = result.result()["rawyields"][0]
     sigma, sigmaerr= result.result()["sigma"][0]
+
     mean,meanerr  = result.result()["mean"][0]
     signif, signiferr = result.result()["significance"][0]
     sgn, sgnerr = result.result()["signal"][0]
@@ -213,16 +228,16 @@ for result, iPt in results:
     hRawYieldsSignal.SetBinError(iPt+1, sgnerr)
     hRawYieldsBkg.SetBinContent(iPt+1, bkg)
     hRawYieldsBkg.SetBinError(iPt+1, bkgerr)
-    hRawYieldsChiSquare.SetBinContent(iPt+1, redchi2)
+    #hRawYieldsChiSquare.SetBinContent(iPt+1, redchi2)
     hRawYieldsChiSquare.SetBinError(iPt+1, 1.e-20)
 
     rawyieldSecPeak, rawyieldSecPeakerr =  result.result()["rawyields"][1]
-    meanSecPeak, meanSecPeakerr =  result.result()["sigma"][1]
-    sigmaSecPeak, sigmaSecPeakerr =  result.result()["mean"][1]
+    meanSecPeak, meanSecPeakerr =  result.result()["mean"][1]
+    sigmaSecPeak, sigmaSecPeakerr =  result.result()["sigma"][1]
 
-    bkgSecPeak, bkgSecPeakerr =  result.result()["significance"][1]
+    bkgSecPeak, bkgSecPeakerr =  result.result()["background"][1]
     signalSecPeak, signalSecPeakerr =  result.result()["signal"][1]
-    signifSecPeak, signifSecPeakerr =  result.result()["background"][1]
+    signifSecPeak, signifSecPeakerr =  result.result()["significance"][1]
 
     hRawYieldsSecPeak.SetBinContent(iPt+1, rawyieldSecPeak)
     hRawYieldsSecPeak.SetBinError(iPt+1, rawyieldSecPeakerr)
@@ -244,7 +259,7 @@ for result, iPt in results:
     hRawYieldsBkgSecPeak.SetBinError(iPt+1, bkgSecPeakerr)
 
 
-outFile = TFile("/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/test.root", 'recreate')
+outFile = TFile(args.outFileName, 'recreate')
 
 for hist in hMass:
     hist.Write()
