@@ -37,6 +37,8 @@ def fit(input_file, input_file_bkgtempl, output_dir, config, **kwargs):
     mass_min = config["mass_min"]
     mass_max = config["mass_max"]
     rebin = config["rebin"]
+    fixSigma = config["FixSigma"]
+    fixSigmaFile = config["SigmaFile"]
 
     data_hdl = DataHandler(data=input_file, var_name="fM",
                            histoname=f'hMass_{pt_min*10:.0f}_{pt_max*10:.0f}',
@@ -61,14 +63,23 @@ def fit(input_file, input_file_bkgtempl, output_dir, config, **kwargs):
     # signals initialisation
     fitter.set_particle_mass(0, pdg_id=431, limits=[Particle.from_pdgid(431).mass*0.99e-3,
                                                     Particle.from_pdgid(431).mass*1.01e-3])
-    fitter.set_signal_initpar(0, "sigma", 0.008, limits=[0.005, 0.030])
+    fitter.set_signal_initpar(0, "sigma", 0.008, limits=[0.002, 0.030])
     fitter.set_signal_initpar(0, "frac", 0.1, limits=[0., 1.])
     fitter.set_particle_mass(1, pdg_id=411,
                              limits=[Particle.from_pdgid(411).mass*0.99e-3,
                                      Particle.from_pdgid(411).mass*1.01e-3])
-    fitter.set_signal_initpar(1, "sigma", 0.008, limits=[0.005, 0.030])
+    fitter.set_signal_initpar(1, "sigma", 0.006, limits=[0.002, 0.030])
     fitter.set_signal_initpar(1, "frac", 0.1, limits=[0., 1.])
 
+    if fixSigma:
+        print(fixSigmaFile)
+        sigmaFile = TFile.Open(fixSigmaFile)
+        sigmaHist = sigmaFile.Get(f'hRawYieldsSigma')
+        sigmaSecPeakHist = sigmaFile.Get(f'hRawYieldsSigmaSecondPeak')
+        fitter.set_signal_initpar(0, "sigma", sigmaHist.GetBinContent(sigmaHist.FindBin(pt_min)), fix=True)
+        fitter.set_signal_initpar(1, "sigma", sigmaSecPeakHist.GetBinContent(sigmaSecPeakHist.FindBin(pt_min)), fix=True)
+        sigmaFile.Close()
+        
     fit_result = fitter.mass_zfit()
 
     if kwargs.get("nsigma_bc", False):
@@ -117,6 +128,7 @@ ptMaxs = fitConfig[cent]['PtMax']
 massMins = fitConfig[cent]['MassMin']
 massMaxs = fitConfig[cent]['MassMax']
 fixSigma = fitConfig[cent]['FixSigma']
+fixSigmaFile = fitConfig[cent]['SigmaFile']
 fixMean = fitConfig[cent]['FixMean']
 ptLims = list(ptMins)
 nPtBins = len(ptMins)
@@ -198,12 +210,13 @@ SetObjectStyle(hRelDiffRawYieldsSecPeakFitTrue, color=kRed, markerstyle=kFullSqu
 results = []
 with ProcessPoolExecutor(max_workers=30) as executor:
     for idx, (ptmin, ptmax, massmin, massmax) in enumerate(zip(ptMins, ptMaxs, massMins, massMaxs)):
-        config = {'mass_min': massmin, 'mass_max': massmax, 'pt_min': ptmin, 'pt_max': ptmax, 'rebin': 2}
+        config = {'mass_min': massmin, 'mass_max': massmax, 'pt_min': ptmin, 'pt_max': ptmax, 'rebin': 2, \
+                  'FixSigma': fixSigma, 'SigmaFile': fixSigmaFile}
         results.append((executor.submit(fit, args.inFileName, fitConfig[cent]['TemplateFile'],
             os.path.dirname(args.outFileName) + "/fits", config, save=args.save), idx))
 
 for result, iPt in results:
-#    redchi2 = result.result()["chi2"]
+    redchi2 = result.result()["chi2"]
         
     rawyield, rawyielderr = result.result()["rawyields"][0]
     sigma, sigmaerr= result.result()["sigma"][0]
@@ -228,7 +241,7 @@ for result, iPt in results:
     hRawYieldsSignal.SetBinError(iPt+1, sgnerr)
     hRawYieldsBkg.SetBinContent(iPt+1, bkg)
     hRawYieldsBkg.SetBinError(iPt+1, bkgerr)
-    #hRawYieldsChiSquare.SetBinContent(iPt+1, redchi2)
+    hRawYieldsChiSquare.SetBinContent(iPt+1, redchi2)
     hRawYieldsChiSquare.SetBinError(iPt+1, 1.e-20)
 
     rawyieldSecPeak, rawyieldSecPeakerr =  result.result()["rawyields"][1]

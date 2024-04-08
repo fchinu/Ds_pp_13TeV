@@ -13,7 +13,10 @@
       "RawYields__ML_FD_outFD_pos08.root",
       "RawYields__ML_FD_outFD_pos09.root",
       "RawYields__ML_FD_outFD_pos10.root",
-      "RawYields__ML_FD_outFD_pos11.root"
+      "RawYields__ML_FD_outFD_pos11.root",
+      "RawYields__ML_FD_outFD_pos12.root",
+      "RawYields__ML_FD_outFD_pos13.root",
+      "RawYields__ML_FD_outFD_pos14.root"
     ],
     "histoname": "hRawYields"
   },
@@ -31,7 +34,10 @@
       "Efficiency__ML_FD_outFD_pos08.root",
       "Efficiency__ML_FD_outFD_pos09.root",
       "Efficiency__ML_FD_outFD_pos10.root",
-      "Efficiency__ML_FD_outFD_pos11.root"
+      "Efficiency__ML_FD_outFD_pos11.root",
+      "Efficiency__ML_FD_outFD_pos12.root",
+      "Efficiency__ML_FD_outFD_pos13.root",
+      "Efficiency__ML_FD_outFD_pos14.root"
     ],
     "histonames": {
       "prompt": "Eff_DsPrompt",

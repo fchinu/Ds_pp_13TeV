@@ -25,10 +25,10 @@ def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max):
 
     data_hdl = DataHandler(data=input_file, var_name="fM",
                            histoname=f'hMass_{pt_min*10:.0f}_{pt_max*10:.0f}',
-                           limits=[1.75,2.10], rebin=2)
+                           limits=[1.7,2.10], rebin=8)
     data_corr_bkg = DataHandler(data=input_file_bkgtempl, var_name="fM",
                                 histoname=f'hDplusTemplate_{pt_min*10:.0f}_{pt_max*10:.0f}',
-                                limits=[1.75,2.10], rebin=2)
+                                limits=[1.7,2.10], rebin=8)
     stop_data_init = time.time()
 
     start_fit_init = time.time()
@@ -43,16 +43,17 @@ def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max):
     fitter.set_background_initpar(0, "c2", 0.01)
     fitter.set_background_initpar(0, "frac", 0.7)
     fitter.set_background_template(1, data_corr_bkg)
+    fitter.set_background_initpar(1, "frac", 0.1, limits=[0., 1.])
 
     # signals initialisation
     fitter.set_particle_mass(0, pdg_id=431, limits=[Particle.from_pdgid(431).mass*0.99e-3,
                                                     Particle.from_pdgid(431).mass*1.01e-3])
-    fitter.set_signal_initpar(0, "sigma", 0.008, limits=[0.005, 0.030])
+    fitter.set_signal_initpar(0, "sigma", 0.008, limits=[0.005, 0.035])
     fitter.set_signal_initpar(0, "frac", 0.1, limits=[0., 1.])
     fitter.set_particle_mass(1, pdg_id=411,
                              limits=[Particle.from_pdgid(411).mass*0.99e-3,
                                      Particle.from_pdgid(411).mass*1.01e-3])
-    fitter.set_signal_initpar(1, "sigma", 0.008, limits=[0.005, 0.030])
+    fitter.set_signal_initpar(1, "sigma", 0.008, limits=[0.005, 0.035])
     fitter.set_signal_initpar(1, "frac", 0.1, limits=[0., 1.])
     stop_fit_init = time.time()
 
@@ -70,17 +71,23 @@ def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max):
                                 axis_title=ax_title)
         figres = fitter.plot_raw_residuals(figsize=(8, 8), style="ATLAS",
                                         extra_info_loc=loc, axis_title=ax_title)
-        fig.savefig(f"{output_dir}/ds_mass_pt{pt_min:.0f}_{pt_max:.0f}.pdf")
-        figres.savefig(f"{output_dir}/ds_massres_pt{pt_min:.0f}_{pt_max:.0f}.pdf")
+        fig.savefig(f"{output_dir}/ds_mass_pt{pt_min:.1f}_{pt_max:.1f}.pdf")
+        figres.savefig(f"{output_dir}/ds_massres_pt{pt_min:.1f}_{pt_max:.1f}.pdf")
         fitter.dump_to_root(os.path.join(output_dir, "ds_fit.root"), option="recreate",
-                            suffix=f"_ds_pt{pt_min:.0f}_{pt_max:.0f}")
+                            suffix=f"_ds_pt{pt_min:.1f}_{pt_max:.1f}")
         stop_save = time.time()
 
     print("\n\nTime data handler initialisation: ", stop_data_init - start_data_init)
     print("Time fitter initialisation: ", stop_fit_init - start_fit_init)
     print("Time fit: ", stop_fit - start_fit)
     print("Time save outputs: ", stop_save - start_save)
-    return 1
+    return {"rawyields": [fitter.get_raw_yield(i) for i in range(2)],
+            "sigma": [fitter.get_sigma(i) for i in range(2)],
+            "mean": [fitter.get_mass(i) for i in range(2)],
+            "chi2": fitter.get_chi2_ndf(),
+            "significance": [fitter.get_significance(i) for i in range(2)],
+            "signal": [fitter.get_signal(i) for i in range(2)],
+            "background": [fitter.get_background(i) for i in range(2)]}
 
 if __name__ == "__main__":  
     parser = argparse.ArgumentParser(description="Arguments")
@@ -101,19 +108,23 @@ if __name__ == "__main__":
 
     futures = []
     start_all = time.time()
-    if True:
+    if False:
         with ProcessPoolExecutor(max_workers=6) as executor:
             futures.append(executor.submit(fit, args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min, args.pt_max))
             futures.append(executor.submit(fit, args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min+0.5, args.pt_max+0.5))
             futures.append(executor.submit(fit, args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min+1, args.pt_max+1))
             futures.append(executor.submit(fit, args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min+1.5, args.pt_max+1.5))
-            futures.append(executor.submit(fit, args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min+2, args.pt_max+2))
-            futures.append(executor.submit(fit, args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min+2.5, args.pt_max+2.5))
+            #futures.append(executor.submit(fit, args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min+2, args.pt_max+2))
+            #futures.append(executor.submit(fit, args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min+2.5, args.pt_max+2.5))
         print(time.time() - start_all)
+        for fut in futures:
+            print(fut.result()["sigma"])
     else:
-        fit(args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min, args.pt_max)
-        fit(args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min+0.5, args.pt_max+0.5)
-        fit(args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min, args.pt_max)
-        fit(args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min+0.5, args.pt_max+0.5)
-        fit(args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min, args.pt_max)
-        fit(args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min+0.5, args.pt_max+0.5)
+        d = fit(args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min, args.pt_max)
+        print(d["sigma"])
+        print(d["chi2"])
+        #fit(args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min+0.5, args.pt_max+0.5)
+        #fit(args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min, args.pt_max)
+        #fit(args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min+0.5, args.pt_max+0.5)
+        #fit(args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min, args.pt_max)
+        #fit(args.input_file, args.input_file_bkgtempl, args.output_dir, args.pt_min+0.5, args.pt_max+0.5)

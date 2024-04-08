@@ -59,6 +59,69 @@ def ProcessThisTrial(trial, config, ptMin, ptMax, idx):
     # Do the fit
     return fit(dataHandl, data_corr_bkg, bkgfunc, idx)
 
+def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
+    fig, axs = plt.subplots(2, 2, figsize=(20, 15))
+
+    colors = iter([plt.cm.tab10(i) for i in range(10)])
+    colorsRatios = iter([plt.cm.tab10(i) for i in range(10)])
+
+    # Plot the results
+    axs[0, 0].errorbar(x=range(1,len(multiTrialDict["rawyieldsDs"])+1), y=multiTrialDict["rawyieldsDs"], yerr=multiTrialDict["rawyieldsDs_err"], fmt='o', c=next(colors), label=f'$D_s^+$')
+    axs[0, 0].errorbar(x=range(1,len(multiTrialDict["rawyieldsDs"])+1), y=multiTrialDict["rawyieldsDplus"], yerr=multiTrialDict["rawyieldsDplus_err"], fmt='o', c=next(colors), label=f'$D^+$')
+    for i, nsigma in enumerate(multiTrialCfg['bincounting']['nsigma']):
+        axs[0, 0].errorbar(x=list(range(len(multiTrialDict["trials"])*(i+1) + 1,len(multiTrialDict["trials"])*(i+2) + 1)), y=multiTrialDict["binCountDs"][i], yerr=multiTrialDict["binCountDs_err"][i], fmt='o', c=next(colors), label=f'$D_s^+$, Bin counting {nsigma} $\sigma$')
+        axs[0, 0].errorbar(x=list(range(len(multiTrialDict["trials"])*(i+1) + 1,len(multiTrialDict["trials"])*(i+2) + 1)), y=multiTrialDict["binCountDplus"][i], yerr=multiTrialDict["binCountDs_err"][i], fmt='o', c=next(colors), label=f'$D^+$, Bin counting {nsigma} $\sigma$')
+    axs[0, 0].set_xlim(0, len(multiTrialDict["trials"])*(len(multiTrialCfg['bincounting']['nsigma'])+1)+1)
+    axs[0, 0].set_xlabel('Trial', fontsize=14)
+    axs[0, 0].set_ylabel('Raw yield', fontsize=14)
+    axs[0, 0].legend(fontsize=12)
+
+    # Draw the central values
+    axs[0, 0].axhline(y=multiTrialDict["hRawYieldsDsCentral"].GetBinContent(multiTrialDict["hRawYieldsDsCentral"].FindBin(ptMin+0.05)), color='r', linestyle='--')
+    axs[0, 0].axhline(y=multiTrialDict["hRawYieldsDplusCentral"].GetBinContent(multiTrialDict["hRawYieldsDplusCentral"].FindBin(ptMin+0.05)), color='b', linestyle='--')
+
+    axs[0, 1].hist(multiTrialDict["ratios"], bins=30, color=next(colorsRatios), alpha=0.3, label='Fit', histtype='stepfilled', ec="k")
+
+    for i, nsigma in enumerate(multiTrialCfg['bincounting']['nsigma']):
+        axs[0, 1].hist(multiTrialDict["binCountRatios"][i], bins=30,  color=next(colorsRatios), alpha=0.3, label=f'Bin Counting {nsigma} $\sigma$', histtype='stepfilled', ec="k")
+    # draw information
+    axs[0, 1].set_xlabel('$D_s^+/D^+$ Ratio', fontsize=14)
+    axs[0, 1].set_ylabel('Counts', fontsize=14)
+    axs[0, 1].legend(fontsize=12, loc='upper right')
+    info = 'Fit:\n'
+    info += fr'$\mu =$ {np.mean(multiTrialDict["ratios"]):.3f}''\n'
+    info += fr'$\sigma =$ {np.std(multiTrialDict["ratios"]):.3f}''\n'
+    for i, nsigma in enumerate(multiTrialCfg['bincounting']['nsigma']):
+        info += f'{nsigma}$\sigma$ Bin counting:\n'
+        info += fr'$\mu =$ {np.mean(multiTrialDict["binCountRatios"][i]):.3f}''\n'
+        info += fr'$\sigma =$ {np.std(multiTrialDict["binCountRatios"][i]):.3f}''\n'
+    anchored_text_fit = AnchoredText(info,
+                                     loc = 'upper left',
+                                     frameon=False)
+    axs[0, 1].add_artist(anchored_text_fit)
+    # Draw the central values
+    axs[0, 1].axvline(x=multiTrialDict["hRawYieldsDsCentral"].GetBinContent(multiTrialDict["hRawYieldsDsCentral"].FindBin(ptMin+0.05))/multiTrialDict["hRawYieldsDplusCentral"].GetBinContent(multiTrialDict["hRawYieldsDplusCentral"].FindBin(ptMin+0.05)), color='r', linestyle='--')
+
+    axs[1, 0].errorbar(x=range(1,len(multiTrialDict["rawyieldsDs"])+1), y=multiTrialDict["sigmasDs"], yerr=multiTrialDict["sigmasDs_err"], fmt='o', c='r', label=f'$D_s^+$')
+    axs[1, 0].errorbar(x=range(1,len(multiTrialDict["rawyieldsDs"])+1), y=multiTrialDict["sigmasDplus"], yerr=multiTrialDict["sigmasDplus_err"], fmt='o', c='b', label=f'$D^+$')
+    axs[1, 0].set_xlim(0, len(multiTrialDict["trials"])*(len(multiTrialCfg['bincounting']['nsigma'])+1)+1)
+    axs[1, 0].set_xlabel('Trial', fontsize=14)
+    axs[1, 0].set_ylabel('Width ($Mev/c^2$)', fontsize=14)
+    axs[1, 0].legend(fontsize=12)
+    
+    # Draw the central values
+    axs[1, 0].axhline(y=multiTrialDict["hSigmaDsCentral"].GetBinContent(multiTrialDict["hSigmaDsCentral"].FindBin(ptMin+0.05)), color='g', linestyle='--')
+    axs[1, 0].axhline(y=multiTrialDict["hSigmaDplusCentral"].GetBinContent(multiTrialDict["hSigmaDplusCentral"].FindBin(ptMin+0.05)), color='orange', linestyle='--')
+
+    axs[1, 1].scatter(x=range(1,len(multiTrialDict["rawyieldsDs"])+1), y=multiTrialDict["chi2s"])
+    axs[1, 1].set_xlim(0, len(multiTrialDict["trials"])*(len(multiTrialCfg['bincounting']['nsigma'])+1)+1)
+    axs[1, 1].set_xlabel('Trial', fontsize=14)
+    axs[1, 1].set_ylabel('$\chi^2/ndf$', fontsize=14)
+
+    plt.show()
+    fig.savefig(f'/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/pt{ptMin*10}_{ptMax*10}.png',bbox_inches='tight')
+
+
 
 def doMultiTrial(config: dict, ptMin, ptMax):
     """
@@ -88,8 +151,6 @@ def doMultiTrial(config: dict, ptMin, ptMax):
   
     # Do the combination of the trials
     trials = list(product(mins, maxs, rebins, bkgfuncs))
-
-    fig, axs = plt.subplots(2, 2, figsize=(20, 15))
 
     rawyieldsDs = []
     rawyieldsDs_err = []
@@ -144,71 +205,17 @@ def doMultiTrial(config: dict, ptMin, ptMax):
                         'binCountDplus': binCountDplus, 'binCountDplus_err': binCountDplus_err, \
                         'sigmasDs': sigmasDs, 'sigmasDs_err': sigmasDs_err, \
                         'sigmasDplus': sigmasDplus, 'sigmasDplus_err': sigmasDplus_err, \
-                        'chi2s': chi2s, 'ratios': ratios, 'binCountRatios': binCountRatios}
+                        'chi2s': chi2s, 'ratios': ratios, 'binCountRatios': binCountRatios,\
+                        'hRawYieldsDsCentral': hRawYieldsDsCentral, 'hRawYieldsDplusCentral': hRawYieldsDplusCentral,\
+                        'hSigmaDsCentral': hSigmaDsCentral, 'hSigmaDplusCentral': hSigmaDplusCentral,\
+                        'trials': trials}
     
     # Save the results
     with open(f'/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/results/pt{ptMin*10}_{ptMax*10}.pkl', 'wb') as f:
         pickle.dump(multiTrialDict, f)
+
+    ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax)
         
-    colors = iter([plt.cm.tab10(i) for i in range(10)])
-    colorsRatios = iter([plt.cm.tab10(i) for i in range(10)])
-
-    # Plot the results
-    axs[0, 0].errorbar(x=range(1,len(rawyieldsDs)+1), y=rawyieldsDs, yerr=rawyieldsDs_err, fmt='o', c=next(colors), label=f'$D_s^+$')
-    axs[0, 0].errorbar(x=range(1,len(rawyieldsDs)+1), y=rawyieldsDplus, yerr=rawyieldsDplus_err, fmt='o', c=next(colors), label=f'$D^+$')
-    for i, nsigma in enumerate(multiTrialCfg['bincounting']['nsigma']):
-        axs[0, 0].errorbar(x=list(range(len(trials)*(i+1) + 1,len(trials)*(i+2) + 1)), y=binCountDs[i], yerr=binCountDs_err[i], fmt='o', c=next(colors), label=f'$D_s^+$, Bin counting {nsigma} $\sigma$')
-        axs[0, 0].errorbar(x=list(range(len(trials)*(i+1) + 1,len(trials)*(i+2) + 1)), y=binCountDplus[i], yerr=binCountDs_err[i], fmt='o', c=next(colors), label=f'$D^+$, Bin counting {nsigma} $\sigma$')
-    axs[0, 0].set_xlim(0, len(trials)*(len(multiTrialCfg['bincounting']['nsigma'])+1)+1)
-    axs[0, 0].set_xlabel('Trial', fontsize=14)
-    axs[0, 0].set_ylabel('Raw yield', fontsize=14)
-    axs[0, 0].legend(fontsize=12)
-
-    # Draw the central values
-    axs[0, 0].axhline(y=hRawYieldsDsCentral.GetBinContent(hRawYieldsDsCentral.FindBin(ptMin+0.05)), color='r', linestyle='--')
-    axs[0, 0].axhline(y=hRawYieldsDplusCentral.GetBinContent(hRawYieldsDplusCentral.FindBin(ptMin+0.05)), color='b', linestyle='--')
-
-    axs[0, 1].hist(ratios, bins=30, color=next(colorsRatios), alpha=0.3, label='Fit', histtype='stepfilled', ec="k")
-
-    for i, nsigma in enumerate(multiTrialCfg['bincounting']['nsigma']):
-        axs[0, 1].hist(binCountRatios[i], bins=30,  color=next(colorsRatios), alpha=0.3, label=f'Bin Counting {nsigma} $\sigma$', histtype='stepfilled', ec="k")
-    # draw information
-    axs[0, 1].set_xlabel('$D_s^+/D^+$ Ratio', fontsize=14)
-    axs[0, 1].set_ylabel('Counts', fontsize=14)
-    axs[0, 1].legend(fontsize=12, loc='upper right')
-    info = 'Fit:\n'
-    info += fr'$\mu =$ {np.mean(ratios):.3f}''\n'
-    info += fr'$\sigma =$ {np.std(ratios):.3f}''\n'
-    for i, nsigma in enumerate(multiTrialCfg['bincounting']['nsigma']):
-        info += f'{nsigma}$\sigma$ Bin counting:\n'
-        info += fr'$\mu =$ {np.mean(binCountRatios[i]):.3f}''\n'
-        info += fr'$\sigma =$ {np.std(binCountRatios[i]):.3f}''\n'
-    anchored_text_fit = AnchoredText(info,
-                                     loc = 'upper left',
-                                     frameon=False)
-    axs[0, 1].add_artist(anchored_text_fit)
-    # Draw the central values
-    axs[0, 1].axvline(x=hRawYieldsDsCentral.GetBinContent(hRawYieldsDsCentral.FindBin(ptMin+0.05))/hRawYieldsDplusCentral.GetBinContent(hRawYieldsDplusCentral.FindBin(ptMin+0.05)), color='r', linestyle='--')
-
-    axs[1, 0].errorbar(x=range(1,len(rawyieldsDs)+1), y=sigmasDs, yerr=sigmasDs_err, fmt='o', c='r', label=f'$D_s^+$')
-    axs[1, 0].errorbar(x=range(1,len(rawyieldsDs)+1), y=sigmasDplus, yerr=sigmasDplus_err, fmt='o', c='b', label=f'$D^+$')
-    axs[1, 0].set_xlim(0, len(trials)*(len(multiTrialCfg['bincounting']['nsigma'])+1)+1)
-    axs[1, 0].set_xlabel('Trial', fontsize=14)
-    axs[1, 0].set_ylabel('Width ($Mev/c^2$)', fontsize=14)
-    axs[1, 0].legend(fontsize=12)
-    
-    # Draw the central values
-    axs[1, 0].axhline(y=hSigmaDsCentral.GetBinContent(hSigmaDsCentral.FindBin(ptMin+0.05)), color='g', linestyle='--')
-    axs[1, 0].axhline(y=hSigmaDplusCentral.GetBinContent(hSigmaDplusCentral.FindBin(ptMin+0.05)), color='orange', linestyle='--')
-
-    axs[1, 1].scatter(x=range(1,len(rawyieldsDs)+1), y=chi2s)
-    axs[1, 1].set_xlim(0, len(trials)*(len(multiTrialCfg['bincounting']['nsigma'])+1)+1)
-    axs[1, 1].set_xlabel('Trial', fontsize=14)
-    axs[1, 1].set_ylabel('$\chi^2/ndf$', fontsize=14)
-
-    plt.show()
-    fig.savefig(f'/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/pt{ptMin*10}_{ptMax*10}.png')
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Fit Ds')

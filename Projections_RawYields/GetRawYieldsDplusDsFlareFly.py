@@ -137,7 +137,8 @@ DataHandlers = []
 for iPt, (ptMin, ptMax, secPeak) in enumerate(zip(ptMins, ptMaxs, inclSecPeak)):
     if not args.isMC:
         print(ptMin, ptMax)
-        DataHandlers.append(DataHandler(data=args.inFileName, var_name="fM", histoname=f'hMass_{ptMin*10:.0f}_{ptMax*10:.0f}', limits=[1.705,2.1], rebin = fitConfig[cent]['Rebin'][iPt]))
+        DataHandlers.append(DataHandler(data=args.inFileName, var_name="fM", histoname=f'hMass_{ptMin*10:.0f}_{ptMax*10:.0f}', 
+                            limits=[1.75,2.1], rebin = fitConfig[cent]['Rebin'][iPt]))
         hMass.append(infile.Get(f'hMass_{ptMin*10:.0f}_{ptMax*10:.0f}'))
         hMass[iPt].SetDirectory(0)
         if enableRef:
@@ -482,7 +483,7 @@ for iPt, (hM, ptMin, ptMax, reb, sgnEnum, bkgEnum, secPeak, massMin, massMax, da
         input_file_bkgtempl = '/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/DplusForTemplateHistos_Train165702.root'
         data_corr_bkg = DataHandler(data=input_file_bkgtempl, var_name="fM",
                                 histoname=f'hDplusTemplate_{ptMin*10:.0f}_{ptMax*10:.0f}',
-                                limits=[1.705,2.12], rebin=fitConfig[cent]['Rebin'][iPt])
+                                limits=[1.75,2.12], rebin=fitConfig[cent]['Rebin'][iPt])
 
         massFitters.append(F2MassFitter(data_handler=dataHandler,
                                 name_signal_pdf=signal_pdfs,
@@ -493,6 +494,7 @@ for iPt, (hM, ptMin, ptMax, reb, sgnEnum, bkgEnum, secPeak, massMin, massMax, da
         massFitters[iPt].set_background_initpar(0, "c2", 0.008)
         massFitters[iPt].set_background_initpar(0, "frac", 0.7)
         massFitters[iPt].set_background_template(1, data_corr_bkg)
+        massFitters[iPt].set_background_initpar(1, "frac", 0.1, limits=[0., 1.])
 
         # signals initialisation
         massFitters[iPt].set_particle_mass(0, pdg_id=431,
@@ -507,18 +509,19 @@ for iPt, (hM, ptMin, ptMax, reb, sgnEnum, bkgEnum, secPeak, massMin, massMax, da
         massFitters[iPt].set_signal_initpar(1, "frac", 0.1, limits=[0., 1.])
         massFitters[iPt].mass_zfit()
 
-        loc = ["lower left", "upper left"]
-        ax_title = r"$M(\mathrm{KK\pi})$ GeV$/c^2$"
-        output_dir = os.path.dirname(args.outFileName)
-        fig = massFitters[iPt].plot_mass_fit(style="ATLAS", show_extra_info=True,
-                                figsize=(8, 8), extra_info_loc=loc,
-                                axis_title=ax_title)
-        figres = massFitters[iPt].plot_raw_residuals(figsize=(8, 8), style="ATLAS",
-                                        extra_info_loc=loc, axis_title=ax_title)
-        fig.savefig(f"{output_dir}/ds_mass_pt{ptMin:.1f}_{ptMax:.1f}.png")
-        figres.savefig(f"{output_dir}/ds_massres_pt{ptMin:.1f}_{ptMax:.1f}.png")
-        massFitters[iPt].dump_to_root(os.path.join(output_dir, "ds_fit.root"), option="recreate",
-                            suffix=f"_ds_pt{ptMin:.1f}_{ptMax:.1f}")
+        if not args.batch:
+            loc = ["lower left", "upper left"]
+            ax_title = r"$M(\mathrm{KK\pi})$ GeV$/c^2$"
+            output_dir = os.path.dirname(args.outFileName)
+            fig = massFitters[iPt].plot_mass_fit(style="ATLAS", show_extra_info=True,
+                                    figsize=(8, 8), extra_info_loc=loc,
+                                    axis_title=ax_title)
+            figres = massFitters[iPt].plot_raw_residuals(figsize=(8, 8), style="ATLAS",
+                                            extra_info_loc=loc, axis_title=ax_title)
+            fig.savefig(f"{output_dir}/ds_mass_pt{ptMin:.1f}_{ptMax:.1f}.png")
+            figres.savefig(f"{output_dir}/ds_massres_pt{ptMin:.1f}_{ptMax:.1f}.png")
+            massFitters[iPt].dump_to_root(os.path.join(output_dir, "ds_fit.root"), option="recreate",
+                                suffix=f"_ds_pt{ptMin:.1f}_{ptMax:.1f}")
 
         #if degPol[iPt] > 0:
         #    massFitters[iPt].SetPolDegreeForBackgroundFit(degPol[iPt])

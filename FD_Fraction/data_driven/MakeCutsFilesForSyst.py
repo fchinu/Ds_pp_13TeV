@@ -86,7 +86,7 @@ def make_cuts_ml():
     var_tag = ['outFD'] # used in file names to reduce length
     step_variation = [{"1": 0.05, "1.5": 0.05, "2": 0.05, "2.5": 0.05, "3": 0.05, "3.5": 0.05, "4": 0.05, "4.5": 0.05, \
                          "5": 0.05, "5.5": 0.05, "6": 0.05, "8": 0.05, "12": 0.05}]
-    num_step_pos = 13
+    num_step_pos = 15
     num_step_neg = 0
     edge_to_vary = ['min']
 

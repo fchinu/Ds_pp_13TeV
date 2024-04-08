@@ -16,7 +16,7 @@ sigmaMB: 1
 rawyield:
   filename: /home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/Data/RawYields_Data.root
   rawyieldhist: hRawYields
-  skipLast: 1
+  skipLast: null
   #normhist: hEvForNorm
 
 acceff:
@@ -26,4 +26,4 @@ acceff:
 
 output:
   directory: /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/theory_driven
-  filename: FD_fraction # without extension
+  filename: FD_fraction_Ds # without extension

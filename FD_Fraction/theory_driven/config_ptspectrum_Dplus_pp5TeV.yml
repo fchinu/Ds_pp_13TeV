@@ -16,7 +16,7 @@ sigmaMB: 1
 rawyield:
   filename: /home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/Data/RawYields_Data.root
   rawyieldhist: hRawYieldsSecondPeak
-  skipLast: 1
+  skipLast: null
   #normhist: hEvForNorm
 
 acceff:
