@@ -1,4 +1,4 @@
-CutSetsDir="/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds/configs"
+CutSetsDir="/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/configs"
 declare -a CutSets=()
 for filename in ${CutSetsDir}/*.yml; do
     tmp_name="$(basename -- ${filename} .yml)"
@@ -7,9 +7,6 @@ for filename in ${CutSetsDir}/*.yml; do
 done
 arraylength=${#CutSets[@]}
 
-configFile="/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds/Efficiency/Config_Efficiency.yaml"
+configFile="/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Efficiency/Config_Efficiency.yaml"
 
-for (( iCutSet=0; iCutSet<${arraylength}; iCutSet++ ));
-do
-    python3 /home/fchinu/Run3/ThesisUtils/EvaluateEfficiency.py -c ${configFile} -s ${CutSetsDir}/cutset${CutSets[$iCutSet]}.yml -o /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds/Efficiency/Efficiency_${CutSets[$iCutSet]}.root
-done
+parallel -j10 python3 /home/fchinu/Run3/ThesisUtils/EvaluateEfficiency.py -c ${configFile} -s ${CutSetsDir}/cutset{1}.yml -o /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Efficiency/Efficiency_{1}.root ::: ${CutSets[@]}

@@ -1,6 +1,6 @@
 {
   "rawyields": {
-    "inputdir": "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds/RawYields",
+    "inputdir": "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/RawYields",
     "inputfiles": [
       "RawYields__ML_FD_outFD_pos00.root",
       "RawYields__ML_FD_outFD_pos01.root",
@@ -21,7 +21,7 @@
     "histoname": "hRawYields"
   },
   "efficiencies": {
-    "inputdir": "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds/Efficiency",
+    "inputdir": "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Efficiency",
     "inputfiles": [
       "Efficiency__ML_FD_outFD_pos00.root",
       "Efficiency__ML_FD_outFD_pos01.root",
