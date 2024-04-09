@@ -1,5 +1,5 @@
 CutSetsDir="/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/configs"
-DataFile="/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Data/Train191573/LHC22o_AnalysisResults.root"
+DataFile="/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Data/Train183601/LHC22o_pass6_AnalysisResults.root"
 FitConfig="/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/config_Ds_Fit_pp13TeV.yml"
 declare -a CutSets=()
 for filename in ${CutSetsDir}/*.yml; do

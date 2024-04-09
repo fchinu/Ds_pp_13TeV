@@ -82,18 +82,18 @@ def make_cuts():
                 yaml.dump(cutset_mod, outfile_mod, default_flow_style=False)
 
 def make_cuts_ml():
-    var_key = ['ML_output_FD']
-    var_tag = ['outFD'] # used in file names to reduce length
+    var_key = ['ML_output_Prompt']
+    var_tag = ['outPrompt'] # used in file names to reduce length
     step_variation = [{"1": 0.04, "1.5": 0.04, "2": 0.04, "2.5": 0.04, "3": 0.04, "3.5": 0.04, "4": 0.04, "4.5": 0.04, \
                          "5": 0.04, "5.5": 0.04, "6": 0.04, "8": 0.04, "12": 0.04}]
-    num_step_pos = 15
-    num_step_neg = 0
-    edge_to_vary = ['min']
+    num_step_pos = 0
+    num_step_neg = 15
+    edge_to_vary = ['max']
 
     in_dir = '/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/'
     cut_file_central = 'Central_cutset.yml'
     out_dir = '/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/configs/'
-    out_file_tag = 'cutset_ML_FD'
+    out_file_tag = 'cutset_ML_Prompt'
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -124,6 +124,7 @@ def make_cuts_ml():
                 else:
                     new_value = max_val + step * step_variation[i][f'{pt_min:.0f}']
                     if(new_value > 1. or new_value <= min_val):
+                        print("Warning: cut is greater than 1 or max value is less then min value")
                         new_value = max_val
                 modified_list.append(new_value)
             cuts[edge_to_vary[i]] = modified_list
