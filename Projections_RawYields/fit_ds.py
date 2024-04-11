@@ -25,10 +25,10 @@ def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max):
 
     data_hdl = DataHandler(data=input_file, var_name="fM",
                            histoname=f'hMass_{pt_min*10:.0f}_{pt_max*10:.0f}',
-                           limits=[1.7,2.10], rebin=8)
+                           limits=[1.7,2.10], rebin=4)
     data_corr_bkg = DataHandler(data=input_file_bkgtempl, var_name="fM",
                                 histoname=f'hDplusTemplate_{pt_min*10:.0f}_{pt_max*10:.0f}',
-                                limits=[1.7,2.10], rebin=8)
+                                limits=[1.7,2.10], rebin=4)
     stop_data_init = time.time()
 
     start_fit_init = time.time()

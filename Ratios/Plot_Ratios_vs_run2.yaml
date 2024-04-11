@@ -5,6 +5,7 @@ input_data:
     marker_style: 'kFullSquare'
     marker_size: 2
     line_width: 2
+    line_style: 1
     scale_factor: 1.0
     fill_style: 0
     fill_color: null
@@ -17,6 +18,7 @@ input_data:
     marker_style: 'kFullSquare'
     marker_size: 2
     line_width: 2
+    line_style: 1
     scale_factor: 1.0
     fill_style: 0
     fill_color: 'kBlue'
@@ -29,6 +31,7 @@ input_data:
     marker_style: 'kFullCircle'
     marker_size: 2
     line_width: 2
+    line_style: 1
     scale_factor: 1.0
     fill_style: 0
     fill_color: 'kRed'

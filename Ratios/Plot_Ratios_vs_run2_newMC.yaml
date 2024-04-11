@@ -1,0 +1,98 @@
+input_data:
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/pp_data/v1Figure7.root'
+    histogram: 'syst'
+    color: 'kBlue'
+    marker_style: 'kFullSquare'
+    marker_size: 2
+    line_width: 2
+    line_style: 1
+    scale_factor: 1.0
+    fill_style: 0
+    fill_color: null
+    fill_alpha: null
+    normalize: false
+    draw_option: '5'
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/pp_data/v1Figure7.root'
+    histogram: 'histoStat'
+    color: 'kBlue'
+    marker_style: 'kFullSquare'
+    marker_size: 2
+    line_width: 2
+    line_style: 1
+    scale_factor: 1.0
+    fill_style: 0
+    fill_color: 'kBlue'
+    fill_alpha: 0.5
+    normalize: false
+    draw_option: 'pe'
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/DsOverDplus_newMC.root'
+    histogram: 'hRatio'
+    color: 'kRed'
+    marker_style: 'kFullCircle'
+    marker_size: 2
+    line_width: 2
+    line_style: 1
+    scale_factor: 1.0
+    fill_style: 0
+    fill_color: 'kRed'
+    fill_alpha: 0.5
+    normalize: false
+    draw_option: 'pe'
+
+canvas:
+  width: 800
+  height: 600
+  title: ''
+  margin:
+    left: 0.13
+    right: 0.1
+    top: 0.1
+    bottom: 0.13
+  axes:
+    x:
+      title: 
+        name: '#it{p}_{T} (GeV/#it{c})'
+        size: 0.05
+        offset: 1
+      labels:
+        size: 0.045
+        offset: 0.01
+      range: [0, 24]
+      log_scale: false
+    y:
+      title: 
+        name: 'D_{s}^{+}/D^{+} ratio'
+        size: 0.05
+        offset: 1
+      labels:
+        size: 0.045
+        offset: 0.01
+      range: [0, 1.4]
+      log_scale: false
+
+text:
+
+
+legend:
+  draw: true
+  x1: 0.5
+  y1: 0.6
+  x2: 0.7
+  y2: 0.8
+  size: 0.05
+  entries:
+    - histogram: 'hRatio'
+      label: 'Run 3'
+      style: 'pl'
+    - histogram: 'histoStat'
+      label: 'Run 2'
+      style: 'pl'
+
+horizontal_line:
+  draw: true
+  height: 50
+  line_color: ROOT.kBlack  # Use appropriate ROOT color constant
+  line_style: 9  # Use appropriate ROOT line style constant
+
+
+output_file: '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/Compare_to_Run2_newMC.png'
