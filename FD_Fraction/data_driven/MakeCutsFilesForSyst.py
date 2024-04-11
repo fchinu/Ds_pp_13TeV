@@ -93,7 +93,7 @@ def make_cuts_ml():
     in_dir = '/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/'
     cut_file_central = 'Central_cutset.yml'
     out_dir = '/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/configs/'
-    out_file_tag = 'cutset_ML_Prompt'
+    out_file_tag = 'cutset_ML_FD'
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -124,7 +124,6 @@ def make_cuts_ml():
                 else:
                     new_value = max_val + step * step_variation[i][f'{pt_min:.0f}']
                     if(new_value > 1. or new_value <= min_val):
-                        print("Warning: cut is greater than 1 or max value is less then min value")
                         new_value = max_val
                 modified_list.append(new_value)
             cuts[edge_to_vary[i]] = modified_list

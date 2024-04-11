@@ -192,7 +192,7 @@ def doMultiTrial(config: dict, fitConfig, ptMin, ptMax):
     ratios = []
     binCountRatios = [[] for _ in multiTrialCfg['bincounting']['nsigma']]
 
-    converged = []
+    convergedTrials = []
     
     results = []
     with ProcessPoolExecutor(max_workers=10) as executor:
@@ -202,8 +202,8 @@ def doMultiTrial(config: dict, fitConfig, ptMin, ptMax):
                 trial = trial), idx))
     
     for result, idx in results:
-        if result.result()['converged']:
-            converged.append(True)
+        if result.result()['converged'] and result.result()['chi2'] < 2:
+            convergedTrials.append(trials[idx])
             rawyieldsDs.append(result.result()['rawyields'][0][0])
             rawyieldsDs_err.append(result.result()['rawyields'][0][1])
 
@@ -224,8 +224,6 @@ def doMultiTrial(config: dict, fitConfig, ptMin, ptMax):
                 binCountDplus[i].append(result.result()['rawyields_bincounting'][1][i][0])
                 binCountDplus_err[i].append(result.result()['rawyields_bincounting'][1][i][1])
                 binCountRatios[i].append(binCountDs[i][-1]/binCountDplus[i][-1])
-        else:
-            converged.append(False)
 
     del results
 
@@ -238,7 +236,7 @@ def doMultiTrial(config: dict, fitConfig, ptMin, ptMax):
                         'chi2s': chi2s, 'ratios': ratios, 'binCountRatios': binCountRatios,\
                         'hRawYieldsDsCentral': hRawYieldsDsCentral, 'hRawYieldsDplusCentral': hRawYieldsDplusCentral,\
                         'hSigmaDsCentral': hSigmaDsCentral, 'hSigmaDplusCentral': hSigmaDplusCentral,\
-                        'trials': trials, 'converged': converged}
+                        'trials': trials, 'convergedTrials': convergedTrials}
     
     # Save the results
     with open(f'/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/results/pt{ptMin*10}_{ptMax*10}.pkl', 'wb') as f:
