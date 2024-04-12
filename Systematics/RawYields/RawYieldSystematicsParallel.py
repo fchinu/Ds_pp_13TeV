@@ -30,22 +30,25 @@ def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max, **kwargs):
                                 limits=[mass_min,mass_max], rebin=rebin)
 
     fitter = F2MassFitter(data_hdl, name_signal_pdf=["gaussian", "gaussian"],
-                          name_background_pdf=[bkgfunc, "hist"],
+                          name_background_pdf=["hist", bkgfunc],
                           name=f"ds_pt{pt_min*10:.0f}_{pt_max*10:.0f}_{idx}", chi2_loss=False,
                           verbosity=1, tol=1.e-1)
 
     # bkg initialisation
-    if "chebpol" in bkgfunc:
-        fitter.set_background_initpar(0, "c0", 0.6)
-        fitter.set_background_initpar(0, "c1", -0.2)
-        fitter.set_background_initpar(0, "c2", 0.01)
-        fitter.set_background_initpar(0, "frac", 0.7)
-        fitter.set_background_initpar(0, "frac", 0.7, limits=[0., 1.])
-    elif "exp" in bkgfunc:
-        fitter.set_background_initpar(0, "lam", -1.0)
-        fitter.set_background_initpar(0, "frac", 0.7, limits=[0., 1.])
-        
-    fitter.set_background_template(1, data_corr_bkg)
+    if bkgfunc == "expo":
+        fitter.set_background_initpar(1, "lam", -2)
+    elif bkgfunc == "chebpol2":
+        fitter.set_background_initpar(1, "c0", 0.6)
+        fitter.set_background_initpar(1, "c1", -0.2)
+        fitter.set_background_initpar(1, "c2", 0.01)
+    elif bkgfunc == "chebpol3":
+        fitter.set_background_initpar(1, "c0", 0.4)
+        fitter.set_background_initpar(1, "c1", -0.2)
+        fitter.set_background_initpar(1, "c2", -0.01)
+        fitter.set_background_initpar(1, "c3", 0.01)
+
+    fitter.set_background_template(0, data_corr_bkg)
+    fitter.set_background_initpar(0, "frac", 0.01, limits=[0., 1.])
 
     # signals initialisation
     fitter.set_particle_mass(0, pdg_id=431, limits=[Particle.from_pdgid(431).mass*0.99e-3,
@@ -192,7 +195,7 @@ def doMultiTrial(config: dict, fitConfig, ptMin, ptMax):
     ratios = []
     binCountRatios = [[] for _ in multiTrialCfg['bincounting']['nsigma']]
 
-    converged = []
+    convergedTrials = []
     
     results = []
     with ProcessPoolExecutor(max_workers=10) as executor:
@@ -202,8 +205,8 @@ def doMultiTrial(config: dict, fitConfig, ptMin, ptMax):
                 trial = trial), idx))
     
     for result, idx in results:
-        if result.result()['converged']:
-            converged.append(True)
+        if result.result()['converged'] and result.result()['chi2'] < 2:
+            convergedTrials.append(trials[idx])
             rawyieldsDs.append(result.result()['rawyields'][0][0])
             rawyieldsDs_err.append(result.result()['rawyields'][0][1])
 
@@ -224,8 +227,6 @@ def doMultiTrial(config: dict, fitConfig, ptMin, ptMax):
                 binCountDplus[i].append(result.result()['rawyields_bincounting'][1][i][0])
                 binCountDplus_err[i].append(result.result()['rawyields_bincounting'][1][i][1])
                 binCountRatios[i].append(binCountDs[i][-1]/binCountDplus[i][-1])
-        else:
-            converged.append(False)
 
     del results
 
@@ -238,7 +239,7 @@ def doMultiTrial(config: dict, fitConfig, ptMin, ptMax):
                         'chi2s': chi2s, 'ratios': ratios, 'binCountRatios': binCountRatios,\
                         'hRawYieldsDsCentral': hRawYieldsDsCentral, 'hRawYieldsDplusCentral': hRawYieldsDplusCentral,\
                         'hSigmaDsCentral': hSigmaDsCentral, 'hSigmaDplusCentral': hSigmaDplusCentral,\
-                        'trials': trials, 'converged': converged}
+                        'trials': trials, 'convergedTrials': convergedTrials}
     
     # Save the results
     with open(f'/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/results/pt{ptMin*10}_{ptMax*10}.pkl', 'wb') as f:

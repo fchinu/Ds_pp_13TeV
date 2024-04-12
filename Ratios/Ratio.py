@@ -4,7 +4,7 @@ import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser(description='Calculate Ds+/D+ ratio')
-parser.add_argument('-r', '--raw_yields_file', metavar='raw_yields_file', type=str, help='Path to the raw yields file', default="/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/Data/RawYields_DataFlareFly.root")
+parser.add_argument('-r', '--raw_yields_file', metavar='raw_yields_file', type=str, help='Path to the raw yields file', default="/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/Data/RawYields_Data.root")
 parser.add_argument('-e', '--efficiency_file', type=str, help='Path to the efficiency file', default="/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiencies.root")
 parser.add_argument('-o', '--output_file', type=str, help='Path to the output file', default="/home/fchinu/Run3/Ds_pp_13TeV/Ratios/DsOverDplus.root")
 

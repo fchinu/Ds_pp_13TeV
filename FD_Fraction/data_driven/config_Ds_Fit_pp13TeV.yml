@@ -5,13 +5,13 @@ pp13TeVPrompt:
     SigmaMultFactor: 1.
     FixMean: 0
     MeanFile: ''
-    PtMin: [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12] 
-    PtMax: [1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12, 24]
-    MassMin: [1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75]    
-    MassMax: [2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1]
-    Rebin: [2,2,2,2,2,2,4,4,4,4,4,4,4,4,4,4,4]
-    InclSecPeak: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    SigmaSecPeak: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.015, 0.015, 0.015, 0.015, 0.013,  0.013, 0.015, 0.02, 0.02]
+    PtMin: [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12] 
+    PtMax: [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12, 24]
+    MassMin: [1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75]    
+    MassMax: [2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1]
+    Rebin: [2,2,2,2,2,2,2,4,4,4,4,4,4,4,4,4,4,4]
+    InclSecPeak: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    SigmaSecPeak: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.015, 0.015, 0.015, 0.015, 0.013,  0.013, 0.015, 0.02, 0.02]
     FixSigmaSecPeak: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
     SigmaFileSecPeak: ''
     SigmaMultFactorSecPeak: 1.
@@ -20,7 +20,7 @@ pp13TeVPrompt:
     FixSigmaRatioSecPeak: 0
     FixSigmaToFirstPeak: false
     UseLikelihood: 1
-    BkgFunc: ['kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2']
+    BkgFunc: ['kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo', 'kExpo']
     SgnFunc: ['kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus']
     FixSigmaRatio: 0 # used only if SgnFunc = k2GausSigmaRatioPar
     SigmaRatioFile: ""

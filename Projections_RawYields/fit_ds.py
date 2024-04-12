@@ -25,25 +25,27 @@ def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max):
 
     data_hdl = DataHandler(data=input_file, var_name="fM",
                            histoname=f'hMass_{pt_min*10:.0f}_{pt_max*10:.0f}',
-                           limits=[1.7,2.10], rebin=8)
+                           limits=[1.75,2.10], rebin=2)
     data_corr_bkg = DataHandler(data=input_file_bkgtempl, var_name="fM",
                                 histoname=f'hDplusTemplate_{pt_min*10:.0f}_{pt_max*10:.0f}',
-                                limits=[1.7,2.10], rebin=8)
+                                limits=[1.75,2.10], rebin=2)
     stop_data_init = time.time()
 
     start_fit_init = time.time()
     fitter = F2MassFitter(data_hdl, name_signal_pdf=["gaussian", "gaussian"],
-                          name_background_pdf=["chebpol2", "hist"],
+                          name_background_pdf=["hist", "expo"],
                           name=f"ds_pt{pt_min*10:.0f}_{pt_max*10:.0f}", chi2_loss=False,
                           verbosity=7, tol=1.e-1)
 
     # bkg initialisation
-    fitter.set_background_initpar(0, "c0", 0.6)
-    fitter.set_background_initpar(0, "c1", -0.2)
-    fitter.set_background_initpar(0, "c2", 0.01)
-    fitter.set_background_initpar(0, "frac", 0.7)
-    fitter.set_background_template(1, data_corr_bkg)
-    fitter.set_background_initpar(1, "frac", 0.1, limits=[0., 1.])
+    #fitter.set_background_initpar(1, "c0", 0.6)
+    #fitter.set_background_initpar(1, "c1", -0.2)
+    #fitter.set_background_initpar(1, "c2", 0.01)
+    #fitter.set_background_initpar(1, "c3", 0.01)
+    
+    fitter.set_background_initpar(1, "lam", -2)
+    fitter.set_background_template(0, data_corr_bkg)
+    fitter.set_background_initpar(0, "frac", 0.1, limits=[0., 1.])
 
     # signals initialisation
     fitter.set_particle_mass(0, pdg_id=431, limits=[Particle.from_pdgid(431).mass*0.99e-3,
