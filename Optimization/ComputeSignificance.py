@@ -10,7 +10,9 @@ from hipe4ml import plot_utils
 import matplotlib.pyplot as plt
 
 inputFileNames = [             
-            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0_2/Data_pT_0_2_ModelApplied.parquet.gzip",
+            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0.5_1/Data_pT_0.5_1_ModelApplied.parquet.gzip",
+            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_1.5/Data_pT_1_1.5_ModelApplied.parquet.gzip",
+            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1.5_2/Data_pT_1.5_2_ModelApplied.parquet.gzip",
             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_2.5/Data_pT_2_2.5_ModelApplied.parquet.gzip",
             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2.5_3/Data_pT_2.5_3_ModelApplied.parquet.gzip",
             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3_3.5/Data_pT_3_3.5_ModelApplied.parquet.gzip",
@@ -24,17 +26,17 @@ inputFileNames = [
             "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt12_24/Data_pT_12_24_ModelApplied.parquet.gzip"
                     ]
 outputFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Optimization/Significance_ptDiff.root"
-pTmin = [0,2,2.5,3,3.5,4,4.5,5,5.5,6,8,12] # list 
-pTmax = [2,2.5,3,3.5,4,4.5,5,5.5,6,8,12,24] # list 
-BDT_prompt_mins = [0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1]
-BDT_prompt_maxs = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
-stepPrompt = [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
-BDT_bkg_mins = [0.001,0.001,0.005,0.005,0.005,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.05]
-BDT_bkg_maxs = [0.01,0.01,0.02,0.04,0.04,0.1,0.1,0.1,0.1,0.1,0.2,0.2,0.4]
-stepBkg = [0.001, 0.001, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005]
-significanceLimits = [50.,50.,50.,50.,50.,50.,50.,50.,50.,50.,50.,50.,50.]
-rebins = [4,4,4,4,4,4,4,4,4,4,4,4,4]
-fitFunction = [2,2,0,0,0,0,0,0,0,0,0,0,0]
+pTmin = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12] # list 
+pTmax = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12, 24] # list 
+BDT_prompt_mins = [0.05,0.05,0.05,0.05,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.1,0.1,0.1,0.1,0.1,0.1,0.1]
+BDT_prompt_maxs = [0.5,0.5,0.5,0.5,0.5,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
+stepPrompt = [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
+BDT_bkg_mins = [0.05,0.05,0.05,0.05,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.1,0.1,0.1,0.1,0.1,0.1,0.1]
+BDT_bkg_maxs = [0.5,0.5,0.5,0.5,0.5,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
+stepBkg = [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
+significanceLimits = [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]
+rebins = [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+fitFunction = [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
 
 saveAllFits = True
 
@@ -80,7 +82,7 @@ for iPt, (minPt,maxPt) in enumerate(PtEdges):
     BDT_bkg_cuts = np.arange(BDT_bkg_mins[iPt],BDT_bkg_maxs[iPt],stepBkg[iPt])
 
     #Draw the significance scan
-    hSignificanceScan = TH2F(f"hSignificanceScan_{minPt}_{maxPt}",f"hSignificanceScan_{minPt}_{maxPt};ML output bkg;ML output prompt",len(BDT_bkg_cuts),BDT_bkg_mins[iPt]-stepBkg[iPt]/2,BDT_bkg_maxs[iPt]+stepBkg[iPt]/2,len(BDT_prompt_cuts),BDT_prompt_mins[iPt]-stepPrompt[iPt]/2,BDT_prompt_maxs[iPt]+stepPrompt[iPt]/2)
+    hSignificanceScan = TH2F(f"hSignificanceScan_{minPt}_{maxPt}",f"hSignificanceScan_{minPt}_{maxPt};ML output bkg;ML output prompt",len(BDT_bkg_cuts),BDT_bkg_mins[iPt]-stepBkg[iPt]/2,BDT_bkg_maxs[iPt]-stepBkg[iPt]/2,len(BDT_prompt_cuts),BDT_prompt_mins[iPt]-stepPrompt[iPt]/2,BDT_prompt_maxs[iPt]-stepPrompt[iPt]/2)
     #Loop over the histograms
     cuts = []
     for (BDT_prompt_cut, BDT_bkg_cut)  in itertools.product(BDT_prompt_cuts,BDT_bkg_cuts):
