@@ -1,0 +1,29 @@
+# example config for cross section calculation of D+ mesons
+
+observable: dsigmadpt # options: dsigmadpt, dNdpt
+channel: DplustoKKpi # options: D0toKpi, DplustoKpipi, DstoKKpi, DstartoD0pi, LctopKpi, LctopK0S
+system: pp # options: pp, pPb, PbPb
+energy: 13TeV # options: 5TeV, 13TeV
+period: Run2 # options: Run2
+
+fraction: Nb # options: Nb, fc
+
+FONLL: /home/fchinu/DmesonAnalysis/models/fonll/feeddown/DmesonLcPredictions_13TeV_y05_FFee_BRpythia8_SepContr_PDG2020.root
+BR: 2.69e-3
+NeV: 1
+sigmaMB: 1
+
+rawyield:
+  filename: /home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/Data/RawYields_Data.root
+  rawyieldhist: hRawYieldsSecondPeak
+  skipLast: null
+  #normhist: hEvForNorm
+
+acceff:
+  filename: /home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiencies_newMC.root
+  prompthist: Eff_DplusPrompt
+  nonprompthist: Eff_DplusFD
+
+output:
+  directory: /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/theory_driven
+  filename: FD_fraction_Dplus_newMC # without extension
