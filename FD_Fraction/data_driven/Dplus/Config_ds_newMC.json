@@ -47,6 +47,15 @@
       "nonprompt": "Eff_DplusFD"
     }
   },
+  "central_efficiency": {
+    "computerawfrac": true,
+    "inputdir": "/home/fchinu/Run3/Ds_pp_13TeV/Efficiency",
+    "inputfile": "Efficiencies_newMC.root",
+    "histonames": {
+        "prompt": "Eff_DplusPrompt",
+        "nonprompt": "Eff_DplusFD"
+    }
+  },
   "minimisation": {
     "correlated": "true"
   },
