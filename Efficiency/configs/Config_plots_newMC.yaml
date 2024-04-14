@@ -1,0 +1,149 @@
+input_data:
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiencies_newMC.root'
+    histogram: 'Eff_DsPrompt'
+    dataframe_column: null               # Draw the histogram of the column1 of the parquet file
+    selections: null
+    color: 'kRed'
+    marker_style: 'kFullCircle'
+    marker_size: 1.0
+    line_width: 1
+    line_style: 7
+    scale_factor: 1.0
+    fill_style: 0
+    fill_color: null
+    fill_alpha: null
+    normalize: false
+    draw_option: 'PH][ E0'
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiencies_newMC.root'
+    histogram: 'Eff_DplusPrompt'
+    dataframe_column: null               # Draw the histogram of the column1 of the parquet file
+    selections: null
+    color: 'kAzure+3'
+    marker_style: 'kFullSquare'
+    marker_size: 1.0
+    line_width: 1
+    line_style: 7
+    scale_factor: 1.0
+    fill_style: 0
+    fill_color: null
+    fill_alpha: null
+    normalize: false
+    draw_option: 'PH][ E0'
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiencies_newMC.root'
+    histogram: 'Eff_DsFD'
+    dataframe_column: null               # Draw the histogram of the column1 of the parquet file
+    selections: null
+    color: 'kRed'
+    marker_style: 'kOpenCircle'
+    marker_size: 1.0
+    line_width: 1
+    line_style: 3
+    scale_factor: 1.0
+    fill_style: 0
+    fill_color: null
+    fill_alpha: null
+    normalize: false
+    draw_option: 'PH][ E0'
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiencies_newMC.root'
+    histogram: 'Eff_DplusFD'
+    dataframe_column: null               # Draw the histogram of the column1 of the parquet file
+    selections: null
+    color: 'kAzure+3'
+    marker_style: 'kOpenSquare'
+    marker_size: 1.0
+    line_width: 1
+    line_style: 3
+    scale_factor: 1.0
+    fill_style: 0
+    fill_color: null
+    fill_alpha: null
+    normalize: false
+    draw_option: 'PH][ E0'
+
+canvas:
+  width: 800
+  height: 800
+  title: ''
+  margin:
+    left: 0.15
+    right: 0.03
+    top: 0.03
+    bottom: 0.13
+  axes:
+    x:
+      title: 
+        name: '#it{p}_{T} (GeV/#it{c})'
+        size: 0.05
+        offset: 1.1
+      labels:
+        size: 0.045
+        offset: 0.01
+      range: [0, 24]
+      log_scale: false
+    y:
+      title: 
+        name: 'Acceptance #times Efficiency'
+        size: 0.05
+        offset: 1.4
+      labels:
+        size: 0.045
+        offset: 0.01
+      range: [1.e-5, 1]
+      log_scale: true
+
+text:
+  - content: 'ALICE Preliminary'
+    x: 0.18
+    y: 0.91
+    size: 0.05
+    font: 42
+  - content: 'pp, #sqrt{#it{s}} = 13.6 TeV'
+    x: 0.18
+    y: 0.86
+    size: 0.04
+    font: 42
+  - content: '#left|#it{y}#right| < 0.5'
+    x: 0.18
+    y: 0.81
+    size: 0.04
+    font: 42
+  - content: 'D_{s}^{+}, D^{+} #rightarrow K^{#font[122]{-}}K^{+}#pi^{+}'
+    x: 0.42
+    y: 0.55
+    size: 0.04
+    font: 42
+  - content: 'and charge conjugates'
+    x: 0.42
+    y: 0.5
+    size: 0.04
+    font: 42
+
+legend:
+  draw: true
+  x1: 0.4
+  y1: 0.26
+  x2: 0.9
+  y2: 0.5
+  size: 0.04
+  entries:
+    - histogram: 'Eff_DsPrompt'
+      label: 'Prompt D_{s}^{+}'
+      style: 'lp'
+    - histogram: 'Eff_DplusPrompt'
+      label: 'Prompt D^{+}'
+      style: 'lp'
+    - histogram: 'Eff_DsFD'
+      label: 'Non-prompt D_{s}^{+}'
+      style: 'lp'
+    - histogram: 'Eff_DplusFD'
+      label: 'Non-prompt D^{+}'
+      style: 'lp'
+
+horizontal_line:
+  draw: false
+  height: 50
+  line_color: ROOT.kBlack  # Use appropriate ROOT color constant
+  line_style: 9  # Use appropriate ROOT line style constant
+
+
+output_file: '/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiency_newMC.pdf'
