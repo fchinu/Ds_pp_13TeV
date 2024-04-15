@@ -1,0 +1,65 @@
+inputs:
+    dirname: null # leave null if not common for all input files
+    filenames: [/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/theory_driven/FD_fraction_Dplus.root,
+                /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/theory_driven/FD_fraction_Dplus_newMC.root,
+                /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Dplus/CutVarDplus_pp13TeV_MB.root,
+                /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Dplus/CutVarDplus_pp13TeV_MB_newMC.root
+                ]
+
+    objectnames: [gfraction,gfraction,hRawFracPrompt,hRawFracPrompt] # can be either histograms of graphs or a mix of them; they will be drawn in the current order
+
+output: 
+    filename: /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/Compare_theory_data_dplus # with path and w/o extension
+    extensions: [png] # possibilities: pdf, eps, png, root
+
+options:
+    ROOTobject: [TGraph, TGraph, TH1, TH1, TH1, TH1, TH1, TH1] # TH1 or TGraph: no need to specify TH1F, TH1D or TGraphErrors, TGraphAsymmErrors
+    scale: [1,1,1,1]
+    lambdaParams: [1., 1., 1., 1., 1., 1., 1., 1., 1.] # counts -> (counts - 1) * lambda + 1
+    normalize: [false, false, false, false, false, false, false, false, false] # divide histogram by its area
+    colors: [kTeal-7,kAzure+3, kRed, kOrange-3]
+    markers: [kFullCircle,kFullSquare,kFullCircle,kFullSquare]
+    markersize: 2.5
+    linewidth: 1
+    fillstyle: [1,1,1,1]
+    fillalpha: [1,1,1,1]
+    drawopt: [pe, pe, e, e, e, e, e, e, e]
+    
+    ratio: 
+        enable: false
+        uncertainties:
+            enable: true
+            corr: false
+        displayRMS: true
+
+    errcomp: # comparison of uncertainties
+        enable: false
+        relative: false
+
+    legend:
+        avoid: false #set true to avoid the legend in the final plot
+        xlimits: [0.2, 0.5]
+        ylimits: [0.17, 0.32]
+        header: null
+        titles: ['Theory driven, LHC22b1(b,a)','Theory driven, LHC23l2a1-6', 'Data driven, LHC22b1(b,a)','Data driven, LHC23l2a1-6']
+        options: [lp, lp, lp, lp, lp, lp, lp, lp, lp]
+        textsize: 0.03
+        ncolumns: 1
+
+    canvas:
+        width: 1000
+        heigth: 1000
+        xaxistitle: '#it{p}_{T} (GeV/#it{c})'
+        yaxistitle: 'D^{+} prompt fraction'
+        xlimits: [0., 24]
+        ylimits: [0.65, 1]
+        ylimitsratio: [0.1, 4]
+        ylimitserr: [0., 0.35]
+        logy: false
+        logx: false
+        ratio:
+            logy: false
+            logx: false
+        errcomp:
+            logy: false
+            logx: false  
