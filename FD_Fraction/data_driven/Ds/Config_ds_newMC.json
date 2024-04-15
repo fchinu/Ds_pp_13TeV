@@ -42,7 +42,7 @@
     }
   },
   "central_efficiency": {
-    "computerawfrac": false,
+    "computerawfrac": true,
     "inputdir": "/home/fchinu/Run3/Ds_pp_13TeV/Efficiency",
     "inputfile": "Efficiencies_newMC.root",
     "histonames": {

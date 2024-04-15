@@ -6,7 +6,7 @@ from ROOT import TFile, THnSparseF
 # Open the file
 file = TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/TestO2/AnalysisResults.root")
 # Get the THnSparse
-sparse = file.Get("hf-task-ds/hSparseMass")
+sparse = file.Get("hf-task-ds/Data/hSparseMass")
 
 # Get the number of bins in each dimension
 nBins = [sparse.GetAxis(i).GetNbins() for i in range(sparse.GetNdimensions())]
