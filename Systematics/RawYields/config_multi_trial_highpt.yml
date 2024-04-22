@@ -12,7 +12,7 @@ output:
 multitrial:
     ptbins: [1] #list of pt bins, set null if you want to keep them all
     mins: [1.71, 1.73, 1.75, 1.78] # lower fit limit
-    maxs: [2.06, 2.08, 2.1, 2.12] # upper fit limit
+    maxs: [2.13, 2.15, 2.17, 2.19] # upper fit limit
     rebins: [ 1, 2, 3, 4, 8] # mass rebin values
     sgnfuncs: [ kGaus] # signal functions of AliHFInvMassFitter
     bkgfuncs: [ chebpol2, chebpol3] # bkg functions of AliHFInvMassFitter       kExpo, kLin, 

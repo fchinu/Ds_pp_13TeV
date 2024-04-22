@@ -1,0 +1,3 @@
+Number of available candidates in 0.5 < pT < 1 GeV/c:
+     Signal: 0
+     Bkg: 325450

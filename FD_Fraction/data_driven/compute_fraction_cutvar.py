@@ -43,6 +43,21 @@ def main(config):
         hist_effnp[-1].SetDirectory(0)
         infile_eff.Close()
 
+    if cfg["central_efficiency"]["computerawfrac"]:
+        infile_name = os.path.join(cfg["central_efficiency"]["inputdir"], cfg["central_efficiency"]["inputfile"])
+        infile_central_eff = ROOT.TFile.Open(infile_name)
+        hist_central_effp = infile_central_eff.Get(cfg["central_efficiency"]["histonames"]["prompt"])
+        hist_central_effnp = infile_central_eff.Get(cfg["central_efficiency"]["histonames"]["nonprompt"])
+        hist_central_effp.SetDirectory(0)
+        hist_central_effnp.SetDirectory(0)
+        infile_central_eff.Close()
+
+        # Check if the histograms have the same binning, assuming the two sets of inputs are consistent
+        for ibin in range(1, hist_rawy[0].GetNbinsX() + 2):  # +2 to include the upper edge of last bin
+            if hist_rawy[0].GetBinLowEdge(ibin) != hist_central_effp.GetBinLowEdge(ibin):
+                print(hist_rawy[0].GetBinLowEdge(ibin), hist_central_effp.GetBinLowEdge(ibin))
+                raise ValueError("Histograms have different binning, check the input files")
+
     hist_corry_prompt = hist_rawy[0].Clone("hCorrYieldsPrompt")
     hist_corry_nonprompt = hist_rawy[0].Clone("hCorrYieldsNonPrompt")
     hist_covariance = hist_rawy[0].Clone("hCovPromptNonPrompt")
@@ -78,6 +93,24 @@ def main(config):
         fillstyle=0,
         markerstyle=ROOT.kFullSquare,
     )
+    if cfg["central_efficiency"]["computerawfrac"]:
+        hist_frac_raw_prompt = hist_rawy[0].Clone("hRawFracPrompt")
+        hist_frac_raw_nonprompt = hist_rawy[0].Clone("hRawFracNonPrompt")
+        hist_frac_raw_prompt.GetYaxis().SetTitle("raw fraction prompt")
+        hist_frac_raw_nonprompt.GetYaxis().SetTitle("raw fraction non-prompt")
+        set_object_style(
+            hist_frac_raw_prompt,
+            color=ROOT.kRed + 1,
+            fillstyle=0,
+            markerstyle=ROOT.kFullSquare,
+        )
+
+        set_object_style(
+            hist_frac_raw_nonprompt,
+            color=ROOT.kAzure + 4,
+            fillstyle=0,
+            markerstyle=ROOT.kFullSquare,
+        )
 
     output = ROOT.TFile(os.path.join(cfg["output"]["directory"], cfg["output"]["file"]), "recreate")
     n_sets = len(hist_rawy)
@@ -109,26 +142,37 @@ def main(config):
         hist_corrfrac_prompt.SetBinError(ipt + 1, corr_frac_prompt[1])
         hist_corrfrac_nonprompt.SetBinContent(ipt + 1, corr_frac_nonprompt[0])
         hist_corrfrac_nonprompt.SetBinError(ipt + 1, corr_frac_nonprompt[1])
+        if cfg["central_efficiency"]["computerawfrac"]:
+            raw_frac_prompt = minimiser.get_raw_prompt_fraction(
+                hist_central_effp.GetBinContent(ipt + 1), hist_central_effnp.GetBinContent(ipt + 1)
+            )
+            raw_frac_nonprompt = minimiser.get_raw_nonprompt_fraction(
+                hist_central_effp.GetBinContent(ipt + 1), hist_central_effnp.GetBinContent(ipt + 1)
+            )
+            hist_frac_raw_prompt.SetBinContent(ipt + 1, raw_frac_prompt[0])
+            hist_frac_raw_prompt.SetBinError(ipt + 1, raw_frac_prompt[1])
+            hist_frac_raw_nonprompt.SetBinContent(ipt + 1, raw_frac_nonprompt[0])
+            hist_frac_raw_nonprompt.SetBinError(ipt + 1, raw_frac_nonprompt[1])
 
-        canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min*10:.0f}_{pt_max*10:.0f}")
+        canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min:.0f}_{pt_max:.0f}")
         output.cd()
         canv_rawy.Write()
         for _, hist in histos_rawy.items():
             hist.Write()
 
-        canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min*10:.0f}_{pt_max*10:.0f}")
+        canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min:.0f}_{pt_max:.0f}")
         output.cd()
         canv_eff.Write()
         for _, hist in histos_eff.items():
             hist.Write()
 
-        canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min*10:.0f}_{pt_max*10:.0f}")
+        canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min:.0f}_{pt_max:.0f}")
         output.cd()
         canv_frac.Write()
         for _, hist in histos_frac.items():
             hist.Write()
 
-        canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min*10:.0f}_{pt_max*10:.0f}")
+        canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min:.0f}_{pt_max:.0f}")
         output.cd()
         canv_cov.Write()
         histo_cov.Write()
@@ -158,6 +202,9 @@ def main(config):
     hist_covariance.Write()
     hist_corrfrac_prompt.Write()
     hist_corrfrac_nonprompt.Write()
+    if cfg["central_efficiency"]["computerawfrac"]:
+        hist_frac_raw_prompt.Write()
+        hist_frac_raw_nonprompt.Write()
     output.Close()
 
 
