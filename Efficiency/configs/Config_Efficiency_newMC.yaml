@@ -1,13 +1,13 @@
 input_files: 
-  DsPrompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train194380/LHC23l2a_PromptDs.parquet
-  DplusPrompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train194380/LHC23l2a_PromptDplus.parquet
-  DsFD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train194380/LHC23l2a_NonPromptDs.parquet
-  DplusFD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train194380/LHC23l2a_NonPromptDplus.parquet
+  DsPrompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train201854/LHC24d3_PromptDs.parquet
+  DplusPrompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train201854/LHC24d3_PromptDplus.parquet
+  DsFD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train201854/LHC24d3_NonPromptDs.parquet
+  DplusFD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train201854/LHC24d3_NonPromptDplus.parquet
 
 dataset_eff_frac: [1, 1, 1, 1]
 
-analysis_result_file_prompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train194380/LHC23l2a_AnalysisResults.root
-analysis_result_file_FD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train194380/LHC23l2a_AnalysisResults.root
+analysis_result_file_prompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train201854/LHC24d3_AnalysisResults.root
+analysis_result_file_FD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train201854/LHC24d3_AnalysisResults.root
 
 pt_bins:
   mins: [0.5, 1., 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12] 
