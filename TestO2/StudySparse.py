@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from ROOT import TFile, THnSparseF
 
 # Open the file
-file = TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/TestO2/AnalysisResults.root")
+file = TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Data/Train197555/LHC22o_AnalysisResults.root")
 # Get the THnSparse
 sparse = file.Get("hf-task-ds/Data/hSparseMass")
 

@@ -95,6 +95,8 @@ for iPt, (bkgStr, sgnStr) in enumerate(zip(fitConfig[cent]['BkgFunc'], fitConfig
         BkgFunc.append(AliHFInvMassFitter.kPow)
     elif bkgStr == 'kPowEx':
         BkgFunc.append(AliHFInvMassFitter.kPowEx)
+    elif bkgStr == 'kNoBk':
+        BkgFunc.append(AliHFInvMassFitter.kNoBk)
     else:
         print('ERROR: only kExpo, kLin, kPol2, kPol3, kPol4, kPow, and kPowEx background functions supported! Exit')
         sys.exit()
