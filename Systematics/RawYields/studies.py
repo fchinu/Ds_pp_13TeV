@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 import seaborn as sns
 
-with open("/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/results/pt20.0_25.0.pkl", "rb") as f:
+with open("/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/results/pt120.0_240.0.pkl", "rb") as f:
     data = pickle.load(f)
 
 Trials = np.array(data["convergedTrials"])
