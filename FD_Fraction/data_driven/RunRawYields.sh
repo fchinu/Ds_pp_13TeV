@@ -11,5 +11,5 @@ arraylength=${#CutSets[@]}
 
 parallel -j10 python3 /home/fchinu/Run3/ThesisUtils/ProjectDataFromSparse.py ${DataFile} ${CutSetsDir}/cutset{1}.yml /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/RawYields/Projection_{1}.root ::: ${CutSets[@]}
 
-parallel -j1 python3 /home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/GetRawYieldsDplusDsFlareFlyParallel.py ${FitConfig} /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/RawYields/Projection_{1}.root /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/RawYields/RawYields_{1}.root --batch ::: ${CutSets[@]} 
+parallel -j1 python3 /home/fchinu/Run3/ThesisUtils/GetRawYieldsDplusDsFlareFlyParallel.py ${FitConfig} /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/RawYields/Projection_{1}.root /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/RawYields/RawYields_{1}.root --batch ::: ${CutSets[@]} 
 
