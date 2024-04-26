@@ -3,7 +3,7 @@ from matplotlib.offsetbox import AnchoredText
 import numpy as np
 import argparse
 import yaml
-from itertools import product
+import itertools
 import zfit
 import ROOT
 from particle import Particle
@@ -14,6 +14,9 @@ from concurrent.futures import ProcessPoolExecutor
 import pickle
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
+import pandas as pd 
+import seaborn as sns
+
 
 def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max, **kwargs):
     """
@@ -53,12 +56,12 @@ def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max, **kwargs):
     # signals initialisation
     fitter.set_particle_mass(0, pdg_id=431, limits=[Particle.from_pdgid(431).mass*0.99e-3,
                                                     Particle.from_pdgid(431).mass*1.01e-3])
-    fitter.set_signal_initpar(0, "sigma", 0.008, limits=[0.005, 0.030])
+    fitter.set_signal_initpar(0, "sigma", 0.008, limits=[0.002, 0.030])
     fitter.set_signal_initpar(0, "frac", 0.1, limits=[0., 1.])
     fitter.set_particle_mass(1, pdg_id=411,
                              limits=[Particle.from_pdgid(411).mass*0.99e-3,
                                      Particle.from_pdgid(411).mass*1.01e-3])
-    fitter.set_signal_initpar(1, "sigma", 0.008, limits=[0.005, 0.030])
+    fitter.set_signal_initpar(1, "sigma", 0.006, limits=[0.002, 0.030])
     fitter.set_signal_initpar(1, "frac", 0.1, limits=[0., 1.])
 
     fit_result = fitter.mass_zfit()
@@ -144,7 +147,66 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
     axs[1, 1].set_ylabel('$\chi^2/ndf$', fontsize=14)
 
     plt.show()
-    fig.savefig(f'/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/pt{ptMin*10}_{ptMax*10}.png',bbox_inches='tight')
+    fig.savefig(f'/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/MultiTrial/pt{ptMin*10}_{ptMax*10}.png',bbox_inches='tight')
+
+    Trials = np.array(multiTrialDict["convergedTrials"])
+    Trials = Trials.transpose()
+
+    min_mass = Trials[0]
+    max_mass = Trials[1]
+    rebin = Trials[2]
+    bkg_func = Trials[3]
+
+    df = pd.DataFrame(multiTrialDict, columns=["rawyieldsDs","rawyieldsDplus","ratios","sigmasDs","sigmasDplus","chi2s","convergedTrials"])
+    df["min_mass"] = min_mass
+    df["max_mass"] = max_mass
+    df["rebin"] = rebin
+    df["bkg_func"] = bkg_func
+
+    Variations = ["min_mass", "max_mass", "rebin", "bkg_func"]
+    combinations = set(itertools.combinations(Variations, 2))
+
+    plt.figure(figsize=(10, 10))
+    for comb in combinations:
+        print(f"Plotting {comb[0]} vs {comb[1]}")
+        sns.stripplot(
+        data=df, x=comb[0], y="ratios", hue=comb[1],
+        dodge=0.5, alpha=.5, legend=False,
+        )
+        sns.pointplot(
+            data=df, x=comb[0], y="ratios", hue=comb[1],
+            dodge=0.5, linestyle="none", errorbar=None,
+            marker="_", markersize=20, markeredgewidth=3,
+        )
+
+        # if folder does not exist, create it
+        if not os.path.exists(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/{comb[0]}_{comb[1]}"):
+            os.makedirs(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/{comb[0]}_{comb[1]}")
+        
+        plt.savefig(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/{comb[0]}_{comb[1]}/pt{float(args.ptmin)*10:.1f}_{float(args.ptmax)*10:.1f}.png")
+        #Clear figure
+        plt.clf()
+
+        
+        sns.stripplot(
+        data=df, x=comb[1], y="ratios", hue=comb[0],
+        dodge=0.5, alpha=.5, legend=False,
+        )
+        sns.pointplot(
+            data=df, x=comb[1], y="ratios", hue=comb[0],
+            dodge=0.5, linestyle="none", errorbar=None,
+            marker="_", markersize=20, markeredgewidth=3,
+        )
+
+        # if folder does not exist, create it
+        if not os.path.exists(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/{comb[1]}_{comb[0]}"):
+            os.makedirs(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/{comb[1]}_{comb[0]}")
+        
+        plt.savefig(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/{comb[1]}_{comb[0]}/pt{float(args.ptmin)*10:.1f}_{float(args.ptmax)*10:.1f}.png")
+        #Clear figure
+        plt.clf()
+
+
 
 def doMultiTrial(config: dict, fitConfig, ptMin, ptMax):
     """
@@ -173,7 +235,7 @@ def doMultiTrial(config: dict, fitConfig, ptMin, ptMax):
 
   
     # Do the combination of the trials
-    trials = list(product(mins, maxs, rebins, bkgfuncs))
+    trials = list(itertools.product(mins, maxs, rebins, bkgfuncs))
 
     rawyieldsDs = []
     rawyieldsDs_err = []
