@@ -64,7 +64,18 @@ def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max, **kwargs):
     fitter.set_signal_initpar(1, "sigma", 0.006, limits=[0.002, 0.030])
     fitter.set_signal_initpar(1, "frac", 0.1, limits=[0., 1.])
 
-    fit_result = fitter.mass_zfit()
+    try:
+        fit_result = fitter.mass_zfit()
+    except:
+        return {"rawyields": -999.,
+                "rawyields_bincounting": -999.,
+                "sigma": -999.,
+                "mean": -999.,
+                "chi2": -999.,
+                "significance": -999.,
+                "signal": -999.,
+                "background": -999.,
+                "converged": False } 
 
     if fit_result.converged and kwargs.get("save", False):
         loc = ["lower left", "upper left"]
@@ -108,7 +119,7 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
     axs[0, 0].axhline(y=multiTrialDict["hRawYieldsDsCentral"].GetBinContent(multiTrialDict["hRawYieldsDsCentral"].FindBin(ptMin+0.05)), color='r', linestyle='--')
     axs[0, 0].axhline(y=multiTrialDict["hRawYieldsDplusCentral"].GetBinContent(multiTrialDict["hRawYieldsDplusCentral"].FindBin(ptMin+0.05)), color='b', linestyle='--')
 
-    axs[0, 1].hist(multiTrialDict["ratios"], bins=30, color=next(colorsRatios), alpha=0.3, label='Fit', histtype='stepfilled', ec="k")
+    axs[0, 1].hist(multiTrialDict["ratios"], bins=30, color=next(colorsRatios), alpha=0.7, label='Fit', histtype='stepfilled', ec="k", linewidth=2)
 
     for i, nsigma in enumerate(multiTrialCfg['bincounting']['nsigma']):
         axs[0, 1].hist(multiTrialDict["binCountRatios"][i], bins=30,  color=next(colorsRatios), alpha=0.3, label=f'Bin Counting {nsigma} $\sigma$', histtype='stepfilled', ec="k")
@@ -166,8 +177,10 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
     Variations = ["min_mass", "max_mass", "rebin", "bkg_func"]
     combinations = set(itertools.combinations(Variations, 2))
 
-    plt.figure(figsize=(10, 10))
+    plt.figure(figsize=(7, 7))
     for comb in combinations:
+
+        ### Ratio plottings
         print(f"Plotting {comb[0]} vs {comb[1]}")
         sns.stripplot(
         data=df, x=comb[0], y="ratios", hue=comb[1],
@@ -180,10 +193,10 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
         )
 
         # if folder does not exist, create it
-        if not os.path.exists(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/{comb[0]}_{comb[1]}"):
-            os.makedirs(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/{comb[0]}_{comb[1]}")
+        if not os.path.exists(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/Ratio/{comb[0]}_{comb[1]}"):
+            os.makedirs(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/Ratio/{comb[0]}_{comb[1]}")
         
-        plt.savefig(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/{comb[0]}_{comb[1]}/pt{float(args.ptmin)*10:.1f}_{float(args.ptmax)*10:.1f}.png")
+        plt.savefig(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/Ratio/{comb[0]}_{comb[1]}/pt{ptMin*10:.1f}_{ptMax*10:.1f}.png")
         #Clear figure
         plt.clf()
 
@@ -199,10 +212,85 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
         )
 
         # if folder does not exist, create it
-        if not os.path.exists(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/{comb[1]}_{comb[0]}"):
-            os.makedirs(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/{comb[1]}_{comb[0]}")
+        if not os.path.exists(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/Ratio/{comb[1]}_{comb[0]}"):
+            os.makedirs(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/Ratio/{comb[1]}_{comb[0]}")
         
-        plt.savefig(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/{comb[1]}_{comb[0]}/pt{float(args.ptmin)*10:.1f}_{float(args.ptmax)*10:.1f}.png")
+        plt.savefig(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/Ratio/{comb[1]}_{comb[0]}/pt{ptMin*10:.1f}_{ptMax*10:.1f}.png")
+        #Clear figure
+        plt.clf()
+
+        ### Ds raw yields plottings
+        sns.stripplot(
+        data=df, x=comb[0], y="rawyieldsDs", hue=comb[1],
+        dodge=0.5, alpha=.5, legend=False,
+        )
+        sns.pointplot(
+            data=df, x=comb[0], y="rawyieldsDs", hue=comb[1],
+            dodge=0.5, linestyle="none", errorbar=None,
+            marker="_", markersize=20, markeredgewidth=3,
+        )
+
+        # if folder does not exist, create it
+        if not os.path.exists(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/DsRawYields/{comb[0]}_{comb[1]}"):
+            os.makedirs(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/DsRawYields/{comb[0]}_{comb[1]}")
+        
+        plt.savefig(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/DsRawYields/{comb[0]}_{comb[1]}/pt{ptMin*10:.1f}_{ptMax*10:.1f}.png")
+        #Clear figure
+        plt.clf()
+
+        
+        sns.stripplot(
+        data=df, x=comb[1], y="rawyieldsDs", hue=comb[0],
+        dodge=0.5, alpha=.5, legend=False,
+        )
+        sns.pointplot(
+            data=df, x=comb[1], y="rawyieldsDs", hue=comb[0],
+            dodge=0.5, linestyle="none", errorbar=None,
+            marker="_", markersize=20, markeredgewidth=3,
+        )
+
+        # if folder does not exist, create it
+        if not os.path.exists(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/DsRawYields/{comb[1]}_{comb[0]}"):
+            os.makedirs(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/DsRawYields/{comb[1]}_{comb[0]}")
+        
+        plt.savefig(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/DsRawYields/{comb[1]}_{comb[0]}/pt{ptMin*10:.1f}_{ptMax*10:.1f}.png")
+        #Clear figure
+
+        ### Dplus raw yields plottings
+        sns.stripplot(
+        data=df, x=comb[0], y="rawyieldsDplus", hue=comb[1],
+        dodge=0.5, alpha=.5, legend=False,
+        )
+        sns.pointplot(
+            data=df, x=comb[0], y="rawyieldsDplus", hue=comb[1],
+            dodge=0.5, linestyle="none", errorbar=None,
+            marker="_", markersize=20, markeredgewidth=3,
+        )
+
+        # if folder does not exist, create it
+        if not os.path.exists(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/DplusRawYields/{comb[0]}_{comb[1]}"):
+            os.makedirs(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/DplusRawYields/{comb[0]}_{comb[1]}")
+        
+        plt.savefig(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/DplusRawYields/{comb[0]}_{comb[1]}/pt{ptMin*10:.1f}_{ptMax*10:.1f}.png")
+        #Clear figure
+        plt.clf()
+
+        
+        sns.stripplot(
+        data=df, x=comb[1], y="rawyieldsDplus", hue=comb[0],
+        dodge=0.5, alpha=.5, legend=False,
+        )
+        sns.pointplot(
+            data=df, x=comb[1], y="rawyieldsDplus", hue=comb[0],
+            dodge=0.5, linestyle="none", errorbar=None,
+            marker="_", markersize=20, markeredgewidth=3,
+        )
+
+        # if folder does not exist, create it
+        if not os.path.exists(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/DplusRawYields/{comb[1]}_{comb[0]}"):
+            os.makedirs(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/DplusRawYields/{comb[1]}_{comb[0]}")
+        
+        plt.savefig(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/plots/Distributions_Figures/DplusRawYields/{comb[1]}_{comb[0]}/pt{ptMin*10:.1f}_{ptMax*10:.1f}.png")
         #Clear figure
         plt.clf()
 

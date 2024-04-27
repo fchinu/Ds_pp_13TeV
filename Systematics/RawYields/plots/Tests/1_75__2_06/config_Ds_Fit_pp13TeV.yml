@@ -1,0 +1,28 @@
+pp13TeVPrompt:
+    Particle: 'Ds'
+    FixSigma: False
+    SigmaFile: null
+    SigmaMultFactor: 1.
+    FixMean: 0
+    MeanFile: ''
+    PtMin: [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12] 
+    PtMax: [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12, 24]
+    MassMin: [1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.73, 1.73, 1.73, 1.73, 1.73, 1.73, 1.73]    
+    MassMax: [2.06,   2.06,  2.06,  2.06,  2.06,  2.06,  2.06,  2.06,  2.06, 2.15, 2.15, 2.15, 2.15, 2.15, 2.15, 2.15]
+    Rebin: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+    InclSecPeak: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    SigmaSecPeak: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.015, 0.015, 0.015, 0.015, 0.013,  0.013, 0.015, 0.02, 0.02]
+    FixSigmaSecPeak: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+    SigmaFileSecPeak: ''
+    SigmaMultFactorSecPeak: 1.
+    SigmaRatioSecPeakFile: '/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/SigmaDsOverDplusMC.root'
+    TemplateFile: /home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/DplusForTemplateHistos_Train165702.root
+    FixSigmaRatioSecPeak: 0
+    FixSigmaToFirstPeak: false
+    UseLikelihood: 1
+    BkgFunc: ['expo', 'expo', 'expo', 'expo', 'expo', 'expo', 'expo', 'expo', 'expo', 'expo', 'expo', 'expo', 'expo', 'expo', 'expo']
+    SgnFunc: ['kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus']
+    FixSigmaRatio: 0 # used only if SgnFunc = k2GausSigmaRatioPar
+    SigmaRatioFile: ""
+    BoundMean: 0 # 0: Do not set limits on mean range, 1: the mean is set to be between MassMin[i] and MassMax[i]
+    EnableRef: false

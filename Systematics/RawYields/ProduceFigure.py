@@ -3,11 +3,25 @@ import yaml
 import ROOT
 from itertools import product
 from RawYieldSystematicsParallel import ProduceFigure
+import argparse
 
-with open('/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/config_multi_trial.yml', 'rb') as f:
+parser = argparse.ArgumentParser(description='Produce figure')
+parser.add_argument('ptmin', type=float, help='Minimum pT')
+parser.add_argument('ptmax', type=float, help='Maximum pT')
+parser.add_argument('--highpt', action='store_true', help='High pT')
+args = parser.parse_args()
+
+ptmin = float(args.ptmin)
+ptmax = float(args.ptmax)
+
+configFile = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/config_multi_trial_lowpt.yml"
+if args.highpt:
+    configFile = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/config_multi_trial_highpt.yml"
+
+with open(configFile, 'rb') as f:
     config = yaml.safe_load(f)
 
-with open("/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/results/pt25.0_30.0.pkl", "rb") as f:
+with open(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/results/pt{ptmin*10:.1f}_{ptmax*10:.1f}.pkl", "rb") as f:
     d = pickle.load(f)
 
     #refFileName = config['reffilenames']['data']
@@ -27,4 +41,4 @@ with open("/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/results/pt25.0_30
     #d['hSigmaDsCentral'] = hSigmaDsCentral
     #d['hSigmaDplusCentral'] = hSigmaDplusCentral
 
-ProduceFigure(d, config['multitrial'], 2.5, 3.0)
+ProduceFigure(d, config['multitrial'], ptmin, ptmax)
