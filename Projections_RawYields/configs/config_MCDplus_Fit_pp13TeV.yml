@@ -5,13 +5,13 @@ pp13TeVPrompt:
     SigmaMultFactor: 1.
     FixMean: 0
     MeanFile: ''
-    PtMin: [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12] 
-    PtMax: [1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12, 24]
-    MassMin: [1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7]    
-    MassMax: [2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1]
-    Rebin: [4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 8, 8, 8]
-    InclSecPeak: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    SigmaSecPeak: [0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.013,  0.013, 0.015, 0.02, 0.02]
+    PtMin: [0.5, 1., 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12] 
+    PtMax: [1., 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12, 24]
+    MassMin: [1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7]    
+    MassMax: [2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1]
+    Rebin: [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+    InclSecPeak: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    SigmaSecPeak: [0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.013,  0.013, 0.015, 0.02, 0.02, 0.02]
     FixSigmaSecPeak: [false, false, false, false, false, false, false, false, false, false, false, false, false, false]
     SigmaFileSecPeak: ''
     SigmaMultFactorSecPeak: 1.
@@ -19,8 +19,8 @@ pp13TeVPrompt:
     FixSigmaRatioSecPeak: 0
     FixSigmaToFirstPeak: false
     UseLikelihood: 1
-    BkgFunc: ['kPol3', 'kPol3', 'kPol3', 'kPol3', 'kPol3', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2', 'kPol2']
-    SgnFunc: ['kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus']
+    BkgFunc: ['kNoBk', 'kNoBk', 'kNoBk', 'kNoBk', 'kNoBk', 'kNoBk', 'kNoBk', 'kNoBk', 'kNoBk', 'kNoBk', 'kNoBk', 'kNoBk', 'kNoBk', 'kNoBk', 'kNoBk']
+    SgnFunc: ['kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus', 'kGaus']
     FixSigmaRatio: 0 # used only if SgnFunc = k2GausSigmaRatioPar
     SigmaRatioFile: ""
     BoundMean: 0 # 0: Do not set limits on mean range, 1: the mean is set to be between MassMin[i] and MassMax[i]

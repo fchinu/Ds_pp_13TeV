@@ -143,25 +143,17 @@ if enableRef:
 hRel, hSig, hMassForRel, hMassForSig  = [], [], [], []
 hMass, hMassForFit = [], []
 for iPt, (ptMin, ptMax, secPeak) in enumerate(zip(ptMins, ptMaxs, inclSecPeak)):
-    if not args.isMC:
-        print(ptMin, ptMax)
-        hMass.append(infile.Get(f'hMass_{ptMin*10:.0f}_{ptMax*10:.0f}'))
-        hMass[iPt].SetDirectory(0)
-        if enableRef:
-            hRel.append(infileref.Get(f'hVarReflMass_{ptMin*10:.0f}_{ptMax*10:.0f}'))
-            hSig.append(infileref.Get(f'hFDMass_{ptMin*10:.0f}_{ptMax*10:.0f}'))
-            hSig[iPt].Add(infileref.Get(f'hPromptMass_{ptMin*10:.0f}_{ptMax*10:.0f}'))
-            hRel[iPt].SetDirectory(0)
-            hSig[iPt].SetDirectory(0)
-            hRel[iPt].Sumw2()
-            hSig[iPt].Sumw2()
-    else:
-        hMass.append(infile.Get(f'hPromptMass_{ptMin*10:.0f}_{ptMax*10:.0f}'))
-        hMass[iPt].Add(infile.Get(f'hFDMass_{ptMin*10:.0f}_{ptMax*10:.0f}'))
-        if secPeak:
-            hMass[iPt].Add(infile.Get(f'hPromptSecPeakMass_{ptMin*10:.0f}_{ptMax*10:.0f}'))
-            hMass[iPt].Add(infile.Get(f'hFDSecPeakMass_{ptMin*10:.0f}_{ptMax*10:.0f}'))
-        hMass[iPt].SetDirectory(0)
+    print(ptMin, ptMax)
+    hMass.append(infile.Get(f'hMass_{ptMin*10:.0f}_{ptMax*10:.0f}'))
+    hMass[iPt].SetDirectory(0)
+    if enableRef:
+        hRel.append(infileref.Get(f'hVarReflMass_{ptMin*10:.0f}_{ptMax*10:.0f}'))
+        hSig.append(infileref.Get(f'hFDMass_{ptMin*10:.0f}_{ptMax*10:.0f}'))
+        hSig[iPt].Add(infileref.Get(f'hPromptMass_{ptMin*10:.0f}_{ptMax*10:.0f}'))
+        hRel[iPt].SetDirectory(0)
+        hSig[iPt].SetDirectory(0)
+        hRel[iPt].Sumw2()
+        hSig[iPt].Sumw2()
     hMass[iPt].Sumw2()
     SetObjectStyle(hMass[iPt], color=kBlack, markerstyle=kFullCircle)
 
@@ -358,6 +350,8 @@ for iCanv in range(nCanvases):
     cResiduals.append(TCanvas(f'cResiduals{iCanv}', f'cResiduals{iCanv}', canvSizes[0], canvSizes[1]))
     DivideCanvas(cResiduals[iCanv], nPads)
 
+
+print(len(hMass), len(ptMins), len(ptMaxs), len(fitConfig[cent]['Rebin']), len(SgnFunc), len(BkgFunc), len(inclSecPeak), len(fitConfig[cent]['MassMin']), len(fitConfig[cent]['MassMax']))
 massFitter = []
 for iPt, (hM, ptMin, ptMax, reb, sgnEnum, bkgEnum, secPeak, massMin, massMax) in enumerate(
         zip(hMass, ptMins, ptMaxs, fitConfig[cent]['Rebin'], SgnFunc, BkgFunc, inclSecPeak, fitConfig[cent]['MassMin'],
