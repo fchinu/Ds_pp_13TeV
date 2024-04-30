@@ -3,7 +3,7 @@ Test for binned fit with flarefly.F2MassFitter
 """
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 # import sys
 import argparse
 # import numpy as np
