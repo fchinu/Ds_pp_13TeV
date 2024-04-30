@@ -8,17 +8,14 @@ import argparse
 parser = argparse.ArgumentParser(description='Produce figure')
 parser.add_argument('ptmin', type=float, help='Minimum pT')
 parser.add_argument('ptmax', type=float, help='Maximum pT')
-parser.add_argument('--highpt', action='store_true', help='High pT')
+parser.add_argument('configfile', type=str, help='multi trial config file')
 args = parser.parse_args()
 
 ptmin = float(args.ptmin)
 ptmax = float(args.ptmax)
 
-configFile = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/config_multi_trial_lowpt.yml"
-if args.highpt:
-    configFile = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/config_multi_trial_highpt.yml"
 
-with open(configFile, 'rb') as f:
+with open(args.configfile, 'rb') as f:
     config = yaml.safe_load(f)
 
 with open(f"/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/results/pt{ptmin*10:.1f}_{ptmax*10:.1f}.pkl", "rb") as f:

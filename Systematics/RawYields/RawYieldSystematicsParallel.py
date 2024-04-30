@@ -13,16 +13,16 @@ import concurrent.futures
 from concurrent.futures import ProcessPoolExecutor
 import pickle
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import pandas as pd 
 import seaborn as sns
 
 
-def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max, **kwargs):
+def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max, sigmaMultFactorSecPeak, **kwargs):
     """
     Method for fitting
     """
-    mass_min, mass_max, rebin, bkgfunc = kwargs.get("trial", (1.74, 2.10, 2, "chebpol2"))
+    mass_min, mass_max, rebin, bkgfunc, sigmaDs, sigmaDplus = kwargs.get("trial", (1.74, 2.10, 2, "chebpol2", "kFree", "kFree"))
     idx = kwargs.get("idx", 0)
 
     data_hdl = DataHandler(data=input_file, var_name="fM",
@@ -64,10 +64,55 @@ def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max, **kwargs):
     fitter.set_signal_initpar(1, "sigma", 0.006, limits=[0.002, 0.030])
     fitter.set_signal_initpar(1, "frac", 0.1, limits=[0., 1.])
 
+    if sigmaDplus == "kFixed":
+        if sigmaMultFactorSecPeak:
+            fit_result = fitter.mass_zfit() # First fit to get the sigma
+            fitter.set_signal_initpar(1, "sigma", fitter.get_sigma(0)[0]*sigmaMultFactorSecPeak, fix=True)
+        else:
+            print("ERROR: No sigma factor provided, please check your config file")
+            sys.exit()
+    elif sigmaDplus == "kFixedPlus10Perc":
+        if sigmaMultFactorSecPeak:
+            fit_result = fitter.mass_zfit() # First fit to get the sigma
+            fitter.set_signal_initpar(1, "sigma", fitter.get_sigma(0)[0]*sigmaMultFactorSecPeak*1.1, fix=True)
+        else:
+            print("ERROR: No sigma factor provided, please check your config file")
+            sys.exit()
+    elif sigmaDplus == "kFixedMinus10Perc":
+        if sigmaMultFactorSecPeak:
+            fit_result = fitter.mass_zfit() # First fit to get the sigma
+            fitter.set_signal_initpar(1, "sigma", fitter.get_sigma(0)[0]*sigmaMultFactorSecPeak*0.9, fix=True)
+        else:
+            print("ERROR: No sigma factor provided, please check your config file")
+            sys.exit()
+
+
     try:
         fit_result = fitter.mass_zfit()
-    except:
-        return {"rawyields": -999.,
+        if fit_result.converged and kwargs.get("save", False):
+            loc = ["lower left", "upper left"]
+            ax_title = r"$M(\mathrm{KK\pi})$ GeV$/c^2$"
+            fig = fitter.plot_mass_fit(style="ATLAS", show_extra_info=True,
+                                    figsize=(8, 8), extra_info_loc=loc,
+                                    axis_title=ax_title)
+            figres = fitter.plot_raw_residuals(figsize=(8, 8), style="ATLAS",
+                                            extra_info_loc=loc, axis_title=ax_title)
+            fig.savefig(f"{output_dir}/ds_mass_pt{pt_min:.1f}_{pt_max:.1f}.pdf")
+            figres.savefig(f"{output_dir}/ds_massres_pt{pt_min:.1f}_{pt_max:.1f}.pdf")
+
+        outDict = {"rawyields": [fitter.get_raw_yield(i) for i in range(2)],
+                "rawyields_bincounting": [[fitter.get_raw_yield_bincounting(i, nsigma=j) for j in kwargs.get("nsigma", [3, 5])] for i in range(2)],
+                "sigma": [fitter.get_sigma(i) for i in range(2)],
+                "mean": [fitter.get_mass(i) for i in range(2)],
+                "chi2": fitter.get_chi2_ndf(),
+                "significance": [fitter.get_significance(i) for i in range(2)],
+                "signal": [fitter.get_signal(i) for i in range(2)],
+                "background": [fitter.get_background(i) for i in range(2)],
+                "converged": fit_result.converged}
+
+    except Exception as e:
+        print("An error occurred during mass fitting:", e)
+        outDict = {"rawyields": -999.,
                 "rawyields_bincounting": -999.,
                 "sigma": -999.,
                 "mean": -999.,
@@ -77,26 +122,8 @@ def fit(input_file, input_file_bkgtempl, output_dir, pt_min, pt_max, **kwargs):
                 "background": -999.,
                 "converged": False } 
 
-    if fit_result.converged and kwargs.get("save", False):
-        loc = ["lower left", "upper left"]
-        ax_title = r"$M(\mathrm{KK\pi})$ GeV$/c^2$"
-        fig = fitter.plot_mass_fit(style="ATLAS", show_extra_info=True,
-                                figsize=(8, 8), extra_info_loc=loc,
-                                axis_title=ax_title)
-        figres = fitter.plot_raw_residuals(figsize=(8, 8), style="ATLAS",
-                                        extra_info_loc=loc, axis_title=ax_title)
-        fig.savefig(f"{output_dir}/ds_mass_pt{pt_min:.1f}_{pt_max:.1f}.pdf")
-        figres.savefig(f"{output_dir}/ds_massres_pt{pt_min:.1f}_{pt_max:.1f}.pdf")
+    return outDict
 
-    return {"rawyields": [fitter.get_raw_yield(i) for i in range(2)],
-            "rawyields_bincounting": [[fitter.get_raw_yield_bincounting(i, nsigma=j) for j in kwargs.get("nsigma", [3, 5])] for i in range(2)],
-            "sigma": [fitter.get_sigma(i) for i in range(2)],
-            "mean": [fitter.get_mass(i) for i in range(2)],
-            "chi2": fitter.get_chi2_ndf(),
-            "significance": [fitter.get_significance(i) for i in range(2)],
-            "signal": [fitter.get_signal(i) for i in range(2)],
-            "background": [fitter.get_background(i) for i in range(2)],
-            "converged": fit_result.converged}
 
 def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
     fig, axs = plt.subplots(2, 2, figsize=(20, 15))
@@ -145,7 +172,7 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
     axs[1, 0].errorbar(x=range(1,len(multiTrialDict["rawyieldsDs"])+1), y=multiTrialDict["sigmasDplus"], yerr=multiTrialDict["sigmasDplus_err"], fmt='o', c='b', label=f'$D^+$')
     axs[1, 0].set_xlim(0, len(multiTrialDict["binCountDs"][i])*(len(multiTrialCfg['bincounting']['nsigma'])+1)+1)
     axs[1, 0].set_xlabel('Trial', fontsize=14)
-    axs[1, 0].set_ylabel('Width ($Mev/c^2$)', fontsize=14)
+    axs[1, 0].set_ylabel('Width ($GeV/c^2$)', fontsize=14)
     axs[1, 0].legend(fontsize=12)
     
     # Draw the central values
@@ -320,10 +347,11 @@ def doMultiTrial(config: dict, fitConfig, ptMin, ptMax):
     rebins = multiTrialCfg['rebins']
     bkgfuncs = multiTrialCfg['bkgfuncs']
     ptbins = multiTrialCfg['ptbins']
-
+    sigmasDs = multiTrialCfg['sigmaDs']
+    sigmasDplus = multiTrialCfg['sigmaDplus']
   
     # Do the combination of the trials
-    trials = list(itertools.product(mins, maxs, rebins, bkgfuncs))
+    trials = list(itertools.product(mins, maxs, rebins, bkgfuncs, sigmasDs, sigmasDplus))
 
     rawyieldsDs = []
     rawyieldsDs_err = []
@@ -351,7 +379,7 @@ def doMultiTrial(config: dict, fitConfig, ptMin, ptMax):
     with ProcessPoolExecutor(max_workers=10) as executor:
         for idx, trial in enumerate(trials):
             results.append((executor.submit(fit, config['reffilenames']['data'], fitConfig["pp13TeVPrompt"]['TemplateFile'],
-                "", ptMin, ptMax, nsigma=multiTrialCfg['bincounting']['nsigma'], save=False, idx=idx,
+                "", ptMin, ptMax, nsigma=multiTrialCfg['bincounting']['nsigma'], save=False, idx=idx, sigmaMultFactorSecPeak=fitConfig["pp13TeVPrompt"]["SigmaMultFactorSecPeak"],
                 trial = trial), idx))
     
     for result, idx in results:
@@ -415,4 +443,4 @@ if __name__ == '__main__':
 
     zfit.run.set_cpus_explicit(intra=3, inter=3)
 
-    doMultiTrial(config, FitConfig, args.ptmin, args.ptmax)
+    doMultiTrial(config, FitConfig, args.ptmin, args.ptmax)   
