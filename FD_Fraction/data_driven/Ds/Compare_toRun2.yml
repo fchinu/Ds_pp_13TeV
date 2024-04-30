@@ -2,10 +2,9 @@ inputs:
     dirname: null # leave null if not common for all input files
     filenames: [
                 /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Run2/CutVarDs_pp13TeV_MB.root,
-                /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds/CutVarDs_pp13TeV_MB.root,
                 /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds/CutVarDs_pp13TeV_MB_newMC.root
                 ]
-    objectnames: [hCorrFracPrompt, hCorrFracPrompt, hCorrFracPrompt] # can be either histograms of graphs or a mix of them; they will be drawn in the current order
+    objectnames: [hCorrFracPrompt, hCorrFracPrompt] # can be either histograms of graphs or a mix of them; they will be drawn in the current order
 
 output: 
     filename: /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds/Compare_toRun2 # with path and w/o extension
@@ -40,7 +39,7 @@ options:
         xlimits: [0.6, 0.9]
         ylimits: [0.75, 0.9]
         header: null
-        titles: [Run2, Run3 - old MC, Run3 - new MC]
+        titles: [Run2, Run3 - new MC]
         options: [lp, lp, lp, lp, lp, lp, lp, lp, lp]
         textsize: 0.045
         ncolumns: 1
