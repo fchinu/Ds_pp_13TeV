@@ -1,0 +1,68 @@
+{
+  "rawyields": {
+    "inputdir": "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Dplus/RawYields",
+    "inputfiles": [
+      "RawYields__ML_FD_outFD_pos00.root",
+      "RawYields__ML_FD_outFD_pos01.root",
+      "RawYields__ML_FD_outFD_pos02.root",
+      "RawYields__ML_FD_outFD_pos03.root",
+      "RawYields__ML_FD_outFD_pos04.root",
+      "RawYields__ML_FD_outFD_pos05.root",
+      "RawYields__ML_FD_outFD_pos06.root",
+      "RawYields__ML_FD_outFD_pos07.root",
+      "RawYields__ML_FD_outFD_pos08.root",
+      "RawYields__ML_FD_outFD_pos09.root",
+      "RawYields__ML_FD_outFD_pos10.root",
+      "RawYields__ML_FD_outFD_pos11.root",
+      "RawYields__ML_FD_outFD_pos12.root",
+      "RawYields__ML_FD_outFD_pos13.root",
+      "RawYields__ML_FD_outFD_pos14.root",
+      "RawYields__ML_FD_outFD_pos15.root",
+      "RawYields__ML_FD_outFD_pos16.root"
+    
+    ],
+    "histoname": "hRawYieldsSecondPeak"
+  },
+  "efficiencies": {
+    "inputdir": "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/worseResoPullsData1p1/FD_Fraction/Dplus/Efficiency",
+    "inputfiles": [
+      "Efficiency__ML_FD_outFD_pos00.root",
+      "Efficiency__ML_FD_outFD_pos01.root",
+      "Efficiency__ML_FD_outFD_pos02.root",
+      "Efficiency__ML_FD_outFD_pos03.root",
+      "Efficiency__ML_FD_outFD_pos04.root",
+      "Efficiency__ML_FD_outFD_pos05.root",
+      "Efficiency__ML_FD_outFD_pos06.root",
+      "Efficiency__ML_FD_outFD_pos07.root",
+      "Efficiency__ML_FD_outFD_pos08.root",
+      "Efficiency__ML_FD_outFD_pos09.root",
+      "Efficiency__ML_FD_outFD_pos10.root",
+      "Efficiency__ML_FD_outFD_pos11.root",
+      "Efficiency__ML_FD_outFD_pos12.root",
+      "Efficiency__ML_FD_outFD_pos13.root",
+      "Efficiency__ML_FD_outFD_pos14.root",
+      "Efficiency__ML_FD_outFD_pos15.root",
+      "Efficiency__ML_FD_outFD_pos16.root"
+    ],
+    "histonames": {
+      "prompt": "Eff_DplusPrompt",
+      "nonprompt": "Eff_DplusFD"
+    }
+  },
+  "central_efficiency": {
+    "computerawfrac": true,
+    "inputdir": "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/worseResoPullsData1p1/Efficiency",
+    "inputfile": "Efficiency.root",
+    "histonames": {
+        "prompt": "Eff_DplusPrompt",
+        "nonprompt": "Eff_DplusFD"
+    }
+  },
+  "minimisation": {
+    "correlated": "true"
+  },
+  "output": {
+    "directory": "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/worseResoPullsData1p1/FD_Fraction/Dplus",
+    "file": "CutVarDs_pp13TeV_MB_newMC.root"
+  }
+}
