@@ -8,11 +8,13 @@ from StyleFormatter import SetGlobalStyle
 ColsToUse = [ROOT.kRed,ROOT.kAzure+3,ROOT.kTeal-7]
 SetGlobalStyle(padrightmargin=0.05, padleftmargin=0.15, padbottommargin=0.13, padtopmargin=0.05, opttitle=0, titleoffsetx=1.2, titleoffsety=1.5)
 
+AssignedSyst = [0.08, 0.03, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02]
+
 #################
 # Efficiency
 #################
 
-EffCentralFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiencies_newMC.root"
+EffCentralFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiencies_newestMC.root"
 EffPtSmearingFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/ptSmearing/Efficiency/Efficiency.root"
 EffWorseResoPullsFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/worseResoPullsData1p1/Efficiency/Efficiency.root"
 
@@ -161,8 +163,8 @@ EffRatiosWorseResoPulls[3].Draw("e same")
 # FD fraction
 #################
 
-FDsCentralFileNameDs = "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds/CutVarDs_pp13TeV_MB_newMC.root"
-FDsCentralFileNameDplus = "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Dplus/CutVarDplus_pp13TeV_MB_newMC.root"
+FDsCentralFileNameDs = "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds/CutVarDs_pp13TeV_MB_LHC24d3a.root"
+FDsCentralFileNameDplus = "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Dplus/CutVarDplus_pp13TeV_MB_LHC24d3a.root"
 FDPtSmearingFileNameDs = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/ptSmearing/FD_Fraction/Ds/CutVarDs_pp13TeV_MB_newMC.root"
 FDPtSmearingFileNameDplus = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/ptSmearing/FD_Fraction/Dplus/CutVarDs_pp13TeV_MB_newMC.root"
 FDWorseResoPullsFileNameDs = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/worseResoPullsData1p1/FD_Fraction/Ds/CutVarDs_pp13TeV_MB_newMC.root"
@@ -229,7 +231,7 @@ hFDDplusRatiosWorseResoPulls.Divide(hFDDplusCentral)
 
 cFDDs = ROOT.TCanvas("cFDDs", "cFDDs", 800, 600)
 cFDDs.Divide(2)
-cFDDs.cd(1).DrawFrame(0., 0.75, 24, 1.05, ";#it{p}_{T} (GeV/c);D_{s}^{+} FD fraction")
+cFDDs.cd(1).DrawFrame(0., 0.75, 24, 1.05, ";#it{p}_{T} (GeV/c);D_{s}^{+} prompt fraction")
 
 hFDDsCentral.Draw("e same")
 hFDDsPtSmearing.Draw("e same")
@@ -251,7 +253,7 @@ hFDDsRatiosWorseResoPulls.Draw("e same")
 
 cFDDplus = ROOT.TCanvas("cFDDplus", "cFDDplus", 800, 600)
 cFDDplus.Divide(2)
-cFDDplus.cd(1).DrawFrame(0., 0.75, 24, 1.05, ";#it{p}_{T} (GeV/c);D^{+} FD fraction")
+cFDDplus.cd(1).DrawFrame(0., 0.75, 24, 1.05, ";#it{p}_{T} (GeV/c);D^{+} prompt fraction")
 
 hFDDplusCentral.Draw("e same")
 hFDDplusPtSmearing.Draw("e same")
@@ -275,7 +277,7 @@ hFDDplusRatiosWorseResoPulls.Draw("e same")
 # Ratios
 #################
 
-RatioCentralFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Ratios/DsOverDplus_newMC.root"
+RatioCentralFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Ratios/DsOverDplus_LHC24d3a.root"
 RatioPtSmearingFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/ptSmearing/Ratio/DsOverDplus_newMC.root"
 RatioWorseResoPullsFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/worseResoPullsData1p1/Ratio/DsOverDplus_newMC.root"
 
@@ -322,7 +324,7 @@ legRatio.SetBorderSize(0)
 legRatio.SetFillStyle(0)
 legRatio.Draw()
 
-cRatio.cd(2).DrawFrame(0., 0.8, 24, 1.2, ";#it{p}_{T} (GeV/c);Ratio")
+cRatio.cd(2).DrawFrame(0., 0.7, 24, 1.4, ";#it{p}_{T} (GeV/c);Ratio")
 
 hRatiosRatioPtSmearing = hRatioPtSmearing.Clone("hRatiosRatioPtSmearing")
 hRatiosRatioWorseResoPulls = hRatioWorseResoPulls.Clone("hRatiosRatioWorseResoPulls")
@@ -330,7 +332,7 @@ hRatiosRatioWorseResoPulls = hRatioWorseResoPulls.Clone("hRatiosRatioWorseResoPu
 hRatiosRatioPtSmearing.Divide(hRatioCentral)
 hRatiosRatioWorseResoPulls.Divide(hRatioCentral)
 
-hRatiosRatioPtSmearing.Draw("e")
+hRatiosRatioPtSmearing.Draw("e same")
 hRatiosRatioWorseResoPulls.Draw("e same")
 
 #################
@@ -357,3 +359,25 @@ cEffDplusFD.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/Results/E
 cFDDs.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/Results/FDDs.png")
 cFDDplus.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/Results/FDDplus.png")
 cRatio.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/Results/Ratio.png")
+
+
+#################
+# Save systematic uncertainty
+#################
+
+hSemidisp = hRatioCentral.Clone("hSemidisp")
+hSyst = hRatioCentral.Clone("hSyst")
+for iPt in range(hRatioCentral.GetNbinsX()):
+    maxRatio = max(hRatioPtSmearing.GetBinContent(iPt+1), hRatioWorseResoPulls.GetBinContent(iPt+1), hRatioCentral.GetBinContent(iPt+1))
+    minRatio = min(hRatioPtSmearing.GetBinContent(iPt+1), hRatioWorseResoPulls.GetBinContent(iPt+1), hRatioCentral.GetBinContent(iPt+1))
+    syst = 0.5*(maxRatio - minRatio)/(hRatioCentral.GetBinContent(iPt+1))
+    hSemidisp.SetBinContent(iPt+1, syst)
+    hSemidisp.SetBinError(iPt+1, 0.)
+    print(f"{hRatioCentral.GetBinLowEdge(iPt+1):.3f} < pT < {hRatioCentral.GetBinLowEdge(iPt+2):.3f}: {syst}")
+    hSyst.SetBinContent(iPt+1, AssignedSyst[iPt])
+    hSyst.SetBinError(iPt+1, 0.)
+
+outputFileSyst = ROOT.TFile("/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/Results/SystUncertainty.root", "RECREATE")
+hSemidisp.Write()
+hSyst.Write()
+outputFileSyst.Close()

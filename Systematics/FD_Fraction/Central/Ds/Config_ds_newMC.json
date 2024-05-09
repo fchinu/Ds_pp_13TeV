@@ -54,7 +54,7 @@
     "correlated": "true"
   },
   "output": {
-    "directory": "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds",
+    "directory": "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/Central/Ds",
     "file": "CutVarDs_pp13TeV_MB_newMC.root"
   }
 }

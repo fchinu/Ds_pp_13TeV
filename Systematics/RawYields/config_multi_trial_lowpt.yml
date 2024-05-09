@@ -16,7 +16,8 @@ multitrial:
     rebins: [ 1, 2, 3, 4] # mass rebin values
     sgnfuncs: [ kGaus] # signal functions of AliHFInvMassFitter
     bkgfuncs: [ chebpol2, expo] # bkg functions of AliHFInvMassFitter       kExpo, kLin, 
-    sigma: [kFree] # kFree, kFixed
+    sigmaDs: [kFree] # kFree, kFixed
+    sigmaDplus: [kFree] # kFree, kFixed
     # all possibilities: 
     # kFree, kFixed, kFixedMinus10Perc, kFixedPlus10Perc, kFixedMinus15Perc, kFixedPlus15Perc, kFixedMinus20Perc, kFixedPlus20Perc, kFixedMinusUnc, kFixedPlusUnc
     # those with variations (Plus/Minus) are exclusive (i.e. it is not possible to run with 10% and 15% variation at the same time)

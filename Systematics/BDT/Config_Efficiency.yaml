@@ -1,19 +1,20 @@
 input_files: 
-  DsPrompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train189890/LHC22b1b_PromptDs_Eff.parquet
-  DplusPrompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train189890/LHC22b1b_PromptDplus.parquet
-  DsFD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train189892/LHC22b1a_NonPromptDs_Eff.parquet
-  DplusFD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train189892/LHC22b1a_NonPromptDplus.parquet
+  DsPrompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train201854/LHC24d3_PromptDs.parquet
+  DplusPrompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train201854/LHC24d3_PromptDplus.parquet
+  DsFD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train201854/LHC24d3_NonPromptDs.parquet
+  DplusFD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train201854/LHC24d3_NonPromptDplus.parquet
 
-dataset_eff_frac: [0.2, 1, 0.2, 1]
+dataset_eff_frac: [1, 1, 1, 1]
 
-analysis_result_file_prompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train189890/LHC22b1b_AnalysisResults.root
-analysis_result_file_FD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train189892/LHC22b1a_AnalysisResults.root
+analysis_result_file_prompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train201854/LHC24d3_AnalysisResults.root
+analysis_result_file_FD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train201854/LHC24d3_AnalysisResults.root
 
 pt_bins:
-  mins: [1., 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12] 
-  maxs: [1.5, 2., 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12, 24]
-preselections: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+  mins: [0.5, 1., 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12] 
+  maxs: [1, 1.5, 2., 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12, 24]
+preselections: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
 model_handlers: [ 
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt0_1.5/ModelHandler_pT_0_1.5.pickle,
                   /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt0_1.5/ModelHandler_pT_0_1.5.pickle,
                   /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt1.5_2/ModelHandler_pT_1.5_2.pickle,
                   /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/pt2_3/ModelHandler_pT_2_3.pickle,

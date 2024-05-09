@@ -1,8 +1,8 @@
 #!/bin/bash
 #steps to be performed
-DoDataProjection=true
+DoDataProjection=false
 DoEfficiency=true
-DoDataRawYields=true
+DoDataRawYields=false
 DoRatio=true
 
 #wheter you are projecting a tree or a sparse
@@ -28,9 +28,9 @@ done
 arraylength=${#CutSets[@]}
 
 OutDirRawyields="/home/fchinu/Run3/Ds_pp_13TeV/Systematics/BDT/RawYields"
-OutDirEfficiency="/home/fchinu/Run3/Ds_pp_13TeV/Systematics/BDT/Efficiency"
+OutDirEfficiency="/home/fchinu/Run3/Ds_pp_13TeV/Systematics/BDT/Efficiency_LHC24d3a"
 OutDirCrossSec="/home/fchinu/Run3/Ds_pp_13TeV/Systematics/BDT/CrossSection"
-OutDirRatios="/home/fchinu/Run3/Ds_pp_13TeV/Systematics/BDT/Ratios"
+OutDirRatios="/home/fchinu/Run3/Ds_pp_13TeV/Systematics/BDT/Ratios_LHC24d3a"
 ################################################################################################
 
 if [ ! -d "${OutDirRawyields}" ]; then
@@ -57,12 +57,12 @@ if $DoDataProjection; then
   parallel -j 10 python3 ${ProjectScript} ${SparseName} ${CutSetsDir}/cutset{1}.yml ${OutDirRawyields}/Distr_${Particle}_data{1}.root ::: ${CutSets[@]}
 fi
 
-configFileEff="/home/fchinu/Run3/Ds_pp_13TeV/Systematics/BDT/Config_Efficiency.yaml"
+configFileEff="/home/fchinu/Run3/Ds_pp_13TeV/Systematics/BDT/Config_Efficiency_LHC24d3a.yaml"
 if $DoEfficiency; then
     parallel -j 10 python3 /home/fchinu/Run3/ThesisUtils/EvaluateEfficiency.py -c ${configFileEff} -s ${CutSetsDir}/cutset{1}.yml -o ${OutDirEfficiency}/Efficiency_{1}.root ::: ${CutSets[@]}
 fi
 
-RawYieldsScript="/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/GetRawYieldsDplusDsFlareFlyParallel.py"
+RawYieldsScript="/home/fchinu/Run3/ThesisUtils/GetRawYieldsDplusDsFlareFlyParallel.py"
 if $DoDataRawYields; then
   parallel -j 1 python3 ${RawYieldsScript} ${cfgFileFit} ${OutDirRawyields}/Distr_${Particle}_data{1}.root ${OutDirRawyields}/RawYields${Meson}_data{1}.root --batch ::: ${CutSets[@]}
 fi
@@ -74,31 +74,3 @@ if $DoRatio; then
     python3 ${RatioScript} -r ${OutDirRawyields}/RawYields${Meson}_data${CutSets[$iCutSet]}.root -e ${OutDirEfficiency}/Efficiency_${CutSets[$iCutSet]}.root -o ${OutDirRatios}/Ratio_${CutSets[$iCutSet]}.root
   done
 fi
-
-#compute HFPtSpectrumRaa
-#if $DoHFPtSpecRaa; then
-#  for (( iCutSet=0; iCutSet<${arraylength}; iCutSet++ ));
-#  do
-#    echo $(tput setaf 4) Compute HFPtspectrumRaa $(tput sgr0)
-#    echo '.x HFPtSpectrumRaa.C+("'${pprefFileName}'","'${OutDirCrossSec}'/HFPtSpectrum'${Particle}${CutSets[$iCutSet]}'.root","'${OutDirRaa}'/HFPtSpectrumRaa'$#{Particle}${CutSets[$iCutSet]}'.root",4,1,kNb,'${Cent}',k2018,k5dot023,1./3,3,6,false,1)' | root -l -b
-#    echo '.q'
-#  done
-#fi
-#
-##compute corrected yield
-#if $DoDmesonYield; then
-#  for (( iCutSet=0; iCutSet<${arraylength}; iCutSet++ ));
-#  do
-#    echo $(tput setaf 4) Compute corrected yield $(tput sgr0)
-#    echo '.x ComputeDmesonYield.C+(k'${Particle}','${Cent}',2,1,"'${pprefFileName}'","'${OutDirCrossSec}'/HFPtSpectrum'${Particle}${CutSets[$iCutSet]}'.root",#"","'${OutDirRaa}'/HFPtSpectrumRaa'${Particle}${CutSets[$iCutSet]}'.root","","'${OutDirCrossSec}'","'${CutSets[$iCutSet]}'",1,1./3,3,false,1)' | root -l -b
-#    echo '.q'
-#  done
-#fi
-#
-#if $DoXic0Crosssec; then
-#  for (( iCutSet=0; iCutSet<${arraylength}; iCutSet++ ));
-#  do
-#    echo $(tput setaf 4) Compute corrected yield $(tput sgr0)
-#    python3 /home/fchinu/Xic0_pPb_5TeV/ML_CrossSection/Efficiency_and_Crosssection.py ${OutDirRawyields}/RawYields${Meson}_data${CutSets[$iCutSet]}.root $#{OutDirEfficiency}/Efficiency_${Particle}${Channel}${CutSets[$iCutSet]}.root ${OutDirCrossSec}/HFPtSpectrum${Particle}${CutSets[$iCutSet]}.root
-#  done
-#fi

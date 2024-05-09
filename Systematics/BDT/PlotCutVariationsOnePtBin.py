@@ -88,6 +88,7 @@ def PlotCutVariationsOnePtBin(cfgFileName):
         hEffFDsDplus[iFile].SetDirectory(0)
         infile_eff.Close()
 
+    hSyst = hRawYieldsDs[0].Clone("hSyst")
 
     for iPt in range(hRawYieldsDs[0].GetNbinsX()):
         
@@ -125,6 +126,20 @@ def PlotCutVariationsOnePtBin(cfgFileName):
         FDFracsDplusErr = []
 
         for iFile in range(nFiles):
+            
+            # chi2 quality check
+            if hchi2s[iFile].GetBinContent(iPt+1) > 2:
+                continue
+
+            # Significance quality check
+            if hSignificancesDs[iFile].GetBinContent(iPt+1) < minSignif or hSignificancesDplus[iFile].GetBinContent(iPt+1) < minSignif:
+                continue
+            if hSignificancesDs[iFile].GetBinContent(iPt+1) < hSignificancesDs[0].GetBinContent(iPt+1) * minRelSignif or hSignificancesDplus[iFile].GetBinContent(iPt+1) < hSignificancesDplus[0].GetBinContent(iPt+1) * minRelSignif:
+                continue
+            
+            # Efficiency quality check
+            if hEffPromptsDs[iFile].GetBinContent(iPt+1) < hEffPromptsDs[0].GetBinContent(iPt+1) * minRelEff or hEffPromptsDplus[iFile].GetBinContent(iPt+1) < hEffPromptsDplus[iFile].GetBinContent(iPt+1) * minRelEff:
+                continue
 
             Ratios.append(hRatios[iFile].GetBinContent(iPt+1))
             RatiosErr.append(hRatios[iFile].GetBinError(iPt+1))
@@ -166,8 +181,8 @@ def PlotCutVariationsOnePtBin(cfgFileName):
         # Raw yields
         yerrDs = np.array(RawYieldsDs)/RawYieldsDs[0]*np.sqrt(np.square(np.array(RawYieldsDsErr)/np.array(RawYieldsDs)) + (RawYieldsDsErr[0]/RawYieldsDs[0])**2)
         yerrDplus = np.array(RawYieldsDplus)/RawYieldsDplus[0]*np.sqrt(np.square(np.array(RawYieldsDplusErr)/np.array(RawYieldsDplus)) + (RawYieldsDplusErr[0]/RawYieldsDplus[0])**2)
-        axs[0, 0].scatter(range(nFiles), np.array(RawYieldsDs)/RawYieldsDs[0], c='r',  label='$D_s^+$', s=100)  # Increase marker size to 100
-        axs[0, 0].scatter(range(nFiles), np.array(RawYieldsDplus)/RawYieldsDplus[0], c='dodgerblue', label='$D^+$', s=100)  # Increase marker size to 100
+        axs[0, 0].scatter(range(len(RawYieldsDs)), np.array(RawYieldsDs)/RawYieldsDs[0], c='r',  label='$D_s^+$', s=100)  # Increase marker size to 100
+        axs[0, 0].scatter(range(len(RawYieldsDs)), np.array(RawYieldsDplus)/RawYieldsDplus[0], c='dodgerblue', label='$D^+$', s=100)  # Increase marker size to 100
         axs[0, 0].set_title('Raw Yields', fontsize=20)
         axs[0, 0].set_ylabel('Raw Yield/Raw Yield (central)', fontsize=16)
         axs[0, 0].set_xlabel('Cut set', fontsize=16)
@@ -176,8 +191,8 @@ def PlotCutVariationsOnePtBin(cfgFileName):
         # Efficiencies
         yerrDsPrompt = np.array(EffPromptsDs)/EffPromptsDs[0]*np.sqrt(np.square(np.array(EffPromptsDsErr)/np.array(EffPromptsDs)) + (EffPromptsDsErr[0]/EffPromptsDs[0])**2)
         yerrDsFD = np.array(EffFDsDs)/EffFDsDs[0]*np.sqrt(np.square(np.array(EffFDsDsErr)/np.array(EffFDsDs)) + (EffFDsDsErr[0]/EffFDsDs[0])**2)
-        axs[0, 1].scatter(range(nFiles), np.array(EffPromptsDs)/EffPromptsDs[0], c='r', label='Prompt $D_s^+$', s=100)  # Increase marker size to 100
-        axs[0, 1].scatter(range(nFiles), np.array(EffFDsDs)/EffFDsDs[0], c='dodgerblue', label='FD $D_s^+$', s=100)  # Increase marker size to 100
+        axs[0, 1].scatter(range(len(RawYieldsDs)), np.array(EffPromptsDs)/EffPromptsDs[0], c='r', label='Prompt $D_s^+$', s=100)  # Increase marker size to 100
+        axs[0, 1].scatter(range(len(RawYieldsDs)), np.array(EffFDsDs)/EffFDsDs[0], c='dodgerblue', label='FD $D_s^+$', s=100)  # Increase marker size to 100
         axs[0, 1].set_title('Efficiencies $D_s^+$', fontsize=20)
         axs[0, 1].set_ylabel('Efficiency/Efficiency (central)', fontsize=16)
         axs[0, 1].set_xlabel('Cut set', fontsize=16)
@@ -186,8 +201,8 @@ def PlotCutVariationsOnePtBin(cfgFileName):
         # Efficiencies
         yerrDplusPrompt = np.array(EffPromptsDplus)/EffPromptsDplus[0]*np.sqrt(np.square(np.array(EffPromptsDplusErr)/np.array(EffPromptsDplus)) + (EffPromptsDplusErr[0]/EffPromptsDplus[0])**2)
         yerrDplusFD = np.array(EffFDsDplus)/EffFDsDplus[0]*np.sqrt(np.square(np.array(EffFDsDplusErr)/np.array(EffFDsDplus)) + (EffFDsDplusErr[0]/EffPromptsDplus[0])**2)
-        axs[0, 2].scatter(range(nFiles), np.array(EffPromptsDplus)/EffPromptsDplus[0], c='r', label='Prompt $D^+$', s=100)  # Increase marker size to 100
-        axs[0, 2].scatter(range(nFiles), np.array(EffFDsDplus)/EffFDsDplus[0], c='dodgerblue', label='FD $D^+$', s=100)  # Increase marker size to 100
+        axs[0, 2].scatter(range(len(RawYieldsDs)), np.array(EffPromptsDplus)/EffPromptsDplus[0], c='r', label='Prompt $D^+$', s=100)  # Increase marker size to 100
+        axs[0, 2].scatter(range(len(RawYieldsDs)), np.array(EffFDsDplus)/EffFDsDplus[0], c='dodgerblue', label='FD $D^+$', s=100)  # Increase marker size to 100
         axs[0, 2].set_title('Efficiencies $D^+$', fontsize=20)
         axs[0, 2].set_ylabel('Efficiency/Efficiency (central)', fontsize=16)
         axs[0, 2].set_xlabel('Cut set', fontsize=16)
@@ -200,23 +215,23 @@ def PlotCutVariationsOnePtBin(cfgFileName):
         # Skip for now
 
         # Significance
-        axs[1, 0].errorbar(range(nFiles), np.array(SignificancesDs), yerr=np.array(SignificancesDsErr), fmt='o', c='r', label='$D_s^+$', markersize=10)  # Increase marker size to 10
-        axs[1, 0].errorbar(range(nFiles), np.array(SignificancesDplus), yerr=np.array(SignificancesDplusErr), fmt='o', c='dodgerblue', label='$D^+$', markersize=10)  # Increase marker size to 10
+        axs[1, 0].errorbar(range(len(RawYieldsDs)), np.array(SignificancesDs), yerr=np.array(SignificancesDsErr), fmt='o', c='r', label='$D_s^+$', markersize=10)  # Increase marker size to 10
+        axs[1, 0].errorbar(range(len(RawYieldsDs)), np.array(SignificancesDplus), yerr=np.array(SignificancesDplusErr), fmt='o', c='dodgerblue', label='$D^+$', markersize=10)  # Increase marker size to 10
         axs[1, 0].set_title('Significance', fontsize=20)
         axs[1, 0].set_ylabel('Significance', fontsize=16)
         axs[1, 0].set_xlabel('Cut set', fontsize=16)
         axs[1, 0].legend(fontsize=14)
 
         # S/B
-        axs[1, 1].errorbar(range(nFiles), np.array(SoverBsDs), yerr=np.array(SoverBsDsErr), fmt='o', c='r', label='$D_s^+$', markersize=10)  # Increase marker size to 10
-        axs[1, 1].errorbar(range(nFiles), np.array(SoverBsDplus), yerr=np.array(SoverBsDplusErr), fmt='o', c='dodgerblue', label='$D^+$', markersize=10)  # Increase marker size to 10
+        axs[1, 1].errorbar(range(len(RawYieldsDs)), np.array(SoverBsDs), yerr=np.array(SoverBsDsErr), fmt='o', c='r', label='$D_s^+$', markersize=10)  # Increase marker size to 10
+        axs[1, 1].errorbar(range(len(RawYieldsDs)), np.array(SoverBsDplus), yerr=np.array(SoverBsDplusErr), fmt='o', c='dodgerblue', label='$D^+$', markersize=10)  # Increase marker size to 10
         axs[1, 1].set_title('S/B', fontsize=20)
         axs[1, 1].set_ylabel('S/B', fontsize=16)
         axs[1, 1].set_xlabel('Cut set', fontsize=16)
         axs[1, 1].legend(fontsize=14)
 
         # Ratio
-        axs[1, 2].errorbar(range(nFiles), np.array(Ratios), yerr=np.array(RatiosErr), fmt='o', c='k', markersize=10)  # Increase marker size to 10
+        axs[1, 2].errorbar(range(len(RawYieldsDs)), np.array(Ratios), yerr=np.array(RatiosErr), fmt='o', c='k', markersize=10)  # Increase marker size to 10
         axs[1, 2].set_title('Ratio', fontsize=20)
         axs[1, 2].set_ylabel('Ratio', fontsize=16)
         axs[1, 2].set_xlabel('Cut set', fontsize=16)
@@ -228,13 +243,29 @@ def PlotCutVariationsOnePtBin(cfgFileName):
         axs[1, 3].set_xlabel('Ratio/Ratio (central)', fontsize=16)
 
         rms = np.std(Ratios)
-        axs[1, 3].add_patch(Rectangle((1 - rms, 0), 2*rms, axs[1, 3].get_ylim()[1], facecolor="dodgerblue", alpha=0.4, ec='darkblue', lw=5, label='RMS'))
+        mean = np.mean(Ratios)
+        rmsAndShift = np.sqrt(rms**2 + (mean/Ratios[0] - 1)**2)
+
+        print(f"{hRawYieldsDs[0].GetBinLowEdge(iPt+1)} < pT < {hRawYieldsDs[0].GetBinLowEdge(iPt+1)+hRawYieldsDs[0].GetBinWidth(iPt+1)}: RMS+shift = {rmsAndShift}")
+        hSyst.SetBinContent(iPt+1, rmsAndShift)
+        hSyst.SetBinError(iPt+1, 0)
+
+        axs[1, 3].add_patch(Rectangle((1 - rmsAndShift, 0), 2*rmsAndShift, axs[1, 3].get_ylim()[1], facecolor="dodgerblue", alpha=0.4, ec='darkblue', lw=5, label='$\sqrt{RMS^2 + shift^2}$'))
         syst = config['plots']['relassignedsyst'][iPt]
         axs[1, 3].add_patch(Rectangle((1 - syst, 0), 2*syst, axs[1, 3].get_ylim()[1], facecolor="r", alpha=0.5, ec='firebrick', lw=5, label='Assigned syst'))
 
+        xMax = max(1+rmsAndShift, 1+syst, max(Ratios)/Ratios[0])
+        xMin = min(1-rmsAndShift, 1-syst, min(Ratios)/Ratios[0])
+        axs[1, 3].set_xlim(xMin*0.95, xMax*1.05)
+
         axs[1, 3].legend(fontsize=14)
-        # Save figure
+
+        # Save figure and ROOT file
         plt.savefig(f"{outFileName}_pt_{hRawYieldsDs[0].GetBinLowEdge(iPt+1)}_{hRawYieldsDs[0].GetBinLowEdge(iPt+1)+hRawYieldsDs[0].GetBinWidth(iPt+1)}.png", bbox_inches='tight')
+
+    outFile = ROOT.TFile(f"{outFileName}.root", "RECREATE")
+    hSyst.Write()
+    outFile.Close()
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser(description='Plot cut variations for one pt bin')

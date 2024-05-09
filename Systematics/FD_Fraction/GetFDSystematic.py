@@ -2,14 +2,18 @@ import ROOT
 import numpy as np
 import itertools
 
-Ds_FullFileName = "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds/CutVarDs_pp13TeV_MB_newMC.root"
-Dplus_FullFileName = "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Dplus/CutVarDplus_pp13TeV_MB_newMC.root"
-Ds_CentralFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/Central/Ds/CutVarDs_pp13TeV_MB_newMC.root"
-Dplus_CentralFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/Central/Dplus/CutVarDplus_pp13TeV_MB_newMC.root"
-Ds_FirstFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/First/Ds/CutVarDs_pp13TeV_MB_newMC.root"
-Dplus_FirstFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/First/Dplus/CutVarDplus_pp13TeV_MB_newMC.root"
-Ds_LastFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/Last/Ds/CutVarDs_pp13TeV_MB_newMC.root"
-Dplus_LastFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/Last/Dplus/CutVarDplus_pp13TeV_MB_newMC.root"
+Ds_FullFileName = "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds/CutVarDs_pp13TeV_MB_LHC24d3a.root"
+Dplus_FullFileName = "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Dplus/CutVarDplus_pp13TeV_MB_LHC24d3a.root"
+Ds_CentralFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/Central/Ds/CutVarDs_pp13TeV_MB_LHC24d3a.root"
+Dplus_CentralFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/Central/Dplus/CutVarDplus_pp13TeV_MB_LHC24d3a.root"
+Ds_FirstFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/First/Ds/CutVarDs_pp13TeV_MB_LHC24d3a.root"
+Dplus_FirstFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/First/Dplus/CutVarDplus_pp13TeV_MB_LHC24d3a.root"
+Ds_LastFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/Last/Ds/CutVarDs_pp13TeV_MB_LHC24d3a.root"
+Dplus_LastFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/Last/Dplus/CutVarDplus_pp13TeV_MB_LHC24d3a.root"
+
+ROOT.gStyle.SetPalette(ROOT.kRainbow)
+
+AssignedSyst = [0.02, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.03, 0.03]
 
 # Open the files and get the fractions
 Ds_FullFile = ROOT.TFile(Ds_FullFileName)
@@ -63,30 +67,42 @@ hDsLast.SetName("hDsLast")
 hDplusLast.SetName("hDplusLast")
 
 # Get the systematic errors
-hSys = hDsFull.Clone("hSys")
-for iPt in range(1, hSys.GetNbinsX()+1):
+hRMS = hDsFull.Clone("hRMS")
+hSyst = hDsFull.Clone("hSyst")
+hCombinations = []
+for i in range(16):
+    hComb = hDsFull.Clone(f"hComb{i}")
+    hCombinations.append(hComb)
+
+for iPt in range(1, hRMS.GetNbinsX()+1):
     fracDs = [hDsFull.GetBinContent(iPt), hDsCentral.GetBinContent(iPt), hDsFirst.GetBinContent(iPt), hDsLast.GetBinContent(iPt)]
     fracDplus = [hDplusFull.GetBinContent(iPt), hDplusCentral.GetBinContent(iPt), hDplusFirst.GetBinContent(iPt), hDplusLast.GetBinContent(iPt)]
     combs = itertools.product(fracDs, fracDplus)
     ratios = []
-    for comb in combs:
+    for iComb, comb in enumerate(combs):
         ratios.append(comb[0]/comb[1])
+        hCombinations[iComb].SetBinContent(iPt, comb[0]/comb[1])
+        hCombinations[iComb].SetBinError(iPt, 1.e-8)
     syst = np.std(ratios)
-    hSys.SetBinContent(iPt, syst)
-    hSys.SetBinError(iPt, 0)
-    print(f"{hSys.GetBinLowEdge(iPt)} < pT < {hSys.GetBinLowEdge(iPt)+hSys.GetBinWidth(iPt)}: ", syst)
+    hRMS.SetBinContent(iPt, syst)
+    hRMS.SetBinError(iPt, 0)
+    print(f"{hRMS.GetBinLowEdge(iPt)} < pT < {hRMS.GetBinLowEdge(iPt)+hRMS.GetBinWidth(iPt)}: ", syst)
+    hSyst.SetBinContent(iPt, AssignedSyst[iPt-1])
+    hSyst.SetBinError(iPt, 0)
 
 # Save the histograms
 outputFile = ROOT.TFile("/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/FDSystematic.root", "RECREATE")
 
 canvasSyst = ROOT.TCanvas("canvasSyst", "canvasSyst", 800, 600)
 canvasSyst.DrawFrame(0, 0, 24, 0.2, ";#it{p}_{T} (GeV/#it{c});Syst")
-hSys.Draw("hist same")
+hRMS.Draw("hist same")
 canvasSyst.Write()
+hRMS.Write("hRMS")
+hSyst.Write("hSyst")
 
 
 ROOT.gStyle.SetOptStat(0)
-ROOT.gStyle.SetPalette(ROOT.kBird)
+ROOT.gStyle.SetPalette(ROOT.kRainbow)
 canvasDs = ROOT.TCanvas("canvasDs", "canvasDs", 800, 600)#
 canvasDs.DrawFrame(0, 0.5, 24, 1.5, ";#it{p}_{T} (GeV/#it{c});#it{f}_{D_{s}^{+}}")
 hDsFull.Draw("pe PLC PMC same")
@@ -119,5 +135,13 @@ legendDplus.SetBorderSize(0)
 legendDplus.SetFillStyle(0)
 legendDplus.Draw()
 canvasDplus.Write()
+ROOT.gStyle.SetErrorX(1)
+canvasCombinations = ROOT.TCanvas("canvasCombinations", "canvasCombinations", 800, 600)
+canvasCombinations.DrawFrame(0, 0.5, 24, 1.5, ";#it{p}_{T} (GeV/#it{c});#it{f}_{D_{s}^{+}}/#it{f}_{D^{+}}")
+for hComb in hCombinations:
+    hComb.Draw("pe PLC PMC same")
+canvasCombinations.Write()
 
 outputFile.Close()
+
+canvasCombinations.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/test.png")

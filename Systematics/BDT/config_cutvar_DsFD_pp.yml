@@ -1,44 +1,59 @@
 inputs:
     directory: /home/fchinu/Run3/Ds_pp_13TeV/Systematics/BDT
     commonfilenames:
-        rawyield: RawYields/RawYields_data_ML_
-        efficiency: Efficiency/Efficiency__ML_
-        ratios: Ratios/Ratio__ML_
+        rawyield: RawYields/RawYields_data_ML__
+        efficiency: Efficiency_LHC24d3a/Efficiency__ML__
+        ratios: Ratios_LHC24d3a/Ratio__ML__
     cutsets: [  
-                _outBkg_pos00,
-                _outBkg_neg01,
-                _outBkg_neg02,
-                _outBkg_neg03,
-                _outBkg_neg04,
-                _outBkg_neg05,
-                _outBkg_neg06,
-                _outBkg_neg07,
-                _outBkg_neg08,
-                _outBkg_neg09,
-                _outBkg_neg10,
-                _outBkg_neg11,
-                _outBkg_neg12,
-                _outBkg_neg13,
-                _outBkg_neg14,
-                _outBkg_neg15,
-                _outBkg_neg16,
-                _outBkg_neg17,
-                _outBkg_neg18,
-                _outBkg_neg19,
-                _outBkg_neg20,
-                _outBkg_pos01,
-                _outBkg_pos02,
-                _outBkg_pos03,
-                _outBkg_pos04,
-                _outBkg_pos05,
-                _outBkg_pos06,
-                _outBkg_pos07,
-                _outBkg_pos08,
-                _outBkg_pos09,
-                _outBkg_pos10,
-                _outBkg_pos11,
-                _outBkg_pos12,
-                _outBkg_pos13
+            outBkg_pos00_outPrompt_pos00,
+            outBkg_pos00_outPrompt_neg01,
+            outBkg_pos00_outPrompt_neg02,
+            outBkg_pos00_outPrompt_neg03,
+            outBkg_pos00_outPrompt_pos01,
+            outBkg_pos00_outPrompt_pos02,
+            outBkg_pos00_outPrompt_pos03,
+            outBkg_neg03_outPrompt_neg01,
+            outBkg_neg03_outPrompt_neg02,
+            outBkg_neg03_outPrompt_neg03,
+            outBkg_neg03_outPrompt_pos00,
+            outBkg_neg03_outPrompt_pos01,
+            outBkg_neg03_outPrompt_pos02,
+            outBkg_neg03_outPrompt_pos03,
+            outBkg_neg02_outPrompt_neg01,
+            outBkg_neg02_outPrompt_neg02,
+            outBkg_neg02_outPrompt_neg03,
+            outBkg_neg02_outPrompt_pos00,
+            outBkg_neg02_outPrompt_pos01,
+            outBkg_neg02_outPrompt_pos02,
+            outBkg_neg02_outPrompt_pos03,
+            outBkg_neg01_outPrompt_neg01,
+            outBkg_neg01_outPrompt_neg02,
+            outBkg_neg01_outPrompt_neg03,
+            outBkg_neg01_outPrompt_pos00,
+            outBkg_neg01_outPrompt_pos01,
+            outBkg_neg01_outPrompt_pos02,
+            outBkg_neg01_outPrompt_pos03,
+            outBkg_pos01_outPrompt_neg01,
+            outBkg_pos01_outPrompt_neg02,
+            outBkg_pos01_outPrompt_neg03,
+            outBkg_pos01_outPrompt_pos00,
+            outBkg_pos01_outPrompt_pos01,
+            outBkg_pos01_outPrompt_pos02,
+            outBkg_pos01_outPrompt_pos03,
+            outBkg_pos02_outPrompt_neg01,
+            outBkg_pos02_outPrompt_neg02,
+            outBkg_pos02_outPrompt_neg03,
+            outBkg_pos02_outPrompt_pos00,
+            outBkg_pos02_outPrompt_pos01,
+            outBkg_pos02_outPrompt_pos02,
+            outBkg_pos02_outPrompt_pos03,
+            outBkg_pos03_outPrompt_neg01,
+            outBkg_pos03_outPrompt_neg02,
+            outBkg_pos03_outPrompt_neg03,
+            outBkg_pos03_outPrompt_pos00,
+            outBkg_pos03_outPrompt_pos01,
+            outBkg_pos03_outPrompt_pos02,
+            outBkg_pos03_outPrompt_pos03
         ] # the first one must be the default
 
 outfilename: /home/fchinu/Run3/Ds_pp_13TeV/Systematics/BDT/output/BDT_syst
@@ -47,11 +62,11 @@ quality:
     maxchisquare: 2.
     minsignif: 3.
     minrelsignif: 0.5
-    minreleff: 0.3
+    minreleff: 0.6
     maxreleff: 2.5
     fillthrreleff: 0.005
 
 plots:
     plotrelativevar: 1 # 0 -> false, 1 -> true
-    relassignedsyst: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01] # list of values to be plotted, null if you don't want to plot it
+    relassignedsyst: [0.05, 0.05, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02] # list of values to be plotted, null if you don't want to plot it
   
