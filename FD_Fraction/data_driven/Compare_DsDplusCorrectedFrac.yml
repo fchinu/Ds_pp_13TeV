@@ -1,0 +1,61 @@
+inputs:
+    dirname: null # leave null if not common for all input files
+    filenames: [/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Ds/CutVarDs_pp13TeV_MB.root,
+                /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Dplus/CutVarDplus_pp13TeV_MB.root]
+    objectnames: [hCorrFracPrompt, hCorrFracPrompt] # can be either histograms of graphs or a mix of them; they will be drawn in the current order
+
+output: 
+    filename: /home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/Compare_DsDplus_CorrFrac # with path and w/o extension
+    extensions: [pdf] # possibilities: pdf, eps, png, root
+
+options:
+    ROOTobject: [TH1, TH1, TH1, TH1, TH1, TH1, TH1, TH1, TH1] # TH1 or TGraph: no need to specify TH1F, TH1D or TGraphErrors, TGraphAsymmErrors
+    scale: [1., 1., 1., 1., 1., 1., 1., 1., 1.]
+    lambdaParams: [1., 1., 1., 1., 1., 1., 1., 1., 1.] # counts -> (counts - 1) * lambda + 1
+    normalize: [false, false, false, false, false, false, false, false, false] # divide histogram by its area
+    colors: [kBlack, kRed+1, kAzure+4, kGreen+2, kOrange+7, kMagenta+1, kBlue, kCyan+3, kSpring-5]
+    markers: [kFullCircle, kFullCircle, kFullCircle, kFullCircle, kFullCircle, kFullCircle, kFullCircle, kFullCircle, kFullCircle]
+    markersize: 2.5
+    linewidth: 5
+    fillstyle: [1,1,1,1]
+    fillalpha: [1,1,1,1]
+    drawopt: [e, e, e, e, e, e, e, e, e]
+    
+    ratio: 
+        enable: true
+        uncertainties:
+            enable: false
+            corr: false
+        displayRMS: true
+
+    errcomp: # comparison of uncertainties
+        enable: false
+        relative: true
+
+    legend:
+        avoid: false #set true to avoid the legend in the final plot
+        xlimits: [0.2, 0.6]
+        ylimits: [0.85, 0.9]
+        header: null
+        titles: [Run3,Run2]
+        options: [lp, lp, lp, lp, lp, lp, lp, lp, lp]
+        textsize: 0.045
+        ncolumns: 2
+
+    canvas:
+        width: 1920
+        heigth: 1080
+        xaxistitle: '#it{p}_{T} (GeV/#it{c})'
+        yaxistitle: '#it{f}_{prompt}'
+        xlimits: [0.5, 24.]
+        ylimits: [0.8, 1.]
+        ylimitsratio: [0.8, 1.05]
+        ylimitserr: [0., 0.35]
+        logy: false
+        logx: false
+        ratio:
+            logy: false
+            logx: false
+        errcomp:
+            logy: false
+            logx: false  

@@ -92,7 +92,7 @@ canvas:
       log_scale: true
 
 text:
-  - content: 'ALICE Preliminary'
+  - content: 'This Work'
     x: 0.18
     y: 0.91
     size: 0.05
@@ -146,4 +146,4 @@ horizontal_line:
   line_style: 9  # Use appropriate ROOT line style constant
 
 
-output_file: '/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiency_newMC.pdf'
+output_file: '/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiency_newMC.png'
