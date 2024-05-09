@@ -35,7 +35,7 @@ for mass, pt in zip(df["massKaKaPi"], df["ptD"]):
     histo2d.Fill(pt, mass)
 
 ROOT.gStyle.SetOptStat(0)
-ROOT.gStyle.SetPadTopMargin(0.05)
+ROOT.gStyle.SetPadTopMargin(0.1)
 ROOT.gStyle.SetPadLeftMargin(0.17)
 ROOT.gStyle.SetPadRightMargin(0.05)
 ROOT.gStyle.SetPadBottomMargin(0.13)
