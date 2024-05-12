@@ -1,4 +1,5 @@
 import ROOT 
+import numpy as np
 
 
 TransparentBlue = ROOT.TColor.GetFreeColorIndex()
@@ -6,8 +7,11 @@ cTransparentBlue = ROOT.TColor(TransparentBlue, 79./255, 123./255, 161./255, 'Tr
 
 # ALICE comparison
 
-ratioFileName = '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/DsOverDplus_newMC.root'
-systFileName = '/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/SystUncertainties.root'
+ratioFileName = '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/DsOverDplus_LHC24d3a.root'
+systFileNameRawYields = '/home/fchinu/Run3/Ds_pp_13TeV/Systematics/RawYields/SystUncertainties.root'
+systFileNameBDT = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/BDT/output/BDT_syst.root"
+systFileNameFD = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/FDSystematic.root"
+systFileNameTopo = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/Results/SystUncertainty.root"
 Alice5TevFileName = '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/pp_data/RatioComparisonVsEnergy.root'
 Alice7TevFileName = '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/pp_data/RatioComparisonVsEnergy.root'
 Alice13TevFileName = '/home/fchinu/Run3/Ds_pp_13TeV/Ratios/pp_data/RatioComparisonVsEnergy.root'
@@ -17,16 +21,34 @@ hRatio = ratioFile.Get('hRatio')
 hRatio.SetDirectory(0)
 ratioFile.Close()
 
-systFile = ROOT.TFile(systFileName)
-hSystRel = systFile.Get('hSystRel')
-hSystRel.SetDirectory(0)
-systFile.Close()
+systFileRawYields = ROOT.TFile(systFileNameRawYields)
+hSystRawYields = systFileRawYields.Get('hSyst')
+hSystRawYields.SetDirectory(0)
+systFileRawYields.Close()
 
-gSyst = ROOT.TGraphErrors(hSystRel)
+systFileBDT = ROOT.TFile(systFileNameBDT)
+hSystBDT = systFileBDT.Get('hSyst')
+hSystBDT.SetDirectory(0)
+systFileBDT.Close()
+
+systFileFD = ROOT.TFile(systFileNameFD)
+hSystFD = systFileFD.Get('hSyst')
+hSystFD.SetDirectory(0)
+systFileFD.Close()
+
+systFileTopo = ROOT.TFile(systFileNameTopo)
+hSystTopo = systFileTopo.Get('hSyst')
+hSystTopo.SetDirectory(0)
+systFileTopo.Close()
+
+gSyst = ROOT.TGraphErrors(hSystRawYields)
 
 for iPt in range(gSyst.GetN()):
-    gSyst.SetPointError(iPt, 0.2, gSyst.GetPointY(iPt)*hRatio.GetBinContent(iPt+1))
+    unc = np.sqrt(hSystRawYields.GetBinContent(iPt+1)**2 + hSystBDT.GetBinContent(iPt+1)**2 + hSystFD.GetBinContent(iPt+1)**2 + hSystTopo.GetBinContent(iPt+1)**2)
+    print(f"{hSystRawYields.GetBinLowEdge(iPt+1)} < pT < {hSystRawYields.GetBinLowEdge(iPt+1)+hSystRawYields.GetBinWidth(iPt+1)}: ", unc)
+    gSyst.SetPointError(iPt, 0.2, unc*hRatio.GetBinContent(iPt+1))
     gSyst.SetPointY(iPt, hRatio.GetBinContent(iPt+1))
+
 
 Alice5TevFile = ROOT.TFile(Alice5TevFileName)
 hAlice5Tev = Alice5TevFile.Get('hDsOverDplus_5TeV')
@@ -129,7 +151,7 @@ ROOT.gPad.SetRightMargin(0.05)
 ROOT.gPad.SetTopMargin(0.05)
 ROOT.gPad.SetBottomMargin(0.1)
 
-hFrame = canvas.DrawFrame(0, 0, 24, 1, ';#it{p}_{T} (GeV/c);D_{s}^{+}/D^{+}')
+hFrame = canvas.DrawFrame(0, 0, 36, 1, ';#it{p}_{T} (GeV/c);D_{s}^{+}/D^{+}')
 hFrame.GetXaxis().SetTitleOffset(1.2)
 gAlice5Tev.Draw('5 same')
 gAlice7Tev.Draw('5 same')
@@ -145,45 +167,99 @@ hRatio.Draw('p same')
 hRatioBorder.Draw('p same')
 canvas.Update()
 
-textALICE = ROOT.TLatex(0.15, 0.9, 'This Work')
+textALICE = ROOT.TLatex(0.15, 0.9, 'ALICE Preliminary')
 textALICE.SetNDC()
 textALICE.SetTextFont(42)
 textALICE.SetTextSize(0.05)
 textALICE.Draw()
 
-textpp = ROOT.TLatex(0.155, 0.85, 'pp collisions')
+textpp = ROOT.TLatex(0.65, 0.9, 'pp collisions')
 textpp.SetNDC()
 textpp.SetTextFont(42)
 textpp.SetTextSize(0.04)
 textpp.Draw()
 
-texty = ROOT.TLatex(0.155, 0.8, '|#it{y}|<0.5')
+texty = ROOT.TLatex(0.65, 0.85, '|#it{y}|<0.5')
 texty.SetNDC()
 texty.SetTextFont(42)
 texty.SetTextSize(0.04)
 texty.Draw()
 
-text = ROOT.TLatex(0.3, 0.35, 'Prompt D_{s}^{+}, D^{+}')
+textDsDecay = ROOT.TLatex(0.65, 0.79, 'D_{s}^{+}#rightarrow #phi#pi^{+}#rightarrow K^{+}K^{#font[122]{-}}#pi^{+} ')
+textDsDecay.SetNDC()
+textDsDecay.SetTextFont(42)
+textDsDecay.SetTextSize(0.035)
+textDsDecay.Draw()
+
+textDsDecayConj = ROOT.TLatex(0.65, 0.75, 'and charge conj.')
+textDsDecayConj.SetNDC()
+textDsDecayConj.SetTextFont(42)
+textDsDecayConj.SetTextSize(0.035)
+textDsDecayConj.Draw()
+
+textDecay = ROOT.TLatex(0.155, 0.84, 'D^{+}#rightarrow #phi#pi^{+}#rightarrow K^{+}K^{#font[122]{-}}#pi^{+} ')
+textDecay.SetNDC()
+textDecay.SetTextFont(42)
+textDecay.SetTextSize(0.035)
+textDecay.Draw()
+
+textDecayConj = ROOT.TLatex(0.155, 0.8, 'and charge conj.')
+textDecayConj.SetNDC()
+textDecayConj.SetTextFont(42)
+textDecayConj.SetTextSize(0.035)
+textDecayConj.Draw()
+
+textBR = ROOT.TLatex(0.155, 0.755, 'BR unc. (not shown):^{#lower[5]{+3.7}}_{#lower[-0.2]{#font[122]{-}4.0}}#it{%} ')
+textBR.SetNDC()
+textBR.SetTextFont(42)
+textBR.SetTextSize(0.03)
+textBR.Draw()
+
+Thislegend = ROOT.TLegend(0.155, 0.695, 0.355, 0.745)
+Thislegend.SetBorderSize(0)
+Thislegend.SetTextSize(0.027)
+Thislegend.SetFillStyle(0)
+Thislegend.AddEntry(hRatio, '#sqrt{s} = 13.6 TeV', 'lp')
+Thislegend.Draw()
+
+ThislegendBorder = ROOT.TLegend(0.155, 0.695, 0.355, 0.745)
+ThislegendBorder.SetBorderSize(0)
+ThislegendBorder.SetTextSize(0.027)
+ThislegendBorder.SetFillStyle(0)
+ThislegendBorder.AddEntry(hRatioBorder, '#sqrt{s} = 13.6 TeV', 'lp')
+ThislegendBorder.Draw()
+
+text = ROOT.TLatex(0.25, 0.35, 'D^{+}#rightarrow #pi^{+}K^{#font[122]{-}}#pi^{+}')
 text.SetNDC()
 text.SetTextFont(42)
-text.SetTextSize(0.04)
+text.SetTextSize(0.035)
 text.Draw()
 
-legend = ROOT.TLegend(0.3, 0.14, 0.5, 0.34)
+textConj = ROOT.TLatex(0.25, 0.31, 'and charge conj.')
+textConj.SetNDC()
+textConj.SetTextFont(42)
+textConj.SetTextSize(0.035)
+textConj.Draw()
+
+textBRGoldenDplus = ROOT.TLatex(0.25, 0.27, 'BR unc. (not shown): 3.2#kern[-0.5]{#it{%}}')
+textBRGoldenDplus.SetNDC()
+textBRGoldenDplus.SetTextFont(42)
+textBRGoldenDplus.SetTextSize(0.03)
+textBRGoldenDplus.Draw()
+
+legend = ROOT.TLegend(0.25, 0.14, 0.4, 0.26)
 legend.SetBorderSize(0)
 legend.SetTextSize(0.027)
 legend.SetFillStyle(0)
-legend.AddEntry(hRatio, '#sqrt{s} = 13.6 TeV', 'lp')
 legend.AddEntry(hAlice13Tev, '#sqrt{s} = 13 TeV, JHEP12(2023)086', 'lp')
 legend.AddEntry(hAlice7Tev, '#sqrt{s} = 7 TeV, EPJC - s10052-019-6873-6', 'lp')
 legend.AddEntry(hAlice5Tev, '#sqrt{s} = 5 TeV, JHEP05(2021)220', 'lp')
 legend.Draw()
 
-legendBorder = ROOT.TLegend(0.3, 0.14, 0.5, 0.34)
+legendBorder = ROOT.TLegend(0.25, 0.14, 0.4, 0.26)
 legendBorder.SetBorderSize(0)
 legendBorder.SetTextSize(0.027)
 legendBorder.SetFillStyle(0)
-legendBorder.AddEntry(hRatioBorder, '#sqrt{s} = 13.6 TeV', 'lp')
 legendBorder.AddEntry(hAlice13TevBorder, '#sqrt{s} = 13 TeV', 'lp')
 legendBorder.AddEntry(hAlice7TevBorder, '#sqrt{s} = 7 TeV', 'lp')
 legendBorder.AddEntry(hAlice5TevBorder, '#sqrt{s} = 5 TeV', 'lp')
@@ -193,3 +269,4 @@ legendBorder.Draw()
 
 canvas.SaveAs('/home/fchinu/Run3/Ds_pp_13TeV/Figures/Ratio/DsOverDplusComparisonALICE.png')
 canvas.SaveAs('/home/fchinu/Run3/Ds_pp_13TeV/Figures/Ratio/DsOverDplusComparisonALICE.pdf')
+canvas.SaveAs('/home/fchinu/Run3/Ds_pp_13TeV/Figures/Ratio/DsOverDplusComparisonALICE.eps')
