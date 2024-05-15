@@ -130,7 +130,7 @@ ROOT.gPad.SetRightMargin(0.05)
 ROOT.gPad.SetTopMargin(0.05)
 ROOT.gPad.SetBottomMargin(0.1)
 
-hFrame = canvas.DrawFrame(0, 0, 24, 1.5, ';#it{p}_{T} (GeV/c);D_{s}^{+}/D^{+}')
+hFrame = canvas.DrawFrame(0, 0, 24, 1.3, ';#it{p}_{T} (GeV/c);D_{s}^{+}/D^{+}')
 hFrame.GetXaxis().SetTitleOffset(1.2)
 hHTL.Draw('L same')
 hLQCD.Draw('L same')
