@@ -3,6 +3,8 @@ inputs:
     commonfilenames:
         rawyield: RawYields/RawYields_data_ML__
         efficiency: Efficiency_LHC24d3a/Efficiency__ML__
+        prompt_frac_ds: Prompt_Fraction/PromptFracDs__ML__
+        prompt_frac_dplus: Prompt_Fraction/PromptFracDplus__ML__
         ratios: Ratios_LHC24d3a/Ratio__ML__
     cutsets: [  
             outBkg_pos00_outPrompt_pos00,
@@ -68,5 +70,5 @@ quality:
 
 plots:
     plotrelativevar: 1 # 0 -> false, 1 -> true
-    relassignedsyst: [0.05, 0.05, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02] # list of values to be plotted, null if you don't want to plot it
+    relassignedsyst: [0.10, 0.05, 0.03, 0.03, 0.02, 0.02, 0.01, 0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02] # list of values to be plotted, null if you don't want to plot it
   

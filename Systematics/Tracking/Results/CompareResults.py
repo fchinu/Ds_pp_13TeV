@@ -8,13 +8,13 @@ from StyleFormatter import SetGlobalStyle
 ColsToUse = [ROOT.kRed,ROOT.kAzure+3,ROOT.kTeal-7]
 SetGlobalStyle(padrightmargin=0.05, padleftmargin=0.15, padbottommargin=0.13, padtopmargin=0.05, opttitle=0, titleoffsetx=1.2, titleoffsety=1.5)
 
-AssignedSyst = [0.08, 0.03, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02]
+AssignedSyst = [0.08, 0.02, 0.02, 0.02, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.02]
 
 #################
 # Efficiency
 #################
 
-EffCentralFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiencies_newestMC.root"
+EffCentralFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/Efficiencies_LHC24d3a.root"
 EffPtSmearingFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/ptSmearing/Efficiency/Efficiency.root"
 EffWorseResoPullsFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/worseResoPullsData1p1/Efficiency/Efficiency.root"
 
@@ -278,8 +278,8 @@ hFDDplusRatiosWorseResoPulls.Draw("e same")
 #################
 
 RatioCentralFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Ratios/DsOverDplus_LHC24d3a.root"
-RatioPtSmearingFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/ptSmearing/Ratio/DsOverDplus_newMC.root"
-RatioWorseResoPullsFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/worseResoPullsData1p1/Ratio/DsOverDplus_newMC.root"
+RatioPtSmearingFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/ptSmearing/Ratio/DsOverDplus_LHC24d3a.root"
+RatioWorseResoPullsFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/worseResoPullsData1p1/Ratio/DsOverDplus_LHC24d3a.root"
 
 # Load the histograms
 

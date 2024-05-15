@@ -13,7 +13,7 @@ Dplus_LastFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/Last
 
 ROOT.gStyle.SetPalette(ROOT.kRainbow)
 
-AssignedSyst = [0.02, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.03, 0.03]
+AssignedSyst = [0.02, 0.02, 0.02, 0.01, 0.01, 0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02, 0.03, 0.04]
 
 # Open the files and get the fractions
 Ds_FullFile = ROOT.TFile(Ds_FullFileName)
@@ -137,9 +137,23 @@ legendDplus.Draw()
 canvasDplus.Write()
 ROOT.gStyle.SetErrorX(1)
 canvasCombinations = ROOT.TCanvas("canvasCombinations", "canvasCombinations", 800, 600)
-canvasCombinations.DrawFrame(0, 0.5, 24, 1.5, ";#it{p}_{T} (GeV/#it{c});#it{f}_{D_{s}^{+}}/#it{f}_{D^{+}}")
+canvasCombinations.Divide(2)
+canvasCombinations.cd(1).DrawFrame(0, 0.5, 24, 1.5, ";#it{p}_{T} (GeV/#it{c});#it{f}_{D_{s}^{+}}/#it{f}_{D^{+}}")
 for hComb in hCombinations:
     hComb.Draw("pe PLC PMC same")
+
+canvasCombinations.cd(2).DrawFrame(0, 0.5, 24, 1.5, ";#it{p}_{T} (GeV/#it{c});(#it{f}_{D_{s}^{+}}/#it{f}_{D^{+}}) / (Central #it{f}_{D_{s}^{+}}/#it{f}_{D^{+}})")
+CentralRatio = hDsFull.Clone("CentralRatio")
+CentralRatio.Divide(hDplusFull)
+
+hRatios = []
+for hComb in hCombinations:
+    hRatios.append(hComb.Clone(f"{hComb.GetName()}_Ratio"))
+
+for hRatio in hRatios:
+    hRatio.Divide(hRatio, CentralRatio, 1, 1)
+    hRatio.Draw("pe PLC PMC same")
+
 canvasCombinations.Write()
 
 outputFile.Close()

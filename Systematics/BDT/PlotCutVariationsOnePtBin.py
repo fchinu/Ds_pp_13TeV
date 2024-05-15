@@ -17,6 +17,8 @@ def PlotCutVariationsOnePtBin(cfgFileName):
     inDirName = config["inputs"]["directory"]
     inCommonFileNameRawY = config["inputs"]["commonfilenames"]["rawyield"]
     inCommonFileNameEff = config["inputs"]["commonfilenames"]["efficiency"]
+    inCommonFileNamePromptFracDs = config["inputs"]["commonfilenames"]["prompt_frac_ds"]
+    inCommonFileNamePromptFracDplus = config["inputs"]["commonfilenames"]["prompt_frac_dplus"]
     inCommonFileNameRatios = config["inputs"]["commonfilenames"]["ratios"]
     cutSetSuffix = config["inputs"]["cutsets"]
     nFiles = len(cutSetSuffix)
@@ -88,6 +90,16 @@ def PlotCutVariationsOnePtBin(cfgFileName):
         hEffFDsDplus[iFile].SetDirectory(0)
         infile_eff.Close()
 
+        infile_DsPromptFrac = ROOT.TFile.Open(f"{inDirName}/{inCommonFileNamePromptFracDs}{cutSetSuffix[iFile]}.root")
+        hPromptFracsDs.append(infile_DsPromptFrac.Get("hRawFracPrompt"))
+        hPromptFracsDs[iFile].SetDirectory(0)
+        infile_DsPromptFrac.Close()
+
+        infile_DplusPromptFrac = ROOT.TFile.Open(f"{inDirName}/{inCommonFileNamePromptFracDplus}{cutSetSuffix[iFile]}.root")
+        hPromptFracsDplus.append(infile_DplusPromptFrac.Get("hRawFracPrompt"))
+        hPromptFracsDplus[iFile].SetDirectory(0)
+        infile_DplusPromptFrac.Close()
+
     hSyst = hRawYieldsDs[0].Clone("hSyst")
 
     for iPt in range(hRawYieldsDs[0].GetNbinsX()):
@@ -155,8 +167,8 @@ def PlotCutVariationsOnePtBin(cfgFileName):
             EffPromptsDsErr.append(hEffPromptsDs[iFile].GetBinError(iPt+1))
             EffFDsDs.append(hEffFDsDs[iFile].GetBinContent(iPt+1))
             EffFDsDsErr.append(hEffFDsDs[iFile].GetBinError(iPt+1))
-            #PromptFracsDs.append(hPromptFracsDs[iFile].GetBinContent(iPt+1))
-            #PromptFracsDsErr.append(hPromptFracsDs[iFile].GetBinError(iPt+1))
+            PromptFracsDs.append(hPromptFracsDs[iFile].GetBinContent(iPt+1))
+            PromptFracsDsErr.append(hPromptFracsDs[iFile].GetBinError(iPt+1))
             #FDFracsDs.append(hFDFracsDs[iFile].GetBinContent(iPt+1))
             #FDFracsDsErr.append(hFDFracsDs[iFile].GetBinError(iPt+1))
 
@@ -170,8 +182,8 @@ def PlotCutVariationsOnePtBin(cfgFileName):
             EffPromptsDplusErr.append(hEffPromptsDplus[iFile].GetBinError(iPt+1))
             EffFDsDplus.append(hEffFDsDplus[iFile].GetBinContent(iPt+1))
             EffFDsDplusErr.append(hEffFDsDplus[iFile].GetBinError(iPt+1))
-            #PromptFracsDplus.append(hPromptFracsDplus[iFile].GetBinContent(iPt+1))
-            #PromptFracsDplusErr.append(hPromptFracsDplus[iFile].GetBinError(iPt+1))
+            PromptFracsDplus.append(hPromptFracsDplus[iFile].GetBinContent(iPt+1))
+            PromptFracsDplusErr.append(hPromptFracsDplus[iFile].GetBinError(iPt+1))
             #FDFracsDplus.append(hFDFracsDplus[iFile].GetBinContent(iPt+1))
             #FDFracsDplusErr.append(hFDFracsDplus[iFile].GetBinError(iPt+1))
         
@@ -209,10 +221,12 @@ def PlotCutVariationsOnePtBin(cfgFileName):
         axs[0, 2].legend(fontsize=14)
 
         # fprompt
+        axs[0, 3].scatter(range(len(RawYieldsDs)), np.array(PromptFracsDs)/PromptFracsDs[0], c='r', label='$D_s^+$', s=100)  # Increase marker size to 100
+        axs[0, 3].scatter(range(len(RawYieldsDs)), np.array(PromptFracsDplus)/PromptFracsDplus[0], c='dodgerblue', label='$D^+$', s=100)  # Increase marker size to 100
         axs[0, 3].set_title('Prompt fraction', fontsize=20)
         axs[0, 3].set_ylabel('Prompt fraction/Prompt fraction (central)', fontsize=16)
         axs[0, 3].set_xlabel('Cut set', fontsize=16)
-        # Skip for now
+        axs[0, 3].legend(fontsize=14)
 
         # Significance
         axs[1, 0].errorbar(range(len(RawYieldsDs)), np.array(SignificancesDs), yerr=np.array(SignificancesDsErr), fmt='o', c='r', label='$D_s^+$', markersize=10)  # Increase marker size to 10
