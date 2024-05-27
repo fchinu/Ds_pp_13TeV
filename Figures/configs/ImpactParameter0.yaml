@@ -1,8 +1,8 @@
 input_data:
-  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train162788/LHC22o_Train162788.parquet'
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Data/Train197246/LHC22o_pass6_small.parquet'
     histogram: 'Data'
-    dataframe_column: 'fImpactParameterXY'               # Draw the histogram of the column1 of the parquet file
-    selections: '4 < fPt < 6 and abs(fImpactParameterXY)<0.2'
+    dataframe_column: 'fImpactParameter0'               # Draw the histogram of the column1 of the parquet file
+    selections: '4 < fPt < 6 and (1.7 < fM < 1.75 or  2.1 < fM < 2.15)'
     color: 'kTeal-6'
     marker_style: 'kOpenCircle'
     marker_size: 1.0
@@ -14,10 +14,10 @@ input_data:
     fill_alpha: 0.5
     normalize: true
     draw_option: 'hist'
-  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train165701/Merged_LHC22b1a_Train165701_DsFD.parquet'
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train211613/LHC24d3_NonPromptDs.parquet'
     histogram: 'FD'
-    dataframe_column: 'fImpactParameterXY'               # Draw the histogram of the column1 of the parquet file
-    selections: '4 < fPt < 6 and abs(fImpactParameterXY)<0.2'
+    dataframe_column: 'fImpactParameter0'               # Draw the histogram of the column1 of the parquet file
+    selections: '4 < fPt < 6'
     color: 'kOrange-3'
     marker_style: 'kOpenCircle'
     marker_size: 1.0
@@ -29,10 +29,10 @@ input_data:
     fill_alpha: 1
     normalize: true
     draw_option: 'hist'
-  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Train165701/Merged_LHC22b1a_Train165701_DsPrompt.parquet'
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train211613/LHC24d3_PromptDs.parquet'
     histogram: 'Prompt'
-    dataframe_column: 'fImpactParameterXY'               # Draw the histogram of the column1 of the parquet file
-    selections: '4 < fPt < 6 and abs(fImpactParameterXY)<0.2'
+    dataframe_column: 'fImpactParameter0'               # Draw the histogram of the column1 of the parquet file
+    selections: '4 < fPt < 6'
     color: 'kBlue+3'
     marker_style: 'kOpenCircle'
     marker_size: 1.0
@@ -57,13 +57,13 @@ canvas:
   axes:
     x:
       title: 
-        name: 'Impact parameter on XY plane (cm)'
+        name: 'Prong 0 impact parameter (cm)'
         size: 0.05
         offset: 1
       labels:
         size: 0.045
         offset: 0.01
-      range: [-0.5, 0.2]
+      range: [-1., 0.4]
       log_scale: false
     y:
       title: 
@@ -73,7 +73,7 @@ canvas:
       labels:
         size: 0.045
         offset: 0.01
-      range: [1.e-5, 1]
+      range: [1.e-4, 1]
       log_scale: true
 
 text:
@@ -118,4 +118,4 @@ horizontal_line:
   line_style: 9  # Use appropriate ROOT line style constant
 
 
-output_file: '/home/fchinu/Run3/Ds_pp_13TeV/Figures/Variables_Distributions/ImpactParameterXY.pdf'
+output_file: '/home/fchinu/Run3/Ds_pp_13TeV/Figures/Variables_Distributions/ImpactParameter0.pdf'
