@@ -224,7 +224,7 @@ textBRGoldenDplus.SetTextFont(42)
 textBRGoldenDplus.SetTextSize(0.03)
 textBRGoldenDplus.Draw()
 
-LegLHCbText = ROOT.TLatex(0.25, 0.23, 'LHCb, #sqrt{#it{s}} = 13 Te#kern[-0.05]{V}, JHEP03(2016)159')
+LegLHCbText = ROOT.TLatex(0.25, 0.23, 'LHCb, #sqrt{#it{s}} = 13 Te#kern[-0.05]{V}, JHEP 03 (2016) 159')
 LegLHCbText.SetNDC()
 LegLHCbText.SetTextFont(42)
 LegLHCbText.SetTextSize(0.03)
