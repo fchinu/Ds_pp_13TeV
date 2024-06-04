@@ -14,7 +14,7 @@ input_data:
     fill_alpha: 0.5
     normalize: true
     draw_option: 'hist'
-  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train211613/LHC24d3_NonPromptDs.parquet'
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train213175/LHC24d3a_NonPromptDs.parquet'
     histogram: 'FD'
     dataframe_column: 'fM'               # Draw the histogram of the column1 of the parquet file
     selections: '4 < fPt < 6'
@@ -29,7 +29,7 @@ input_data:
     fill_alpha: 1
     normalize: true
     draw_option: 'hist'
-  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train211613/LHC24d3_PromptDs.parquet'
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train213175/LHC24d3a_PromptDs.parquet'
     histogram: 'Prompt'
     dataframe_column: 'fM'               # Draw the histogram of the column1 of the parquet file
     selections: '4 < fPt < 6'
@@ -79,6 +79,7 @@ canvas:
   width: 800
   height: 600
   title: ''
+  same_bins: True
   margin:
     left: 0.12
     right: 0.05
@@ -103,7 +104,7 @@ canvas:
       labels:
         size: 0.045
         offset: 0.01
-      range: [3.e-3, 0.3]
+      range: [2.e-4, 0.3]
       log_scale: true
 
 text:
@@ -135,10 +136,10 @@ legend:
       label: 'Data'
       style: 'f'
     - histogram: 'Prompt'
-      label: '#splitline{#lower[0.]{Prompt}}{#lower[-0.2]{D-meson}}'
+      label: '#splitline{#lower[0.]{Prompt}}{#lower[-0.2]{D-mesons}}'
       style: 'f'
     - histogram: 'FD'
-      label: '#splitline{#lower[0.]{Non#font[122]{-}prompt}}{#lower[-0.2]{D-meson}}'
+      label: '#splitline{#lower[0.]{Non#font[122]{-}prompt}}{#lower[-0.2]{D-mesons}}'
       style: 'f'
 
 horizontal_line:

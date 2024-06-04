@@ -14,6 +14,7 @@ systFileNameFD = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/FD_Fraction/FDSystem
 systFileNameTopo = "/home/fchinu/Run3/Ds_pp_13TeV/Systematics/Tracking/Results/SystUncertainty.root"
 PythiaFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Figures/Ratio/Models/PYTHIA8_Ds_over_Dplus_pp13dot6TeV.root"
 PowlangFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Figures/Ratio/Models/POWLANG-pp-13-TeV.root"
+CataniaFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Figures/Ratio/Models/CATANIA.root"
 
 ratioFile = ROOT.TFile(ratioFileName)
 hRatio = ratioFile.Get('hRatio')
@@ -99,6 +100,13 @@ hLQCD.SetLineStyle(11)
 hLQCD.SetLineWidth(2)
 PowlangFile.Close()
 
+ROOT.gStyle.SetLineStyleString(12,"10 10 25 10 10 10 10 10")
+CataniaFile = ROOT.TFile(CataniaFileName)
+gCatania = CataniaFile.Get('gCatania')
+CataniaFile.Close()
+gCatania.SetLineColor(ROOT.kViolet-5)
+gCatania.SetLineWidth(2)
+gCatania.SetLineStyle(12)
 
 #for iPt in range(hMonash.GetNbinsX()):
 #    hMonash.SetBinError(iPt+1, 0)
@@ -145,6 +153,7 @@ ROOT.gPad.SetTickx(1)
 ROOT.gPad.SetTicky(1)
 hHTL.Draw('L same')
 hLQCD.Draw('L same')
+gCatania.Draw('LX same')
 hMonash.Draw('5 same')
 hCRMode0.Draw('5 same')
 hCRMode2.Draw('5 same')
@@ -228,6 +237,13 @@ legendPythia.AddEntry(hCRMode0, 'CR - Mode 0', 'f')
 legendPythia.AddEntry(hCRMode2, 'CR - Mode 2', 'f')
 legendPythia.AddEntry(hCRMode3, 'CR - Mode 3', 'f')
 legendPythia.Draw()
+
+legendCatania = ROOT.TLegend(0.67, 0.285, 0.95, 0.335)
+legendCatania.SetBorderSize(0)
+legendCatania.SetTextSize(0.034)
+legendCatania.SetFillStyle(0)
+legendCatania.AddEntry(gCatania, 'Catania', 'l')
+legendCatania.Draw()
 
 
 legendPowlang = ROOT.TLegend(0.67, 0.14, 0.95, 0.27)

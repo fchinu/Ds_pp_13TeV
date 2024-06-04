@@ -14,7 +14,7 @@ input_data:
     fill_alpha: 0.5
     normalize: true
     draw_option: 'hist'
-  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train211613/LHC24d3_NonPromptDs.parquet'
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train213175/LHC24d3a_NonPromptDs.parquet'
     histogram: 'FD'
     dataframe_column: 'fImpactParameter0'               # Draw the histogram of the column1 of the parquet file
     selections: '4 < fPt < 6'
@@ -29,7 +29,7 @@ input_data:
     fill_alpha: 1
     normalize: true
     draw_option: 'hist'
-  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train211613/LHC24d3_PromptDs.parquet'
+  - file: '/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train213175/LHC24d3a_PromptDs.parquet'
     histogram: 'Prompt'
     dataframe_column: 'fImpactParameter0'               # Draw the histogram of the column1 of the parquet file
     selections: '4 < fPt < 6'
@@ -49,6 +49,7 @@ canvas:
   width: 800
   height: 600
   title: ''
+  same_bins: True
   margin:
     left: 0.12
     right: 0.05
@@ -57,7 +58,7 @@ canvas:
   axes:
     x:
       title: 
-        name: 'Prong 0 impact parameter (cm)'
+        name: 'Prong 0 impact parameter on XY plane (cm)'
         size: 0.05
         offset: 1
       labels:

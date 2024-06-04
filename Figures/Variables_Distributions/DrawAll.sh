@@ -1,5 +1,5 @@
-#python3 /home/fchinu/Run3/ThesisUtils/Plotting.py -c /home/fchinu/Run3/Ds_pp_13TeV/Figures/configs/Mass.yaml
-python3 /home/fchinu/Run3/ThesisUtils/Plotting.py -c /home/fchinu/Run3/Ds_pp_13TeV/Figures/configs/ImpactParameter0.yaml
+python3 /home/fchinu/Run3/ThesisUtils/Plotting.py -c /home/fchinu/Run3/Ds_pp_13TeV/Figures/configs/Mass.yaml
+#python3 /home/fchinu/Run3/ThesisUtils/Plotting.py -c /home/fchinu/Run3/Ds_pp_13TeV/Figures/configs/ImpactParameter0.yaml
 #python3 /home/fchinu/Run3/ThesisUtils/Plotting.py -c /home/fchinu/Run3/Ds_pp_13TeV/Figures/configs/Cpa.yaml
 #python3 /home/fchinu/Run3/ThesisUtils/Plotting.py -c /home/fchinu/Run3/Ds_pp_13TeV/Figures/configs/CpaXY.yaml
 #python3 /home/fchinu/Run3/ThesisUtils/Plotting.py -c /home/fchinu/Run3/Ds_pp_13TeV/Figures/configs/DecayLength.yaml

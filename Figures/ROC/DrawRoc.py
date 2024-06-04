@@ -59,10 +59,10 @@ def get_roc_ovo(y_truth, y_score, n_classes, labels, average):
 
 
 
-dfDsPrompt = read_parquet_in_batches("/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train213175/LHC24d3a_PromptDs.parquet", "2<fPt<3")
-dfDsFD = read_parquet_in_batches("/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train213175/LHC24d3a_NonPromptDs.parquet", "2<fPt<3")
-dfBkg = read_parquet_in_batches("/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Data/Train191566/LHC22o.parquet", "2<fPt<3 and (1.7 < fM < 1.75 or  2.1 < fM < 2.15)")
-
+dfDsPrompt = read_parquet_in_batches("/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train189890/LHC22b1b_PromptDs_Train.parquet", "2<fPt<3")
+dfDsFD = read_parquet_in_batches("/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train189892/LHC22b1a_NonPromptDs_Train.parquet", "2<fPt<3")
+dfBkg = read_parquet_in_batches("/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Data/Train189072/LHC22o_pass6_small.parquet", "2<fPt<3 and (1.7 < fM < 1.75 or  2.1 < fM < 2.15)")
+dfBkg = dfBkg.sample(frac=1, random_state=42)
 
 nPrompt = len(dfDsPrompt)
 nFD = len(dfDsFD)
@@ -87,19 +87,22 @@ dictTest_roc, globalTest_auc = get_roc_ovo(yTest, yPredTestRaw, 3, ['Bkg', 'Prom
 
 
 # Plot the ROCs
+ROOT.gStyle.SetOptStat(0)
 colors, ROOTcols = get_discrete_matplotlib_palette("tab10")
-c = ROOT.TCanvas("c", "c", 800, 800)
+c = ROOT.TCanvas("c", "c", 800, 1000)
 c.SetLeftMargin(0.1)
 c.SetRightMargin(0.05)
 c.SetBottomMargin(0.1)
-c.SetTopMargin(0.1)
+c.SetTopMargin(0.05)
 
-hFrame = c.DrawFrame(0, 0, 1, 1, ";False Positive Rate;True Positive Rate")
+hFrame = c.DrawFrame(0, 0, 1, 1.2, ";False Positive Rate;True Positive Rate")
+hFrame.GetYaxis().SetNdivisions(-512)
+hFrame.GetXaxis().SetTickLength(0.025)
 
-legend = ROOT.TLegend(0.3, 0.15, 0.6, 0.65)
+legend = ROOT.TLegend(0.25, 0.15, 0.55, 0.6)
 legend.SetBorderSize(0)
 legend.SetFillStyle(0)
-legend.SetTextSize(0.03)
+legend.SetTextSize(0.028)
 
 graphsTrain = []
 graphsTest = []
@@ -111,14 +114,14 @@ for i, comb in enumerate(dictTrain_roc.keys()):
     graphsTrain[-1].SetLineWidth(2)
     graphsTrain[-1].SetLineStyle(2)
     graphsTrain[-1].Draw("L,same")
-    legend.AddEntry(graphsTrain[-1], f"Train: {comb.replace('__', ' vs ')} (ROC AUC = {rocauc:.2f})", "l")
+    legend.AddEntry(graphsTrain[-1], f"Train: {comb.replace('__', ' vs ')} (ROC AUC = {rocauc:.3f})", "l")
     fpr, tpr, rocauc = dictTest_roc[comb]
     graphsTest.append(ROOT.TGraph(len(fpr), array('d', fpr), array('d', tpr)))
     graphsTest[-1].SetTitle()
     graphsTest[-1].SetLineColor(colors[i])
     graphsTest[-1].SetLineWidth(2)
     graphsTest[-1].Draw("L,same")
-    legend.AddEntry(graphsTest[-1], f"Test: {comb.replace('__', ' vs ')} (ROC AUC = {rocauc:.2f})", "l")
+    legend.AddEntry(graphsTest[-1], f"Test: {comb.replace('__', ' vs ')} (ROC AUC = {rocauc:.3f})", "l")
 
 RandomClassifier = ROOT.TGraph(2, array('d', [0, 1]), array('d', [0, 1]))
 RandomClassifier.SetLineColor(ROOT.kGray)
@@ -131,28 +134,54 @@ LineAtOne = ROOT.TLine(0, 1, 1, 1)
 LineAtOne.SetLineColor(ROOT.kBlack)
 LineAtOne.SetLineStyle(9)
 LineAtOne.SetLineWidth(2)
-#LineAtOne.Draw("same")
+LineAtOne.Draw("same")
 
 legend.AddEntry("", "", "")
-legend.AddEntry("", f"Train: Average OvO ROC AUC = {globalTrain_auc:.2f}", "")
-legend.AddEntry("", f"Test: Average OvO ROC AUC = {globalTest_auc:.2f}", "")
+legend.AddEntry("", f"Train: Average OvO ROC AUC = {globalTrain_auc:.3f}", "")
+legend.AddEntry("", f"Test: Average OvO ROC AUC = {globalTest_auc:.3f}", "")
 
 legend.Draw()
 c.Update()
 c.RedrawAxis()
-#c.SetGrid()
+c.SetTickx()
+c.SetTicky()
+c.SetGrid()
 
-thesisText = ROOT.TLatex(0.1, 0.92, "This Thesis")
+thesisText = ROOT.TLatex(0.15, 0.9, "This Thesis")
 thesisText.SetNDC()
 thesisText.SetTextFont(42)
-thesisText.SetTextSize(0.05)
+thesisText.SetTextSize(0.045)
 thesisText.Draw()
 
-ptText = ROOT.TLatex(0.5, 0.92, "2 < #lower[-0.05]{#it{p}_{T}} < 3 GeV/#it{c}")
+ppText = ROOT.TLatex(0.15, 0.86, "pp collisions")
+ppText.SetNDC()
+ppText.SetTextFont(42)
+ppText.SetTextSize(0.04)
+ppText.Draw()
+
+EnergyText = ROOT.TLatex(0.15, 0.82, '#sqrt{#it{s}} = 13.6 Te#kern[-0.03]{V}')
+EnergyText.SetNDC()
+EnergyText.SetTextFont(42)
+EnergyText.SetTextSize(0.04)
+EnergyText.Draw("same")
+
+DecayText = ROOT.TLatex(0.5, 0.9, 'D_{s}^{+}, D^{+} #rightarrow #phi#pi^{+}#rightarrow K^{+}K^{#font[122]{-}}#pi^{+}')
+DecayText.SetNDC()
+DecayText.SetTextFont(42)
+DecayText.SetTextSize(0.04)
+DecayText.Draw("same")
+
+ConjText = ROOT.TLatex(0.5, 0.86, 'and charge conjugate')
+ConjText.SetNDC()
+ConjText.SetTextFont(42)
+ConjText.SetTextSize(0.04)
+ConjText.Draw("same")
+
+ptText = ROOT.TLatex(0.5, 0.82, '2 < #it{p}_{#lower[-0.15]{T}} < 3 Ge#kern[-0.03]{V}/#it{c}')
 ptText.SetNDC()
 ptText.SetTextFont(42)
-ptText.SetTextSize(0.05)
-ptText.Draw()
+ptText.SetTextSize(0.04)
+ptText.Draw("same")
 
 c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/ROC/ROC.png")
 c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/ROC/ROC.pdf")
