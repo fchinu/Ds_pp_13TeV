@@ -9,34 +9,37 @@ import itertools
 from hipe4ml import plot_utils
 import matplotlib.pyplot as plt
 
-inputFileNames = [             
-            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0_2/Data_pT_0_2_ModelApplied.parquet.gzip",
-            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_2.5/Data_pT_2_2.5_ModelApplied.parquet.gzip",
-            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2.5_3/Data_pT_2.5_3_ModelApplied.parquet.gzip",
-            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3_3.5/Data_pT_3_3.5_ModelApplied.parquet.gzip",
-            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3.5_4/Data_pT_3.5_4_ModelApplied.parquet.gzip",
-            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt4_4.5/Data_pT_4_4.5_ModelApplied.parquet.gzip",
-            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt4.5_5/Data_pT_4.5_5_ModelApplied.parquet.gzip",
-            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt5_5.5/Data_pT_5_5.5_ModelApplied.parquet.gzip",
-            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt5.5_6/Data_pT_5.5_6_ModelApplied.parquet.gzip",
-            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt6_8/Data_pT_6_8_ModelApplied.parquet.gzip",
-            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt8_12/Data_pT_8_12_ModelApplied.parquet.gzip",
-            "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt12_24/Data_pT_12_24_ModelApplied.parquet.gzip"
+inputFileNames = [ 
+                        #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt0.5_1/Data_pT_0.5_1_ModelApplied.parquet.gzip",
+                        #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1_1.5/Data_pT_1_1.5_ModelApplied.parquet.gzip",
+                        #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt1.5_2/Data_pT_1.5_2_ModelApplied.parquet.gzip",
+                        "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2_2.5/Data_pT_2_2.5_ModelApplied.parquet.gzip",
+                        "/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt2.5_3/Data_pT_2.5_3_ModelApplied.parquet.gzip",
+                        #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3_3.5/Data_pT_3_3.5_ModelApplied.parquet.gzip",
+                        #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3_3.5/Data_pT_3_3.5_ModelApplied.parquet.gzip",
+                        #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt3.5_4/Data_pT_3.5_4_ModelApplied.parquet.gzip",
+                        #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt4_4.5/Data_pT_4_4.5_ModelApplied.parquet.gzip",
+                        #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt4.5_5/Data_pT_4.5_5_ModelApplied.parquet.gzip",
+                        #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt5_5.5/Data_pT_5_5.5_ModelApplied.parquet.gzip",
+                        #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt5.5_6/Data_pT_5.5_6_ModelApplied.parquet.gzip",
+                        #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt6_8/Data_pT_6_8_ModelApplied.parquet.gzip",
+                        #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt8_12/Data_pT_8_12_ModelApplied.parquet.gzip",
+                        #"/home/fchinu/Run3/Ds_pp_13TeV/ML/Application/pt12_24/Data_pT_12_24_ModelApplied.parquet.gzip"        
                     ]
-outputFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Optimization/Significance_ptDiff.root"
-pTmin = [0,2,2.5,3,3.5,4,4.5,5,5.5,6,8,12] # list 
-pTmax = [2,2.5,3,3.5,4,4.5,5,5.5,6,8,12,24] # list 
+outputFileName = "/home/fchinu/Run3/Ds_pp_13TeV/Optimization/Significance_ptDiff_2_3.root"
+pTmin = [2,2.5] #[0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,8,12] # list 
+pTmax = [2.5,3.] #[1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,8,12,24] # list 
 BDT_prompt_mins = [0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1]
-BDT_prompt_maxs = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
-stepPrompt = [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
-BDT_bkg_mins = [0.001,0.001,0.005,0.005,0.005,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.05]
-BDT_bkg_maxs = [0.01,0.01,0.02,0.04,0.04,0.1,0.1,0.1,0.1,0.1,0.2,0.2,0.4]
-stepBkg = [0.001, 0.001, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005]
+BDT_prompt_maxs = [0.7,0.7,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
+stepPrompt = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
+BDT_bkg_mins = [0.1,0.1,0.1,0.1] #[0.001,0.001,0.005,0.005,0.005,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.05]
+BDT_bkg_maxs = [0.7,0.7,0.9,0.9] #[0.01,0.01,0.02,0.6,0.04,0.1,0.1,0.1,0.1,0.1,0.2,0.2,0.4]
+stepBkg = [0.01, 0.01, 0.01, 0.01, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005]
 significanceLimits = [50.,50.,50.,50.,50.,50.,50.,50.,50.,50.,50.,50.,50.]
 rebins = [4,4,4,4,4,4,4,4,4,4,4,4,4]
 fitFunction = [2,2,0,0,0,0,0,0,0,0,0,0,0]
 
-saveAllFits = True
+saveAllFits = False
 
 PtEdges = [[a, b] for a, b in zip(pTmin, pTmax)]
 ptBins = [i for i in pTmin]
