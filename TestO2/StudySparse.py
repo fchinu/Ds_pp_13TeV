@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 from ROOT import TFile, THnSparseF
 
 # Open the file
-file = TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Data/Train197555/LHC22o_AnalysisResults.root")
+file = TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train208051/LHC24d3a_AnalysisResults.root")
 # Get the THnSparse
-sparse = file.Get("hf-task-ds/Data/hSparseMass")
+sparse = file.Get("hf-task-ds/MC/Ds/Prompt/hSparseMass")
 
 # Get the number of bins in each dimension
 nBins = [sparse.GetAxis(i).GetNbins() for i in range(sparse.GetNdimensions())]
