@@ -27,7 +27,7 @@ for iPt, (ptMin,ptMax) in enumerate(zip(ptMins,ptMaxs)):
     syst = syst/central_value
     #print(syst, central_value, mean, rms)
     print(f"{ptMin:.1f}-{ptMax:.1f} & {syst:.2f}")
-    hRMS.SetBinContent(hRMS.FindBin(ptMin+0.05), syst)
+    hRMS.SetBinContent(hRMS.FindBin(ptMin+0.05),  syst)
     hSyst.SetBinContent(iPt+1, AssignedSyst[ptMins.index(ptMin)])
     hSyst.SetBinError(iPt+1, 0)
 

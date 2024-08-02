@@ -349,6 +349,9 @@ cFDDs.Write()
 cFDDplus.Write()
 cRatio.Write()
 
+hRatioCentral.Write("hRatioCentral")
+hRatioPtSmearing.Write("hRatioPtSmearing")
+hRatioWorseResoPulls.Write("hRatioWorseResoPulls")
 outputFile.Close()
 
 
