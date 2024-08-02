@@ -41,8 +41,8 @@ ROOT.gStyle.SetPadRightMargin(0.05)
 ROOT.gStyle.SetPadBottomMargin(0.13)
 
 
-canvas = ROOT.TCanvas("canvas", "canvas", 1200, 900)
-canvas.Divide(4, 3, 0.005, 0.0001)
+canvas = ROOT.TCanvas("canvas", "canvas", 900, 1200)
+canvas.Divide(3, 4, 0.005, 0.0001)
 ThesisLabel = ROOT.TLatex(0.4, 0.8, "This Thesis")
 ThesisLabel.SetNDC()
 ThesisLabel.SetTextFont(42)
@@ -86,13 +86,14 @@ for i, h in enumerate(histos):
     ptLabels[-1].SetTextFont(42)
     ptLabels[-1].SetTextSize(0.05)
     ptLabels[-1].Draw("same")
+    ROOT.gPad.RedrawAxis()
 
 
-canvas.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/SimulateDplus/outhistos.png")
-canvas.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/SimulateDplus/outhistos.pdf")
+canvas.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/SimulateDplus/Dplus_Corr_Bkg_simulation.png")
+canvas.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/SimulateDplus/Dplus_Corr_Bkg_simulation.pdf")
 
 
-outfileName = "/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/SimulateDplus/outhistos.root"
+outfileName = "/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/SimulateDplus/Dplus_Corr_Bkg_simulation.root"
 outfile = ROOT.TFile(outfileName, "RECREATE")
 for h in histos:
     h.Write()
