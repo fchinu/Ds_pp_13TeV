@@ -1,0 +1,19 @@
+isSlim: true
+
+download:
+  input: "/home/fchinu/Run3/Ds_pp_13TeV/utils/AODsForDownload.txt"
+  output: "/home/fchinu/Run3/Ds_pp_13TeV/utils/fileList217642.txt"
+
+merge:
+  input: "/home/fchinu/Run3/Ds_pp_13TeV/utils/fileList217642.txt"  # If not specified, it uses the download output
+  output: "/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Data/Train217642/LHC22o" # Directory + prefix
+  max_files: 20
+
+convert_to_parquet:
+  input: "/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Data/Train217642/LHC22o_AO2D.root"  # If not specified, it uses the merge output
+  output: "/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Data/Train217642/LHC22o.parquet"
+  treename: "O2hfcanddslite"
+  nThreads: 3
+  selections: null
+  train_fraction: 1
+  isMC: false
