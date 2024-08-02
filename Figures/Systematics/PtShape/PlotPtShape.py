@@ -1,0 +1,210 @@
+import ROOT 
+import sys
+sys.path.append("/home/fchinu/Run3/ThesisUtils")
+from PlotUtils import get_discrete_matplotlib_palette, set_matplotlib_palette
+
+# Get inputs
+infile = ROOT.TFile("/home/fchinu/Run3/Ds_pp_13TeV/Systematics/PtShape/StudyPtShape.root")
+hFONLLDs = infile.Get("hFONLLDs")
+hFONLLDs.SetDirectory(0)
+hFONLLDplus = infile.Get("hFONLLDplus")
+hFONLLDplus.SetDirectory(0)
+hPYTHIADs = infile.Get("hPYTHIADs")
+hPYTHIADs.SetDirectory(0)
+hPYTHIADplus = infile.Get("hPYTHIADplus")
+hPYTHIADplus.SetDirectory(0)
+hWeigthsDs = infile.Get("hWeigthsDs")
+hWeigthsDs.SetDirectory(0)
+hWeigthsDplus = infile.Get("hWeigthsDplus")
+hWeigthsDplus.SetDirectory(0)
+hSyst = infile.Get("canvasRatio").GetPrimitive("canvasRatio_2").GetPrimitive("hRatioCentralOverReweighted")
+hSyst.SetDirectory(0)
+infile.Close()
+
+
+# Set style
+colors, _ = get_discrete_matplotlib_palette("tab10")
+ROOT.gStyle.SetPadTickX(1)
+ROOT.gStyle.SetPadTickY(1)
+
+hPYTHIADs.SetLineColor(colors[0])
+hPYTHIADs.SetMarkerColor(colors[0])
+hPYTHIADs.SetMarkerStyle(ROOT.kFullCircle)
+hPYTHIADs.SetMarkerSize(1)
+hPYTHIADs.SetLineWidth(2)
+hPYTHIADs.SetFillColorAlpha(colors[0], 0.5)
+hPYTHIADs.SetFillStyle(1001)
+
+hFONLLDs.SetLineColor(colors[0])
+hFONLLDs.SetMarkerColor(colors[0])
+hFONLLDs.SetMarkerStyle(ROOT.kOpenCircle)
+hFONLLDs.SetMarkerSize(1)
+hFONLLDs.SetLineWidth(2)
+
+hPYTHIADplus.SetLineColor(colors[1])
+hPYTHIADplus.SetMarkerColor(colors[1])
+hPYTHIADplus.SetMarkerStyle(ROOT.kFullDiamond)
+hPYTHIADplus.SetMarkerSize(1.5)
+hPYTHIADplus.SetLineWidth(2)
+
+hFONLLDplus.SetLineColor(colors[1])
+hFONLLDplus.SetMarkerColor(colors[1])
+hFONLLDplus.SetMarkerStyle(ROOT.kOpenDiamond)
+hFONLLDplus.SetMarkerSize(1)
+hFONLLDplus.SetLineWidth(2)
+
+hSyst.SetLineColor(ROOT.kRed)
+hSyst.SetMarkerColor(ROOT.kRed)
+hSyst.SetMarkerStyle(ROOT.kFullDoubleDiamond)
+hSyst.SetMarkerSize(2)
+hSyst.SetLineWidth(2)
+
+# Draw
+c = ROOT.TCanvas("c", "c", 1600, 1200)
+c.Divide(2,2,0.0001,0.0001)
+
+c.cd(1)
+ROOT.gPad.SetLeftMargin(0.15)
+ROOT.gPad.SetRightMargin(0.05)
+ROOT.gPad.SetBottomMargin(0.12)
+ROOT.gPad.SetTopMargin(0.05)
+ROOT.gPad.SetLogy()
+
+hFrame = ROOT.gPad.DrawFrame(0., 1.e-6, 24, 0.1,";#it{p}_{T} (Ge#kern[-0.05]{V}/#it{c});Generated D_{s}^{+} counts (a.u.)")
+hFrame.GetXaxis().SetTitleOffset(1.1)
+hFrame.GetYaxis().SetTitleOffset(1.3)
+hFrame.GetXaxis().SetTitleSize(0.05)
+hFrame.GetYaxis().SetTitleSize(0.05)
+hFrame.GetXaxis().SetLabelSize(0.05)
+hFrame.GetYaxis().SetLabelSize(0.05)
+
+hPYTHIADs = hPYTHIADs.DrawNormalized("same")
+hFONLLDs = hFONLLDs.DrawNormalized("same")
+
+legDs = ROOT.TLegend(0.2, 0.2, 0.5, 0.35)
+legDs.SetBorderSize(0)
+legDs.SetFillStyle(0)
+legDs.SetTextFont(42)
+legDs.SetTextSize(0.05)
+legDs.AddEntry(hPYTHIADs, "PYTHIA 8", "lp")
+legDs.AddEntry(hFONLLDs, "FONLL", "lp")
+legDs.Draw()
+
+thesisText = ROOT.TLatex(0.5, 0.85, "This Thesis")
+thesisText.SetNDC()
+thesisText.SetTextFont(42)
+thesisText.SetTextSize(0.07)
+thesisText.Draw()
+
+ppText = ROOT.TLatex(0.5, 0.79, "pp collisions, #sqrt{#it{s}} = 13.6 Te#kern[-0.03]{V}")
+ppText.SetNDC()
+ppText.SetTextFont(42)
+ppText.SetTextSize(0.05)
+ppText.Draw()
+
+DecayText = ROOT.TLatex(0.5, 0.71, 'D_{s}^{+}, D^{+} #rightarrow #phi#pi^{+}#rightarrow K^{+}K^{#font[122]{-}}#pi^{+}')
+DecayText.SetNDC()
+DecayText.SetTextFont(42)
+DecayText.SetTextSize(0.05)
+DecayText.Draw("same")
+
+ConjText = ROOT.TLatex(0.5, 0.66, 'and charge conjugate')
+ConjText.SetNDC()
+ConjText.SetTextFont(42)
+ConjText.SetTextSize(0.05)
+ConjText.Draw("same")
+
+ROOT.gPad.RedrawAxis()
+
+c.cd(2)
+ROOT.gPad.SetLeftMargin(0.15)
+ROOT.gPad.SetRightMargin(0.05)
+ROOT.gPad.SetBottomMargin(0.12)
+ROOT.gPad.SetTopMargin(0.05)
+ROOT.gPad.SetLogy()
+
+hFrame = ROOT.gPad.DrawFrame(0., 1.e-6, 24, 0.1,";#it{p}_{T} (Ge#kern[-0.05]{V}/#it{c});Generated D^{+} counts (a.u.)")
+hFrame.GetXaxis().SetTitleOffset(1.1)
+hFrame.GetYaxis().SetTitleOffset(1.3)
+hFrame.GetXaxis().SetTitleSize(0.05)
+hFrame.GetYaxis().SetTitleSize(0.05)
+hFrame.GetXaxis().SetLabelSize(0.05)
+hFrame.GetYaxis().SetLabelSize(0.05)
+
+hPYTHIADplus = hPYTHIADplus.DrawNormalized("same")
+hFONLLDplus = hFONLLDplus.DrawNormalized("same")
+
+legDplus = ROOT.TLegend(0.6, 0.75, 0.9, 0.9)
+legDplus.SetBorderSize(0)
+legDplus.SetFillStyle(0)
+legDplus.SetTextFont(42)
+legDplus.SetTextSize(0.05)
+legDplus.AddEntry(hPYTHIADplus, "PYTHIA 8", "lp")
+legDplus.AddEntry(hFONLLDplus, "FONLL", "lp")
+legDplus.Draw()
+
+ROOT.gPad.RedrawAxis()
+
+c.cd(3)
+ROOT.gPad.SetLeftMargin(0.15)
+ROOT.gPad.SetRightMargin(0.05)
+ROOT.gPad.SetBottomMargin(0.12)
+ROOT.gPad.SetTopMargin(0.05)
+
+hFrame = ROOT.gPad.DrawFrame(0., 0, 24, 3,";#it{p}_{T} (Ge#kern[-0.05]{V}/#it{c});FONLL/PYTHIA")
+hFrame.GetXaxis().SetTitleOffset(1.1)
+hFrame.GetYaxis().SetTitleOffset(1.3)
+hFrame.GetXaxis().SetTitleSize(0.05)
+hFrame.GetYaxis().SetTitleSize(0.05)
+hFrame.GetXaxis().SetLabelSize(0.05)
+hFrame.GetYaxis().SetLabelSize(0.05)
+
+hFONLLOverPYTHIADs = hFONLLDs.Clone("hFONLLOverPYTHIADs")
+hFONLLOverPYTHIADs.Divide(hPYTHIADs)
+hFONLLOverPYTHIADs.SetMarkerStyle(ROOT.kFullCircle)
+hFONLLOverPYTHIADs.Draw("same")
+
+hFONLLOverPYTHIADplus = hFONLLDplus.Clone("hFONLLOverPYTHIADplus")
+hFONLLOverPYTHIADplus.Divide(hPYTHIADplus)
+hFONLLOverPYTHIADplus.SetMarkerStyle(ROOT.kFullDiamond)
+hFONLLOverPYTHIADplus.SetMarkerSize(2)
+hFONLLOverPYTHIADplus.Draw("same")
+
+legRatios = ROOT.TLegend(0.6, 0.75, 0.9, 0.9)
+legRatios.SetBorderSize(0)
+legRatios.SetFillStyle(0)
+legRatios.SetTextFont(42)
+legRatios.SetTextSize(0.05)
+legRatios.AddEntry(hFONLLOverPYTHIADs, "D_{s}^{+}", "lp")
+legRatios.AddEntry(hFONLLOverPYTHIADplus, "D^{+}", "lp")
+legRatios.Draw()
+
+ROOT.gPad.RedrawAxis()
+
+c.cd(4)
+ROOT.gPad.SetLeftMargin(0.15)
+ROOT.gPad.SetRightMargin(0.05)
+ROOT.gPad.SetBottomMargin(0.12)
+ROOT.gPad.SetTopMargin(0.05)
+
+hFrame = ROOT.gPad.DrawFrame(0., 0.9, 24, 1.1,";#it{p}_{T} (Ge#kern[-0.05]{V}/#it{c});PYTHIA/FONLL #left[(Acc#times#varepsilon)^{D_{s}^{+}}_{prompt}/(Acc#times#varepsilon)^{D^{+}}_{prompt}#right]")
+hFrame.GetXaxis().SetTitleOffset(1.1)
+hFrame.GetYaxis().SetTitleOffset(1.3)
+hFrame.GetXaxis().SetTitleSize(0.05)
+hFrame.GetYaxis().SetTitleSize(0.05)
+hFrame.GetXaxis().SetLabelSize(0.05)
+hFrame.GetYaxis().SetLabelSize(0.05)
+
+ROOT.gStyle.SetLineStyleString(11,"50 15")
+lineAtOne = ROOT.TLine(0, 1, 24, 1)
+lineAtOne.SetLineStyle(2)
+lineAtOne.SetLineColor(ROOT.kGray+1)
+lineAtOne.SetLineWidth(2)
+lineAtOne.Draw("same")
+
+hSyst.Draw("same")
+
+ROOT.gPad.RedrawAxis()
+
+c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/Systematics/PtShape/PtShape.pdf")
+c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/Systematics/PtShape/PtShape.png")

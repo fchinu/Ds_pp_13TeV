@@ -20,14 +20,20 @@ def get_discrete_matplotlib_palette(paletteName):
 def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
     ROOT.gStyle.SetOptStat(0)
     canvas = ROOT.TCanvas("canvas", "canvas", 2000, 1500)
-    canvas.Divide(2, 2)
+    canvas.Divide(2, 2, 0.0001, 0.0001)
 
     # Colors for plotting
     colors, _ = get_discrete_matplotlib_palette('tab10')
 
+    multiTrialCfg['bincounting']['nsigma'] = multiTrialCfg['bincounting']['nsigma'][:1] # Only 3 sigma for now
+
     # First pad: Raw Yields
     canvas.cd(1)
-    hFrame = ROOT.gPad.DrawFrame(0, 2500, len(multiTrialDict["convergedTrials"])*3 + 1, 7000, "Raw Yields;Trial;Raw yield")
+    ROOT.gPad.SetLeftMargin(0.1)
+    ROOT.gPad.SetRightMargin(0.05)
+    ROOT.gPad.SetTopMargin(0.1)
+    ROOT.gPad.SetBottomMargin(0.12)
+    hFrame = ROOT.gPad.DrawFrame(0, 2500, len(multiTrialDict["convergedTrials"])*2 + 1, 7000, "Raw Yields;Trial;Raw yield")
     hFrame.GetYaxis().SetLabelSize(0.035)
     hFrame.GetYaxis().SetTitleSize(0.04)
     hFrame.GetYaxis().SetTitleOffset(1.2)
@@ -106,7 +112,11 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
 
     # Second pad: Ratios
     canvas.cd(4)
-    hFrame2 = ROOT.gPad.DrawFrame(1.6, 0., 1.9, 20, "D_{s}^{+}/D^{+} Ratio;Ratio;Entries")
+    ROOT.gPad.SetLeftMargin(0.1)
+    ROOT.gPad.SetRightMargin(0.05)
+    ROOT.gPad.SetTopMargin(0.1)
+    ROOT.gPad.SetBottomMargin(0.12)
+    hFrame2 = ROOT.gPad.DrawFrame(1.6, 0., 1.8, 20, "D_{s}^{+}/D^{+} Ratio;Ratio;Entries")
     hFrame2.GetYaxis().SetLabelSize(0.035)
     hFrame2.GetYaxis().SetTitleSize(0.04)
     hFrame2.GetYaxis().SetTitleOffset(1.2)
@@ -121,7 +131,7 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
     hist1.SetFillColorAlpha(colors[0],0.65)
     hist1.Draw("same")
 
-    legend2 = ROOT.TLegend(0.5, 0.6, 0.7, 0.9)
+    legend2 = ROOT.TLegend(0.5, 0.6, 0.7, 0.8)
     legend2.SetBorderSize(0)
     legend2.SetFillStyle(0)
     legend2.SetTextSize(0.037)
@@ -141,7 +151,7 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
 
     legend2.Draw("same")
 
-    infofit = ROOT.TPaveText(0.7, 0.81, 0.9, 0.89, "NDC")
+    infofit = ROOT.TPaveText(0.7, 0.71, 0.9, 0.79, "NDC")
     infofit.SetBorderSize(0)
     infofit.SetFillColor(0)
     infofit.SetFillStyle(0)
@@ -151,7 +161,7 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
     infofit.AddText(f'#sigma = {np.std(multiTrialDict["ratios"]):.3f}')
     infofit.Draw("same")
 
-    info3sig = ROOT.TPaveText(0.7, 0.71, 0.9, 0.79, "NDC")
+    info3sig = ROOT.TPaveText(0.7, 0.61, 0.9, 0.69, "NDC")
     info3sig.SetBorderSize(0)
     info3sig.SetFillColor(0)
     info3sig.SetFillStyle(0)
@@ -160,17 +170,6 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
     info3sig.AddText(f'#mu = {np.mean(multiTrialDict["binCountRatios"][0]):.3f}')
     info3sig.AddText(f'#sigma = {np.std(multiTrialDict["binCountRatios"][0]):.3f}')
     info3sig.Draw("same")
-
-    info5sig = ROOT.TPaveText(0.7, 0.61, 0.9, 0.69, "NDC")
-    info5sig.SetBorderSize(0)
-    info5sig.SetFillColor(0)
-    info5sig.SetFillStyle(0)
-    info5sig.SetTextFont(42)
-    info5sig.SetTextSize(0.037)
-    info5sig.AddText(f'#mu = {np.mean(multiTrialDict["binCountRatios"][1]):.3f}')
-    info5sig.AddText(f'#sigma = {np.std(multiTrialDict["binCountRatios"][1]):.3f}')
-    info5sig.Draw("same")  
-
 
     # Central values
     central_value = multiTrialDict["hRawYieldsDsCentral"].GetBinContent(multiTrialDict["hRawYieldsDsCentral"].FindBin(ptMin+0.05)) / multiTrialDict["hRawYieldsDplusCentral"].GetBinContent(multiTrialDict["hRawYieldsDplusCentral"].FindBin(ptMin+0.05))
@@ -184,13 +183,17 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
     
     # Third pad: Width
     canvas.cd(3)
-    hFrame = ROOT.gPad.DrawFrame(0, 6.5, len(multiTrialDict["convergedTrials"])*3 + 1, 9.75, "Peak widths;Trial;Width (MeV/#it{c}^{2})")
+    ROOT.gPad.SetLeftMargin(0.1)
+    ROOT.gPad.SetRightMargin(0.05)
+    ROOT.gPad.SetTopMargin(0.1)
+    ROOT.gPad.SetBottomMargin(0.12)
+    hFrame = ROOT.gPad.DrawFrame(0, 6.5, len(multiTrialDict["convergedTrials"])*2 + 1, 9.75, "Peak widths;Trial;Width (MeV/#it{c}^{2})")
     hFrame.GetYaxis().SetLabelSize(0.035)
     hFrame.GetYaxis().SetTitleSize(0.04)
     hFrame.GetYaxis().SetTitleOffset(1.2)
     hFrame.GetXaxis().SetLabelSize(0.035)
     hFrame.GetXaxis().SetTitleSize(0.04)
-    legend3 = ROOT.TLegend(0.5, 0.45, 0.7, 0.55)
+    legend3 = ROOT.TLegend(0.6, 0.45, 0.8, 0.55)
     legend3.SetBorderSize(0)
     legend3.SetFillStyle(0)
     legend3.SetTextSize(0.04)
@@ -216,7 +219,7 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
 
     # Central values
     hLine3 = ROOT.TLine(0, multiTrialDict["hSigmaDsCentral"].GetBinContent(multiTrialDict["hSigmaDsCentral"].FindBin(ptMin+0.05))*1000,
-                        len(multiTrialDict["convergedTrials"])*3 + 1, 
+                        len(multiTrialDict["convergedTrials"])*2 + 1, 
                         multiTrialDict["hSigmaDsCentral"].GetBinContent(multiTrialDict["hSigmaDsCentral"].FindBin(ptMin+0.05))*1000)
     hLine3.SetLineColor(colors[3])
     hLine3.SetLineStyle(2)
@@ -224,7 +227,7 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
     hLine3.Draw("same")
 
     hLine4 = ROOT.TLine(0, multiTrialDict["hSigmaDplusCentral"].GetBinContent(multiTrialDict["hSigmaDplusCentral"].FindBin(ptMin+0.05))*1000,
-                        len(multiTrialDict["convergedTrials"])*3 + 1, 
+                        len(multiTrialDict["convergedTrials"])*2 + 1, 
                         multiTrialDict["hSigmaDplusCentral"].GetBinContent(multiTrialDict["hSigmaDplusCentral"].FindBin(ptMin+0.05))*1000)
     hLine4.SetLineColor(colors[2])
     hLine4.SetLineStyle(2)
@@ -237,7 +240,11 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
 
     # Fourth pad: Chi^2/ndf
     canvas.cd(2)
-    hFrame3 = ROOT.gPad.DrawFrame(0, 0, len(multiTrialDict["convergedTrials"])*3 + 1, 2, "#chi^{2}/ndf;Trial;#chi^{2}/ndf")
+    ROOT.gPad.SetLeftMargin(0.1)
+    ROOT.gPad.SetRightMargin(0.05)
+    ROOT.gPad.SetTopMargin(0.1)
+    ROOT.gPad.SetBottomMargin(0.12)
+    hFrame3 = ROOT.gPad.DrawFrame(0, 0, len(multiTrialDict["convergedTrials"])*2 + 1, 2, "#chi^{2}/ndf;Trial;#chi^{2}/ndf")
     hFrame3.GetYaxis().SetLabelSize(0.035)
     hFrame3.GetYaxis().SetTitleSize(0.04)
     hFrame3.GetYaxis().SetTitleOffset(1.2)
@@ -253,31 +260,37 @@ def ProduceFigure(multiTrialDict, multiTrialCfg, ptMin, ptMax):
 
 
 
-    thesisText = ROOT.TLatex(0.45, 0.7, "This Thesis")
+    thesisText = ROOT.TLatex(0.55, 0.7, "This Thesis")
     thesisText.SetNDC()
     thesisText.SetTextFont(42)
     thesisText.SetTextSize(0.07)
     thesisText.Draw()
 
-    ppText = ROOT.TLatex(0.45, 0.65, "pp collisions, #sqrt{#it{s}} = 13.6 Te#kern[-0.03]{V}")
+    ppText = ROOT.TLatex(0.55, 0.65, "pp collisions")
     ppText.SetNDC()
     ppText.SetTextFont(42)
     ppText.SetTextSize(0.05)
     ppText.Draw()
 
-    DecayText = ROOT.TLatex(0.45, 0.5, 'D_{s}^{+}, D^{+} #rightarrow #phi#pi^{+}#rightarrow K^{+}K^{#font[122]{-}}#pi^{+}')
+    TevText = ROOT.TLatex(0.55, 0.585, "#sqrt{#it{s}} = 13.6 Te#kern[-0.03]{V}")
+    TevText.SetNDC()
+    TevText.SetTextFont(42)
+    TevText.SetTextSize(0.05)
+    TevText.Draw()
+
+    DecayText = ROOT.TLatex(0.55, 0.5, 'D_{s}^{+}, D^{+} #rightarrow #phi#pi^{+}#rightarrow K^{+}K^{#font[122]{-}}#pi^{+}')
     DecayText.SetNDC()
     DecayText.SetTextFont(42)
     DecayText.SetTextSize(0.05)
     DecayText.Draw("same")
 
-    ConjText = ROOT.TLatex(0.45, 0.45, 'and charge conjugate')
+    ConjText = ROOT.TLatex(0.55, 0.45, 'and charge conjugate')
     ConjText.SetNDC()
     ConjText.SetTextFont(42)
     ConjText.SetTextSize(0.05)
     ConjText.Draw("same")
 
-    ptText = ROOT.TLatex(0.45, 0.37, '1.0 < #it{p}_{T} < 1.5 Ge#kern[-0.03]{V}/#it{c}')
+    ptText = ROOT.TLatex(0.55, 0.37, '1.0 < #it{p}_{T} < 1.5 Ge#kern[-0.03]{V}/#it{c}')
     ptText.SetNDC()
     ptText.SetTextFont(42)
     ptText.SetTextSize(0.05)

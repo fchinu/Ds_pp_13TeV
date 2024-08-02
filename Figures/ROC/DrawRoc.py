@@ -89,7 +89,7 @@ dictTest_roc, globalTest_auc = get_roc_ovo(yTest, yPredTestRaw, 3, ['Bkg', 'Prom
 # Plot the ROCs
 ROOT.gStyle.SetOptStat(0)
 colors, ROOTcols = get_discrete_matplotlib_palette("tab10")
-c = ROOT.TCanvas("c", "c", 800, 1000)
+c = ROOT.TCanvas("c", "c", 800, 800)
 c.SetLeftMargin(0.1)
 c.SetRightMargin(0.05)
 c.SetBottomMargin(0.1)
@@ -99,29 +99,33 @@ hFrame = c.DrawFrame(0, 0, 1, 1.2, ";False Positive Rate;True Positive Rate")
 hFrame.GetYaxis().SetNdivisions(-512)
 hFrame.GetXaxis().SetTickLength(0.025)
 
-legend = ROOT.TLegend(0.25, 0.15, 0.55, 0.6)
+legend = ROOT.TLegend(0.37, 0.13, 0.67, 0.33)
 legend.SetBorderSize(0)
 legend.SetFillStyle(0)
 legend.SetTextSize(0.028)
 
 graphsTrain = []
 graphsTest = []
-for i, comb in enumerate(dictTrain_roc.keys()):
-    fpr, tpr, rocauc = dictTrain_roc[comb]
-    graphsTrain.append(ROOT.TGraph(len(fpr), array('d', fpr), array('d', tpr)))
-    graphsTrain[-1].SetTitle()
-    graphsTrain[-1].SetLineColor(colors[i])
-    graphsTrain[-1].SetLineWidth(2)
-    graphsTrain[-1].SetLineStyle(2)
-    graphsTrain[-1].Draw("L,same")
-    legend.AddEntry(graphsTrain[-1], f"Train: {comb.replace('__', ' vs ')} (ROC AUC = {rocauc:.3f})", "l")
+dictTest_roc = {'Bkg__Prompt D_{#lower[-0.5]{s}}^{+}': dictTest_roc['Bkg__Prompt D_{#lower[-0.5]{s}}^{+}'], 
+                 'Bkg__FD D_{#lower[-0.3]{s}}^{+}': dictTest_roc['Bkg__FD D_{#lower[-0.3]{s}}^{+}'], 
+                 'Prompt D_{#lower[-0.5]{s}}^{+}__FD D_{#lower[-0.3]{s}}^{+}': dictTest_roc['Prompt D_{#lower[-0.5]{s}}^{+}__FD D_{#lower[-0.3]{s}}^{+}']}
+
+for i, comb in enumerate(dictTest_roc.keys()):
+    #fpr, tpr, rocauc = dictTrain_roc[comb]
+    #graphsTrain.append(ROOT.TGraph(len(fpr), array('d', fpr), array('d', tpr)))
+    #graphsTrain[-1].SetTitle()
+    #graphsTrain[-1].SetLineColor(colors[i])
+    #graphsTrain[-1].SetLineWidth(2)
+    #graphsTrain[-1].SetLineStyle(2)
+    #graphsTrain[-1].Draw("L,same")
+    #legend.AddEntry(graphsTrain[-1], f"Train: {comb.replace('__', ' vs ')} (ROC AUC = {rocauc:.3f})", "l")
     fpr, tpr, rocauc = dictTest_roc[comb]
     graphsTest.append(ROOT.TGraph(len(fpr), array('d', fpr), array('d', tpr)))
     graphsTest[-1].SetTitle()
     graphsTest[-1].SetLineColor(colors[i])
     graphsTest[-1].SetLineWidth(2)
     graphsTest[-1].Draw("L,same")
-    legend.AddEntry(graphsTest[-1], f"Test: {comb.replace('__', ' vs ')} (ROC AUC = {rocauc:.3f})", "l")
+    legend.AddEntry(graphsTest[-1], f"{comb.replace('__', ' vs ')} (ROC AUC = {rocauc:.3f})", "l")
 
 RandomClassifier = ROOT.TGraph(2, array('d', [0, 1]), array('d', [0, 1]))
 RandomClassifier.SetLineColor(ROOT.kGray)
@@ -136,9 +140,91 @@ LineAtOne.SetLineStyle(9)
 LineAtOne.SetLineWidth(2)
 LineAtOne.Draw("same")
 
-legend.AddEntry("", "", "")
-legend.AddEntry("", f"Train: Average OvO ROC AUC = {globalTrain_auc:.3f}", "")
-legend.AddEntry("", f"Test: Average OvO ROC AUC = {globalTest_auc:.3f}", "")
+legend.AddEntry("", f"Average OvO ROC AUC = {globalTest_auc:.3f}", "")
+
+legend.Draw()
+c.Update()
+c.RedrawAxis()
+c.SetTickx()
+c.SetTicky()
+#c.SetGrid()
+
+thesisText = ROOT.TLatex(0.15, 0.9, "This Thesis")
+thesisText.SetNDC()
+thesisText.SetTextFont(42)
+thesisText.SetTextSize(0.045)
+thesisText.Draw()
+
+ppText = ROOT.TLatex(0.15, 0.86, "pp collisions")
+ppText.SetNDC()
+ppText.SetTextFont(42)
+ppText.SetTextSize(0.04)
+ppText.Draw()
+
+EnergyText = ROOT.TLatex(0.15, 0.82, '#sqrt{#it{s}} = 13.6 Te#kern[-0.03]{V}')
+EnergyText.SetNDC()
+EnergyText.SetTextFont(42)
+EnergyText.SetTextSize(0.04)
+EnergyText.Draw("same")
+
+DecayText = ROOT.TLatex(0.5, 0.9, 'D_{s}^{+}, D^{+} #rightarrow #phi#pi^{+}#rightarrow K^{+}K^{#font[122]{-}}#pi^{+}')
+DecayText.SetNDC()
+DecayText.SetTextFont(42)
+DecayText.SetTextSize(0.04)
+DecayText.Draw("same")
+
+ConjText = ROOT.TLatex(0.5, 0.86, 'and charge conjugate')
+ConjText.SetNDC()
+ConjText.SetTextFont(42)
+ConjText.SetTextSize(0.04)
+ConjText.Draw("same")
+
+ptText = ROOT.TLatex(0.5, 0.82, '2 < #it{p}_{#lower[-0.15]{T}} < 3 Ge#kern[-0.03]{V}/#it{c}')
+ptText.SetNDC()
+ptText.SetTextFont(42)
+ptText.SetTextSize(0.04)
+ptText.Draw("same")
+
+c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/ROC/ROC_Reduced.png")
+c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/ROC/ROC_Reduced.pdf")
+
+'''
+
+dictTest_roc = {'Bkg__Prompt D_{#lower[-0.5]{s}}^{+}': dictTest_roc['Bkg__Prompt D_{#lower[-0.5]{s}}^{+}'], 
+                 'Bkg__FD D_{#lower[-0.3]{s}}^{+}': dictTest_roc['Bkg__FD D_{#lower[-0.3]{s}}^{+}'], 
+                 'Prompt D_{#lower[-0.5]{s}}^{+}__FD D_{#lower[-0.3]{s}}^{+}': dictTest_roc['Prompt D_{#lower[-0.5]{s}}^{+}__FD D_{#lower[-0.3]{s}}^{+}']}
+
+for i, comb in enumerate(dictTest_roc.keys()):
+    #fpr, tpr, rocauc = dictTrain_roc[comb]
+    #graphsTrain.append(ROOT.TGraph(len(fpr), array('d', fpr), array('d', tpr)))
+    #graphsTrain[-1].SetTitle()
+    #graphsTrain[-1].SetLineColor(colors[i])
+    #graphsTrain[-1].SetLineWidth(2)
+    #graphsTrain[-1].SetLineStyle(2)
+    #graphsTrain[-1].Draw("L,same")
+    #legend.AddEntry(graphsTrain[-1], f"Train: {comb.replace('__', ' vs ')} (ROC AUC = {rocauc:.3f})", "l")
+    fpr, tpr, rocauc = dictTest_roc[comb]
+    graphsTest.append(ROOT.TGraph(len(fpr), array('d', fpr), array('d', tpr)))
+    graphsTest[-1].SetTitle()
+    graphsTest[-1].SetLineColor(colors[i])
+    graphsTest[-1].SetLineWidth(2)
+    graphsTest[-1].Draw("L,same")
+    reduced_Legend.AddEntry(graphsTest[-1], f"Test: {comb.replace('__', ' vs ')} (ROC AUC = {rocauc:.3f})", "l")
+
+RandomClassifier = ROOT.TGraph(2, array('d', [0, 1]), array('d', [0, 1]))
+RandomClassifier.SetLineColor(ROOT.kGray)
+RandomClassifier.SetLineStyle(9)
+RandomClassifier.SetLineWidth(2)
+RandomClassifier.Draw("L,same")
+reduced_Legend.AddEntry(RandomClassifier, "Luck (ROC AUC = 0.5)", "l")
+
+LineAtOne = ROOT.TLine(0, 1, 1, 1)
+LineAtOne.SetLineColor(ROOT.kBlack)
+LineAtOne.SetLineStyle(9)
+LineAtOne.SetLineWidth(2)
+LineAtOne.Draw("same")
+
+reduced_Legend.AddEntry("", f"Test: Average OvO ROC AUC = {globalTest_auc:.3f}", "")
 
 legend.Draw()
 c.Update()
@@ -183,5 +269,5 @@ ptText.SetTextFont(42)
 ptText.SetTextSize(0.04)
 ptText.Draw("same")
 
-c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/ROC/ROC.png")
-c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/ROC/ROC.pdf")
+c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/ROC/ROC_Reduced.png")
+c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/ROC/ROC_Reduced.pdf")'''

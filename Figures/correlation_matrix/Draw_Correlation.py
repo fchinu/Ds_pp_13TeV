@@ -26,9 +26,9 @@ dfBkg = read_parquet_in_batches("/home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_ru
 # Define the variables to plot
 VarsToDraw = ['fM', 'fPt', 'fCpa', 'fCpaXY', 'fDecayLength', 'fDecayLengthXY', 'fImpactParameterXY', 'fAbsCos3PiK', 'fImpactParameter0', 'fImpactParameter1',
                        'fImpactParameter2', 'fNSigTpcTofPi0', 'fNSigTpcTofKa0', 'fNSigTpcTofPi1', 'fNSigTpcTofKa1', 'fNSigTpcTofPi2', 'fNSigTpcTofKa2']
-VarsTitles = ['#it{M}', '#it{p}_{T}', 'cos#it{#theta}_{p}', 'cos#it{#theta}_{p}^{xy}', 'L', 'L^{xy}', 'd^{xy}', '|cos^{3}#it{#theta}(K)|', 'd^{xy}_{0}', 'd^{xy}_{1}',
-             'd^{xy}_{2}', 'n#sigma_{comb}^{#pi}(0)', 'n#sigma_{comb}^{K}(0)', 'n#sigma_{comb}^{#pi}(1)', 'n#sigma_{comb}^{K}(1)', 'n#sigma_{comb}^{#pi}(2)', 
-             'n#sigma_{comb}^{K}(2)']
+VarsTitles = ['#it{M}', '#it{p}_{T}', 'cos#it{#theta}_{p}', 'cos#it{#theta}_{p}^{xy}', 'L', 'L^{xy}', 'd^{xy}', "|cos^{3}#it{#theta'}(K)|", 'd^{xy}_{0}', 'd^{xy}_{1}',
+             'd^{xy}_{2}', '#it{n}#sigma_{comb}^{#pi}(0)', '#it{n}#sigma_{comb}^{K}(0)', '#it{n}#sigma_{comb}^{#pi}(1)', '#it{n}#sigma_{comb}^{K}(1)', '#it{n}#sigma_{comb}^{#pi}(2)', 
+             '#it{n}#sigma_{comb}^{K}(2)']
 
 # Reverse the axis
 VarsToDraw.reverse()
@@ -54,8 +54,8 @@ for i, var1 in enumerate(VarsToDraw):
         CorrMatrix[i, j] = dfDsPrompt[var1].corr(dfDsPrompt[var2])
 
 ROOT.gPad.SetRightMargin(0.15)
-ROOT.gPad.SetLeftMargin(0.15)
-ROOT.gPad.SetBottomMargin(0.15)
+ROOT.gPad.SetLeftMargin(0.16)
+ROOT.gPad.SetBottomMargin(0.16)
 ROOT.gPad.SetTopMargin(0.08)
 # Create the histogram
 hCorrPromptDs = ROOT.TH2D("hCorrPromptDs", "Prompt D_{s}^{+} correlation matrix", len(VarsToDraw), 0, len(VarsToDraw), len(VarsToDraw), 0, len(VarsToDraw))
@@ -88,8 +88,8 @@ for i, var1 in enumerate(VarsToDraw):
         CorrMatrix[i, j] = dfDsFD[var1].corr(dfDsFD[var2])
 
 ROOT.gPad.SetRightMargin(0.15)
-ROOT.gPad.SetLeftMargin(0.15)
-ROOT.gPad.SetBottomMargin(0.15)
+ROOT.gPad.SetLeftMargin(0.16)
+ROOT.gPad.SetBottomMargin(0.16)
 ROOT.gPad.SetTopMargin(0.08)
 # Create the histogram
 hCorrFDDs = ROOT.TH2D("hCorrFDDs", "FD D_{s}^{+} correlation matrix", len(VarsToDraw), 0, len(VarsToDraw), len(VarsToDraw), 0, len(VarsToDraw))
@@ -122,8 +122,8 @@ for i, var1 in enumerate(VarsToDraw):
         CorrMatrix[i, j] = dfBkg[var1].corr(dfBkg[var2])
 
 ROOT.gPad.SetRightMargin(0.15)
-ROOT.gPad.SetLeftMargin(0.15)
-ROOT.gPad.SetBottomMargin(0.15)
+ROOT.gPad.SetLeftMargin(0.16)
+ROOT.gPad.SetBottomMargin(0.16)
 ROOT.gPad.SetTopMargin(0.08)
 # Create the histogram
 hCorrBkg = ROOT.TH2D("hCorrBkg", "Bkg. correlation matrix", len(VarsToDraw), 0, len(VarsToDraw), len(VarsToDraw), 0, len(VarsToDraw))
