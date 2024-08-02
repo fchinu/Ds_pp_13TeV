@@ -388,7 +388,6 @@ def main(): #pylint: disable=too-many-statements
                                                                     DataHandler.get_slice(iBin))
 
                                                                     
-        '''
         if args.apply and inputCfg['data_prep']['test_fraction'] < 1.:
             print('\033[93mWARNING: Using only a fraction of the MC for the application! Are you sure?\033[0m')
 
@@ -417,6 +416,5 @@ def main(): #pylint: disable=too-many-statements
         for data in TrainTestData:
             del data
         del PromptDfSelForEff, FDDfSelForEff
-        '''
 
 main()
