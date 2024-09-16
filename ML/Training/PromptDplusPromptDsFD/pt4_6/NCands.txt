@@ -1,0 +1,5 @@
+Number of available candidates in 4 < pT < 6 GeV/c:
+     Prompt Ds: 25843
+ Signal prompt Dplus: 109953
+      FD: 185417
+     Bkg: 91458

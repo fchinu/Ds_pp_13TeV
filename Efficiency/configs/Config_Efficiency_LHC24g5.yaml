@@ -1,0 +1,30 @@
+input_files: 
+  DsPrompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train264446/LHC24g5_PromptDs.parquet
+  DplusPrompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train264446/LHC24g5_PromptDplus.parquet
+  DsFD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train264446/LHC24g5_NonPromptDs.parquet
+  DplusFD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train264446/LHC24g5_NonPromptDplus.parquet
+
+dataset_eff_frac: [1, 1, 1, 1]
+
+analysis_result_file_prompt: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train264446/AnalysisResults_LHC24g5.root
+analysis_result_file_FD: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train264446/AnalysisResults_LHC24g5.root
+
+pt_bins:
+  mins: [0.5, 1., 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12] 
+  maxs: [1, 1.5, 2., 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 8, 12, 24]
+preselections: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+model_handlers: [ 
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/WoNormVariables_LHC22b1a_b/pt0_1.5/ModelHandler_pT_0_1.5.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/WoNormVariables_LHC22b1a_b/pt0_1.5/ModelHandler_pT_0_1.5.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/WoNormVariables_LHC22b1a_b/pt1.5_2/ModelHandler_pT_1.5_2.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/WoNormVariables_LHC22b1a_b/pt2_3/ModelHandler_pT_2_3.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/WoNormVariables_LHC22b1a_b/pt2_3/ModelHandler_pT_2_3.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/WoNormVariables_LHC22b1a_b/pt3_4/ModelHandler_pT_3_4.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/WoNormVariables_LHC22b1a_b/pt3_4/ModelHandler_pT_3_4.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/WoNormVariables_LHC22b1a_b/pt4_5/ModelHandler_pT_4_5.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/WoNormVariables_LHC22b1a_b/pt4_5/ModelHandler_pT_4_5.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/WoNormVariables_LHC22b1a_b/pt5_6/ModelHandler_pT_5_6.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/WoNormVariables_LHC22b1a_b/pt5_6/ModelHandler_pT_5_6.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/WoNormVariables_LHC22b1a_b/pt6_8/ModelHandler_pT_6_8.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/WoNormVariables_LHC22b1a_b/pt8_12/ModelHandler_pT_8_12.pickle,
+                  /home/fchinu/Run3/Ds_pp_13TeV/ML/Training/WoNormVariables_LHC22b1a_b/pt12_24/ModelHandler_pT_12_24.pickle]

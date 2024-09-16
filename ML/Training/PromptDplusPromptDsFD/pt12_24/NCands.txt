@@ -1,0 +1,5 @@
+Number of available candidates in 12 < pT < 24 GeV/c:
+     Prompt Ds: 5887
+ Signal prompt Dplus: 19709
+      FD: 35186
+     Bkg: 2618
