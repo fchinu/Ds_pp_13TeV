@@ -1,3 +1,0 @@
-/alice/cern.ch/user/a/alihyperloop/jobs/0023/hy_238107/AOD/001
-/alice/cern.ch/user/a/alihyperloop/jobs/0023/hy_238107/AOD/002
-/alice/cern.ch/user/a/alihyperloop/jobs/0023/hy_238107/AOD/003
