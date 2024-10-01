@@ -1,0 +1,35 @@
+inputs:
+  data: /home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/MC/VsMult/ds_prompt.root
+  mc: 
+    ds: Projections_RawYields/Data/LHC22o_pass7/VsMult/Projections_MC.root
+    dplus: Projections_RawYields/Data/LHC22o_pass7/VsMult/Projections_MC.root
+  cutset: /home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/configs/cutset_pp13TeV_multiplicity.yml
+
+max_workers: 30
+
+fit_configs:
+  # below one per pT bin
+  mass:
+    mins: [1.75, 1.75, 1.75, 1.75, 1.75, 1.75]
+    maxs: [2.1, 2.1, 2.1, 2.1, 2.1, 2.1]
+  rebin: [2, 2, 2, 2, 2, 2]
+  signal:
+    signal_funcs: [["gaussian"], ["gaussian"], ["gaussian"],
+      ["gaussian"], ["gaussian"], ["gaussian"]]
+    fix_ds_sigma: [false, false, false, false, false, false]
+    ds_sigma: # value, list or path to root_file. If null or empty, fit MC and then use that sigma
+    fix_dplus_sigma: [false, false, false, false, false, false]
+    dplus_sigma: [] # value, list or path to root_file. If null or empty, fit MC and then use that sigma
+    fix_sigma_dplus_to_ds: [false, false, false, false, false, false]
+    ratio_sigma_dplus_to_ds: [0, 0, 0, 0.8, 0.8, 0.8] # value, list or path to root_file. If null or empty, set dplus sigma to that of ds. Otherwise, set to ds sigma * value
+  bkg:
+    bkg_funcs: [['nobkg'], ['nobkg'], ['nobkg'], ['nobkg'], ['nobkg'], ['nobkg']]
+    use_bkg_templ: [false, false, false, false, false, false]
+    template_file: Projections_RawYields/Data/LHC22o_pass7/VsMult/DplusForTemplateHistos_Train165702.root
+
+
+outputs:
+  directory: "/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/MC/VsMult"
+  suffix: ""
+  save_all_fits: true
+  formats: ["png"]
