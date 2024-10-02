@@ -1,0 +1,4 @@
+Number of available candidates in 12 < pT < 24 GeV/c:
+     Prompt: 20182
+     FD: 55636
+     Bkg: 3057
