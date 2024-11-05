@@ -43,18 +43,24 @@ def main(config):
         hist_effnp[-1].SetDirectory(0)
         infile_eff.Close()
 
+    histos_central_effp = []
+    histos_central_effnp = []
     if cfg["central_efficiency"]["computerawfrac"]:
         infile_name = os.path.join(cfg["central_efficiency"]["inputdir"], cfg["central_efficiency"]["inputfile"])
         infile_central_eff = ROOT.TFile.Open(infile_name)
-        hist_central_effp = infile_central_eff.Get(cfg["central_efficiency"]["histonames"]["prompt"])
-        hist_central_effnp = infile_central_eff.Get(cfg["central_efficiency"]["histonames"]["nonprompt"])
-        hist_central_effp.SetDirectory(0)
-        hist_central_effnp.SetDirectory(0)
+        histo_names = cfg["central_efficiency"]["histonames"]
+        if not isinstance(histo_names, list):
+            histo_names = [histo_names]
+        for histoname in histo_names:
+            histos_central_effp.append(infile_central_eff.Get(histoname["prompt"]))
+            histos_central_effnp.append(infile_central_eff.Get(histoname["nonprompt"]))
+            histos_central_effp[-1].SetDirectory(0)
+            histos_central_effnp[-1].SetDirectory(0)
         infile_central_eff.Close()
 
         # Check if the histograms have the same binning, assuming the two sets of inputs are consistent
         for ibin in range(1, hist_rawy[0].GetNbinsX() + 2):  # +2 to include the upper edge of last bin
-            if hist_rawy[0].GetBinLowEdge(ibin) != hist_central_effp.GetBinLowEdge(ibin):
+            if hist_rawy[0].GetBinLowEdge(ibin) != histos_central_effp[0].GetBinLowEdge(ibin):
                 raise ValueError("Histograms have different binning, check the input files")
 
     hist_corry_prompt = hist_rawy[0].Clone("hCorrYieldsPrompt")
@@ -92,24 +98,26 @@ def main(config):
         fillstyle=0,
         markerstyle=ROOT.kFullSquare,
     )
+    histos_frac_raw_prompt = []
+    histos_frac_raw_nonprompt = []
     if cfg["central_efficiency"]["computerawfrac"]:
-        hist_frac_raw_prompt = hist_rawy[0].Clone("hRawFracPrompt")
-        hist_frac_raw_nonprompt = hist_rawy[0].Clone("hRawFracNonPrompt")
-        hist_frac_raw_prompt.GetYaxis().SetTitle("raw fraction prompt")
-        hist_frac_raw_nonprompt.GetYaxis().SetTitle("raw fraction non-prompt")
-        set_object_style(
-            hist_frac_raw_prompt,
-            color=ROOT.kRed + 1,
-            fillstyle=0,
-            markerstyle=ROOT.kFullSquare,
-        )
-
-        set_object_style(
-            hist_frac_raw_nonprompt,
-            color=ROOT.kAzure + 4,
-            fillstyle=0,
-            markerstyle=ROOT.kFullSquare,
-        )
+        for h_eff_p, h_eff_np, suffix in zip(histos_central_effp, histos_central_effnp, cfg["central_efficiency"]["suffixes"]):
+            histos_frac_raw_prompt.append(hist_rawy[0].Clone(f"hRawFracPrompt_{suffix}"))
+            histos_frac_raw_nonprompt.append(hist_rawy[0].Clone(f"hRawFracNonPrompt_{suffix}"))
+            histos_frac_raw_prompt[-1].GetYaxis().SetTitle("raw fraction prompt")
+            histos_frac_raw_nonprompt[-1].GetYaxis().SetTitle("raw fraction non-prompt")
+            set_object_style(
+                histos_frac_raw_prompt[-1],
+                color=ROOT.kRed + 1,
+                fillstyle=0,
+                markerstyle=ROOT.kFullSquare,
+            )
+            set_object_style(
+                histos_frac_raw_nonprompt[-1],
+                color=ROOT.kAzure + 4,
+                fillstyle=0,
+                markerstyle=ROOT.kFullSquare,
+            )
 
     output = ROOT.TFile(os.path.join(cfg["output"]["directory"], cfg["output"]["file"]), "recreate")
     n_sets = len(hist_rawy)
@@ -142,16 +150,20 @@ def main(config):
         hist_corrfrac_nonprompt.SetBinContent(ipt + 1, corr_frac_nonprompt[0])
         hist_corrfrac_nonprompt.SetBinError(ipt + 1, corr_frac_nonprompt[1])
         if cfg["central_efficiency"]["computerawfrac"]:
-            raw_frac_prompt = minimiser.get_raw_prompt_fraction(
-                hist_central_effp.GetBinContent(ipt + 1), hist_central_effnp.GetBinContent(ipt + 1)
-            )
-            raw_frac_nonprompt = minimiser.get_raw_nonprompt_fraction(
-                hist_central_effp.GetBinContent(ipt + 1), hist_central_effnp.GetBinContent(ipt + 1)
-            )
-            hist_frac_raw_prompt.SetBinContent(ipt + 1, raw_frac_prompt[0])
-            hist_frac_raw_prompt.SetBinError(ipt + 1, raw_frac_prompt[1])
-            hist_frac_raw_nonprompt.SetBinContent(ipt + 1, raw_frac_nonprompt[0])
-            hist_frac_raw_nonprompt.SetBinError(ipt + 1, raw_frac_nonprompt[1])
+            for h_eff_p, h_eff_np, h_frac_p, h_frac_np, suffix in zip(
+                histos_central_effp, histos_central_effnp, histos_frac_raw_prompt,
+                histos_frac_raw_nonprompt, cfg["central_efficiency"]["suffixes"]
+            ):
+                raw_frac_prompt = minimiser.get_raw_prompt_fraction(
+                    h_eff_p.GetBinContent(ipt + 1), h_eff_np.GetBinContent(ipt + 1)
+                )
+                raw_frac_nonprompt = minimiser.get_raw_nonprompt_fraction(
+                    h_eff_p.GetBinContent(ipt + 1), h_eff_np.GetBinContent(ipt + 1)
+                )
+                h_frac_p.SetBinContent(ipt + 1, raw_frac_prompt[0])
+                h_frac_p.SetBinError(ipt + 1, raw_frac_prompt[1])
+                h_frac_np.SetBinContent(ipt + 1, raw_frac_nonprompt[0])
+                h_frac_np.SetBinError(ipt + 1, raw_frac_nonprompt[1])
 
         canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min*10:.0f}_{pt_max*10:.0f}")
         output.cd()
@@ -227,8 +239,9 @@ def main(config):
     hist_corrfrac_prompt.Write()
     hist_corrfrac_nonprompt.Write()
     if cfg["central_efficiency"]["computerawfrac"]:
-        hist_frac_raw_prompt.Write()
-        hist_frac_raw_nonprompt.Write()
+        for h_frac_p, h_frac_np in zip(histos_frac_raw_prompt, histos_frac_raw_nonprompt):
+            h_frac_p.Write()
+            h_frac_np.Write()
     output.Close()
 
 
