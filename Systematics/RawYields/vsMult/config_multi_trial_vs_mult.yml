@@ -1,0 +1,36 @@
+reference_fits: Projections_RawYields/data/VsMult/FT0M/mass_fits.root                # file with central values
+    
+inputs:
+  data: Projections_RawYields/data/VsMult/FT0M/data_LHC22o.root
+  mc_signal: Projections_RawYields/MC/VsMult/ds_prompt.root
+  template:
+    file: Projections_RawYields/MC/VsMult/d_plus_corr_bkg_template.root
+    hist_name: 'h_mass_{pt_min}_{pt_max}_cent_0_100'    # can use also pt_min, pt_max, cent_min, cent_max to format name. pt variables are multiplied by 10 to avoid floating point issues
+  cutset: 'Projections_RawYields/configs/cutset_pp13TeV_multiplicity.yml'
+
+output:
+  dir: Systematics/RawYields/vsMult                     # output directory
+  save_all_fits: true                                   # whether to save all fits figures
+  dir_fits: fits                                        # append to output_dir
+  formats: [pdf, png]                                   # save figures in these formats
+  suffix: ''                                            # suffix for output files
+
+max_workers: 10
+
+multitrial:
+    pt_bins: [0]                                        # list of pt bins, set null if you want to keep them all
+    mins: [1.73, 1.75, 1.77]                            # lower fit limit
+    maxs: [2.08, 2.1, 2.12, 2.14]                       # upper fit limit
+    rebins: [2, 4, 6]                                   # rebinning
+    sgn_funcs: [[gaussian, gaussian]]                   # signal functions
+    bkg_funcs: [[chebpol3], [chebpol2]]   # bkg functions
+    sigma: [
+        free, fixed_plus_unc, fixed_minus_unc
+    ]                                                   # free, fixed, fixed_plus_unc, fixed_minus_unc, fixed_plus_XX_perc, fixed_minus_XX_perc
+    fix_sigma_to_mb: [true]                             # fix sigma to minimum bias
+    fix_corr_bkg_to_mb: [true]                          # fix fraction of correlated bkg to minimum bias
+    mean: [free]                                        # free, fixed, fixed_plus_unc, fixed_minus_unc, fixed_plus_XX_perc, fixed_minus_XX_perc
+    use_bkg_templ: [true]                               # use bkg template
+    bincounting_nsigma: []                              # nsigmas for bin counting raw yield extraction
+
+assigned_syst: [0.1, 0.1]                               # assigned systematic uncertainties
