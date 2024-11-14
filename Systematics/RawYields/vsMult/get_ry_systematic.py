@@ -106,12 +106,12 @@ def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst): 
         # Plot the results
         axs[0, 0].errorbar(
             x=range(1, n_trials + 1), y=raw_yields_ds,
-            yerr=raw_yields_ds_unc, fmt='o', label='Fit',
+            yerr=raw_yields_ds_unc, fmt='o', label=r'Fit ($\mathrm{D_s^+}$)',
             zorder=2
         )
         axs[0, 0].errorbar(
             x=range(1, n_trials + 1), y=raw_yields_dplus,
-            yerr=raw_yields_dplus_unc, fmt='o', label='Fit',
+            yerr=raw_yields_dplus_unc, fmt='o', label=r'Fit ($\mathrm{D^+}$)',
             zorder=2
         )
 
@@ -138,7 +138,7 @@ def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst): 
                 (0, central_rawy_ds - central_rawy_ds_unc),
                 x_axis_range, 2 * central_rawy_ds_unc,
                 color='C0', alpha=0.3, zorder=0,
-                label=r'Central value $\pm$ uncertainty'
+                label=r'Central value $\pm$ uncertainty ($\mathrm{D_s^+}$)'
             )
         )
         axs[0, 0].axhline(y=central_rawy_dplus, color='C1', linestyle='--')
@@ -147,7 +147,7 @@ def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst): 
                 (0, central_rawy_dplus - central_rawy_dplus_unc),
                 x_axis_range, 2 * central_rawy_dplus_unc,
                 color='C1', alpha=0.3, zorder=0,
-                label=r'Central value $\pm$ uncertainty'
+                label=r'Central value $\pm$ uncertainty ($\mathrm{D^+}$)'
             )
         )
 
@@ -207,7 +207,7 @@ def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst): 
         axs[0, 1].add_artist(anchored_text_fit)
 
         # Draw the assigned systematic uncertainty
-        axs[0, 1].set_xlabel('Raw yields', fontsize=14)
+        axs[0, 1].set_xlabel('Ratio', fontsize=14)
         axs[0, 1].set_ylabel('Counts', fontsize=14)
         axs[0, 1].legend(fontsize=12, loc='upper right')
 
@@ -246,7 +246,7 @@ def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst): 
                 (0, central_sigma_ds - central_sigma_ds_unc),
                 x_axis_range, 2 * central_sigma_ds_unc,
                 color='C0', alpha=0.3, zorder=0,
-                label=r'Central value $\pm$ uncertainty'
+                label=r'Central value $\pm$ uncertainty ($\mathrm{D_s^+}$)'
             )
         )
         axs[1, 0].axhline(y=central_sigma_dplus, color='C1', linestyle='--')
@@ -255,7 +255,7 @@ def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst): 
                 (0, central_sigma_dplus - central_sigma_dplus_unc),
                 x_axis_range, 2 * central_sigma_dplus_unc,
                 color='C1', alpha=0.3, zorder=0,
-                label=r'Central value $\pm$ uncertainty'
+                label=r'Central value $\pm$ uncertainty ($\mathrm{D^+}$)'
             )
         )
 
@@ -276,7 +276,7 @@ def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst): 
         plt.show()
         fig.savefig(
             os.path.join(
-                cfg["output"]["dir"],
+                cfg["output"]["dir"], "output", "syst",
                 f'fig_{pt_min*10:.0f}_{pt_max*10:.0f}_{cent_min}_{cent_max}.png'
             ), bbox_inches='tight'
         )
@@ -305,7 +305,7 @@ def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst): 
             )
         plt.savefig(
             os.path.join(
-                cfg["output"]["dir"],
+                cfg["output"]["dir"], "output", "ratio",
                 f'fig_ratio_{pt_min*10:.0f}_{pt_max*10:.0f}_{cent_min}_{cent_max}.png'
             ),
             bbox_inches='tight'
