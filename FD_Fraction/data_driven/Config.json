@@ -1,0 +1,69 @@
+{
+  "rawyields": {
+    "inputdir": "FD_Fraction/data_driven/VsMult/2023/Projections_RawYields/doublecb",
+    "inputfiles": [
+      "mass_fits_outFD_pos02.root",
+      "mass_fits_outFD_pos03.root",
+      "mass_fits_outFD_pos04.root",
+      "mass_fits_outFD_pos05.root",
+      "mass_fits_outFD_pos06.root",
+      "mass_fits_outFD_pos07.root",
+      "mass_fits_outFD_pos08.root",
+      "mass_fits_outFD_pos09.root",
+      "mass_fits_outFD_pos10.root",
+      "mass_fits_outFD_pos11.root",
+      "mass_fits_outFD_pos12.root",
+      "mass_fits_outFD_pos13.root",
+      "mass_fits_outFD_pos14.root",
+      "mass_fits_outFD_pos15.root",
+      "mass_fits_outFD_pos16.root",
+      "mass_fits_outFD_pos17.root"
+    ],
+    "histoname": "h_raw_yields_ds"
+  },
+  "efficiencies": {
+    "inputdir": "FD_Fraction/data_driven/VsMult/2023/Efficiency",
+    "inputfiles": [
+      "efficiency__outFD_pos02.root",
+      "efficiency__outFD_pos03.root",
+      "efficiency__outFD_pos04.root",
+      "efficiency__outFD_pos05.root",
+      "efficiency__outFD_pos06.root",
+      "efficiency__outFD_pos07.root",
+      "efficiency__outFD_pos08.root",
+      "efficiency__outFD_pos10.root",
+      "efficiency__outFD_pos11.root",
+      "efficiency__outFD_pos12.root",
+      "efficiency__outFD_pos13.root",
+      "efficiency__outFD_pos14.root",
+      "efficiency__outFD_pos15.root",
+      "efficiency__outFD_pos16.root"
+    ],
+    "histonames": {
+      "prompt": "eff_DsPrompt",
+      "nonprompt": "eff_DsNonPrompt"
+    }
+  },
+  "minimisation": {
+    "correlated": true,
+    "draw_weights": false
+  },
+  "central_efficiency": {
+    "computerawfrac": false,
+    "inputdir": "Efficiency/VsMult",
+    "inputfile": "efficiency_LHC24g5_h1_comb_FT0M.root",
+    "suffixes": [
+      "cent"
+    ],
+    "histonames": [
+      {
+        "prompt": "eff_DsPrompt",
+        "nonprompt": "eff_DsNonPrompt"
+      }
+    ]
+  },
+  "output": {
+    "directory": "FD_Fraction/data_driven/VsMult/2023/ds/doublecb",
+    "file": "CutVarDs_pp13TeV_MB.root"
+  }
+}

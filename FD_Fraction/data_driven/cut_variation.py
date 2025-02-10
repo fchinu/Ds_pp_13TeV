@@ -428,13 +428,19 @@ class CutVarMinimiser:
         set_object_style(hist_raw_yield_sum, color=ROOT.kGreen + 2, fillstyle=0)
 
         canvas = ROOT.TCanvas(f"cRawYieldVsCut{suffix}", "", 500, 500)
-        canvas.DrawFrame(
+        pad_fits = ROOT.TPad("pad_fits", "", 0.0, 0.25, 1.0, 1.0)
+        pad_fits.SetBottomMargin(0.0)
+        pad_fits.Draw()
+        pad_fits.cd()
+        h_frame = pad_fits.DrawFrame(
             -0.5,
-            0.0,
+            1.e-3,
             self.n_sets - 0.5,
             hist_raw_yield.GetMaximum() * 1.2,
             ";cut set;raw yield",
         )
+        h_frame.GetYaxis().SetTitleSize(0.06)
+        h_frame.GetYaxis().SetTitleOffset(1.3)
         leg = ROOT.TLegend(0.6, 0.65, 0.8, 0.9)
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
@@ -449,6 +455,42 @@ class CutVarMinimiser:
         hist_raw_yield_prompt.Draw("histsame")
         hist_raw_yield_nonprompt.Draw("histsame")
         hist_raw_yield_sum.Draw("histsame")
+
+        canvas.cd()
+        pad_ratio = ROOT.TPad("pad_ratio", "", 0.0, 0.0, 1.0, 0.25)
+        pad_ratio.SetTopMargin(0.0)
+        pad_ratio.SetBottomMargin(0.3)
+        pad_ratio.Draw()
+        pad_ratio.cd()
+        h_ratio = hist_raw_yield.Clone(f"hRatioVsCut{suffix}")
+        h_ratio.Divide(hist_raw_yield_sum)
+        h_ratio.SetMarkerStyle(ROOT.kFullCircle)
+        h_ratio.SetMarkerSize(1.0)
+        h_ratio.SetMarkerColor(ROOT.kBlack)
+        h_frame_ratio = pad_ratio.DrawFrame(
+            -0.5,
+            h_ratio.GetMinimum() * 0.8,
+            self.n_sets - 0.5,
+            h_ratio.GetMaximum() * 1.2,
+            ";cut set;Ratio",
+        )
+        h_frame_ratio.GetYaxis().SetNdivisions(505)
+        h_frame_ratio.GetYaxis().SetTitleSize(0.18)
+        h_frame_ratio.GetYaxis().SetTitleOffset(0.4)
+        h_frame_ratio.GetYaxis().SetLabelSize(0.15)
+        h_frame_ratio.GetXaxis().SetTitleSize(0.18)
+        h_frame_ratio.GetXaxis().SetTitleOffset(0.7)
+        h_frame_ratio.GetXaxis().SetLabelSize(0.15)
+        h_ratio.Draw("esame")
+
+        histo_one = ROOT.TH1F(f"hOne{suffix}", "", 1, -0.5, self.n_sets - 0.5)
+        histo_one.SetBinContent(1, 1.0)
+        histo_one.SetLineColor(ROOT.kBlack)
+        histo_one.SetLineWidth(2)
+        histo_one.SetLineStyle(2)
+        histo_one.Draw("histsame")
+
+
         canvas.Modified()
         canvas.Update()
 
@@ -457,6 +499,8 @@ class CutVarMinimiser:
             "prompt": hist_raw_yield_prompt,
             "nonprompt": hist_raw_yield_nonprompt,
             "sum": hist_raw_yield_sum,
+            "ratio": h_ratio,
+            "histo_one": histo_one
         }
 
         return canvas, histos, leg
@@ -517,6 +561,52 @@ class CutVarMinimiser:
         canvas.Update()
 
         return canvas, hist_corr_matrix
+
+    def plot_weights(self, suffix=""):
+        """
+        Helper function to plot weights matrix (inverse of covariance matrix)
+
+        Parameters
+        -----------------------------------------------------
+        - suffix: str
+            suffix to be added in the name of the output objects
+
+        Returns
+        -----------------------------------------------------
+        - canvas: ROOT.TCanvas
+            canvas with plot
+        - hist_weights: ROOT.TH2F
+            histogram of correlation matrix
+        """
+
+        set_global_style(
+            padleftmargin=0.14,
+            padbottommargin=0.12,
+            padrightmargin=0.12,
+            palette=ROOT.kRainBow,
+        )
+
+        hist_weights = ROOT.TH2F(
+            f"hCorrMatrixCutSets{suffix}",
+            ";cut set;cut set",
+            self.n_sets,
+            -0.5,
+            self.n_sets - 0.5,
+            self.n_sets,
+            -0.5,
+            self.n_sets - 0.5,
+        )
+
+        for i_row in range(len(self.m_weights)):
+            for i_col in range(len(np.asarray(self.m_weights)[i_row])):
+                hist_weights.SetBinContent(i_row + 1, i_col + 1, self.m_weights[i_row, i_col])
+
+        canvas = ROOT.TCanvas(f"cCorrMatrixCutSets{suffix}", "", 500, 500)
+        hist_weights.Draw("colz")
+        canvas.Modified()
+        canvas.Update()
+
+        return canvas, hist_weights
 
     def plot_efficiencies(self, suffix=""):
         """

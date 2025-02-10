@@ -183,21 +183,66 @@ def main(config):
         for _, hist in histos_frac.items():
             hist.Write()
 
-        canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min*10:.0f}_{pt_max*10:.0f}")
-        output.cd()
-        canv_cov.Write()
-        histo_cov.Write()
+        print(bool(cfg["minimisation"]["draw_weights"]))
+        if bool(cfg["minimisation"]["draw_weights"]):
+            canv_cov, histo_cov = minimiser.plot_weights(f"_pt{pt_min*10:.0f}_{pt_max*10:.0f}")
+            output.cd()
+            canv_cov.Write()
+            histo_cov.Write()
+        else:
+            canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min*10:.0f}_{pt_max*10:.0f}")
+            output.cd()
+            canv_cov.Write()
+            histo_cov.Write()
 
         canv_summary = ROOT.TCanvas(f"canv_summary_pt{pt_min*10:.0f}_{pt_max*10:.0f}", "", 800, 600)
         canv_summary.Divide(2, 2, 0.001, 0.005)
         canv_summary.cd(1)
         histo_cov.Draw("colz")
-        canv_summary.cd(2).DrawFrame(-0.5, 0, n_sets - 0.5,histos_rawy["data"].GetMaximum()*1.2, ";cut set;raw yields")
+
+        canv_summary.cd(2)
+        pad_fits = ROOT.TPad("pad_fits", "", 0.0, 0.25, 1.0, 1.0)
+        pad_fits.SetBottomMargin(0.0)
+        pad_fits.Draw()
+        pad_fits.cd()
+        h_frame = pad_fits.DrawFrame(
+            -0.5,
+            1.e-3,
+            n_sets - 0.5,
+            histos_rawy["data"].GetMaximum() * 1.2,
+            ";cut set;raw yield",
+        )
+        h_frame.GetYaxis().SetTitleSize(0.06)
+        h_frame.GetYaxis().SetTitleOffset(1.3)
         histos_rawy["data"].Draw("pe,same")
         histos_rawy["prompt"].Draw("hist,same")
         histos_rawy["nonprompt"].Draw("hist,same")
         histos_rawy["sum"].Draw("hist,same")
         leg_r.Draw()
+
+        canv_summary.cd(2)
+        pad_ratio = ROOT.TPad("pad_ratio", "", 0.0, 0.0, 1.0, 0.25)
+        pad_ratio.SetTopMargin(0.0)
+        pad_ratio.SetBottomMargin(0.3)
+        pad_ratio.Draw()
+        pad_ratio.cd()
+        h_frame_ratio = pad_ratio.DrawFrame(
+            -0.5,
+            histos_rawy["ratio"].GetMinimum() * 0.8,
+            n_sets - 0.5,
+            histos_rawy["ratio"].GetMaximum() * 1.2,
+            ";cut set;Ratio",
+        )
+        h_frame_ratio.GetYaxis().SetNdivisions(505)
+        h_frame_ratio.GetYaxis().SetTitleSize(0.18)
+        h_frame_ratio.GetYaxis().SetTitleOffset(0.4)
+        h_frame_ratio.GetYaxis().SetLabelSize(0.15)
+        h_frame_ratio.GetXaxis().SetTitleSize(0.18)
+        h_frame_ratio.GetXaxis().SetTitleOffset(0.7)
+        h_frame_ratio.GetXaxis().SetLabelSize(0.15)
+        histos_rawy["ratio"].Draw("esame")
+        histos_rawy["histo_one"].Draw("hist,same")
+        #canv_summary.cd(2).DrawFrame(-0.5, 0, n_sets - 0.5, histos_rawy["data"].GetMaximum()*1.2, ";cut set;raw yields")
         canv_summary.cd(3).DrawFrame(-0.5, 1.e-5, n_sets - 0.5,1, ";cut set;acceptance#timesefficiency")
         ROOT.gPad.SetLogy()
         for _, hist in histos_eff.items():
