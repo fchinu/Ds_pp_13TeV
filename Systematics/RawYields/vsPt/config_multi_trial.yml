@@ -1,0 +1,29 @@
+reference_fits: fit/outputs/B0_mass.root                # file with central values
+    
+inputs:
+  data: Projections_RawYields/data/VsMult/FT0M/Projections_Data.root
+  mc_signal: Projections_RawYields/MC/VsMult/ds_prompt.root
+  template:
+    file: Projections_RawYields/MC/VsMult/d_plus_corr_bkg_template.root
+    hist_name: 'h_mass_{pt_min}_{pt_max}_cent_0_100'    # can use also pt_min, pt_max, cent_min, cent_max to format name. pt variables are multiplied by 10 to avoid floating point issues
+  cutset: 'config/cutset.yaml'
+
+output_dir: systematics/raw_yields/outputs              # output directory
+save_all_fits: true                                     # whether to save all fits figures
+output_dir_fits: fits                                   # append to output_dir
+
+multitrial:
+    pt_bins: [0, 1]                                     # list of pt bins, set null if you want to keep them all
+    mins: [5.00, 5.02, 5.04]                            # lower fit limit
+    maxs: [5.56, 5.54, 5.52]                            # upper fit limit
+    sgn_funcs: [[gaussian, gaussian]]                   # signal functions
+    bkg_funcs: [[expo], [chebpol2]]                     # bkg functions
+    sigma: [
+        free, fixed_plus_15_perc,
+        fixed_minus_15_perc, fixed
+    ]                                                   # free, fixed, fixed_plus_unc, fixed_minus_unc, fixed_plus_XX_perc, fixed_minus_XX_perc
+    mean: [free]                                        # free, fixed, fixed_plus_unc, fixed_minus_unc, fixed_plus_XX_perc, fixed_minus_XX_perc
+    use_bkg_templ: [true]                               # use bkg template
+    bincounting_nsigma: []                              # nsigmas for bin counting raw yield extraction
+
+assigned_syst: [0.1, 0.1]                               # assigned systematic uncertainties
