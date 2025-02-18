@@ -1,10 +1,10 @@
-reference_fits: Projections_RawYields/data/VsMult/FT0M/mass_fits.root                # file with central values
+reference_fits: Projections_RawYields/data/VsMult/FT0M/2023/mass_fits.root               # file with central values
     
 inputs:
-  data: Projections_RawYields/data/VsMult/FT0M/data_LHC22o.root
+  data: Projections_RawYields/data/VsMult/FT0M/data_LHC23_full.root
   mc_signal: Projections_RawYields/MC/VsMult/ds_prompt.root
   template:
-    file: Projections_RawYields/MC/VsMult/d_plus_corr_bkg_template.root
+    file: Projections_RawYields/MC/VsMult/LHC24g5/d_plus_corr_bkg_template.root
     hist_name: 'h_mass_{pt_min}_{pt_max}_cent_0_100'    # can use also pt_min, pt_max, cent_min, cent_max to format name. pt variables are multiplied by 10 to avoid floating point issues
   cutset: 'Projections_RawYields/configs/cutset_pp13TeV_multiplicity.yml'
 
@@ -15,15 +15,59 @@ output:
   formats: [pdf, png]                                   # save figures in these formats
   suffix: ''                                            # suffix for output files
 
-max_workers: 10
+max_workers: 7
 
 multitrial:
-    pt_bins: [0]                                        # list of pt bins, set null if you want to keep them all
+    pt_bins: [0, 1, 2]                                        # list of pt bins, set null if you want to keep them all
     mins: [1.73, 1.75, 1.77]                            # lower fit limit
-    maxs: [2.08, 2.1, 2.12, 2.14]                       # upper fit limit
-    rebins: [2, 4, 6]                                   # rebinning
-    sgn_funcs: [[gaussian, gaussian]]                   # signal functions
-    bkg_funcs: [[chebpol3], [chebpol2]]   # bkg functions
+    maxs: [2.08, 2.1, 2.12]                       # upper fit limit
+    rebins: [1, 2, 4]                                   # rebinning
+    sgn_funcs: [[doublecbsymm, doublecbsymm]]                   # signal functions
+    par_init_limit:
+      - # First set of signal functions
+        - sigma:
+            init: [0.01, 0.01, 0.01, 0.02, 0.02, 0.02]
+            min: [0.001, 0.001, 0.001, 0.001, 0.001, 0.001]
+            max: [0.013, 0.013, 0.02, 0.03, 0.04, 0.04]
+            fix: [false, false, false, false, false, false]
+          alpha:
+            init: [1.5, 1.5, 1.5, 1.5, 1.5, 1.5]
+            min: [1., 1., 1., 1., 1., 1.]
+            max: [3., 3., 3., 3., 3., 3.]
+            fix: [false, false, false, false, false, false]
+          n:
+            init: [50, 50, 50, 50, 50, 50]
+            min: [30, 30, 30, 30, 30, 30]
+            max: [100., 100., 100., 100., 100., 100.]
+            fix: [false, false, false, false, false, false]
+        - sigma:
+            init: [0.01, 0.01, 0.01, 0.02, 0.02, 0.024]
+            min: [0.001, 0.001, 0.001, 0.001, 0.001, 0.001]
+            max: [0.013, 0.013, 0.02, 0.03, 0.04, 0.04]
+            fix: [false, false, false, false, false, false]
+          alpha:
+            init: [1.5, 1.5, 1.5, 1.5, 1.5, 1.5]
+            min: [1., 1., 1., 1., 1., 1.]
+            max: [3., 3., 3., 3., 3., 3.]
+            fix: [false, false, false, false, false, false]
+          n:
+            init: [50, 50, 50, 50, 50, 50]
+            min: [30, 30, 30, 30, 30, 30]
+            max: [100., 100., 100., 100., 100., 100.]
+            fix: [false, false, false, false, false, false]
+      - # First set of signal functions
+        - sigma:
+            init: [0.01, 0.01, 0.01, 0.02, 0.02, 0.02]
+            min: [0.001, 0.001, 0.001, 0.001, 0.001, 0.001]
+            max: [0.013, 0.013, 0.02, 0.03, 0.04, 0.04]
+            fix: [false, false, false, false, false, false]
+        - sigma:
+            init: [0.01, 0.01, 0.01, 0.02, 0.02, 0.024]
+            min: [0.001, 0.001, 0.001, 0.001, 0.001, 0.001]
+            max: [0.013, 0.013, 0.02, 0.03, 0.04, 0.04]
+            fix: [false, false, false, false, false, false]
+
+    bkg_funcs: [["expo"], ["chebpol2"]]   # bkg functions
     sigma: [
         free, fixed_plus_unc, fixed_minus_unc
     ]                                                   # free, fixed, fixed_plus_unc, fixed_minus_unc, fixed_plus_XX_perc, fixed_minus_XX_perc
@@ -31,6 +75,8 @@ multitrial:
     fix_corr_bkg_to_mb: [true]                          # fix fraction of correlated bkg to minimum bias
     mean: [free]                                        # free, fixed, fixed_plus_unc, fixed_minus_unc, fixed_plus_XX_perc, fixed_minus_XX_perc
     use_bkg_templ: [true]                               # use bkg template
-    bincounting_nsigma: []                              # nsigmas for bin counting raw yield extraction
+    bincounting_nsigma: [1,2,3,4,5]                              # nsigmas for bin counting raw yield extraction
+    quality_selections:
+      chi2: 10
 
 assigned_syst: [0.1, 0.1]                               # assigned systematic uncertainties

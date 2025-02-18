@@ -14,6 +14,7 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import yaml
 import uproot
+import zfit
 from flarefly.data_handler import DataHandler
 from flarefly.fitter import F2MassFitter
 from flarefly.utils import Logger
@@ -40,6 +41,8 @@ def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst): 
     - None
     """
     multitrial_cfg = cfg["multitrial"]
+
+    df_multitrial = df_multitrial.query(f"chi2 < {multitrial_cfg['quality_selections']['chi2']}")
 
     df_pt_cent_cfg = df_multitrial[
         ["pt_min_cfg", "pt_max_cfg", "cent_min_cfg", "cent_max_cfg"]
@@ -293,23 +296,23 @@ def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst): 
         else:
             n_rows = len(combinations) // 2 + 1
         fig, axs = plt.subplots(n_rows, 2, figsize=(20, 5 * len(combinations)/2))
-        for i_comb, combination in enumerate(combinations):
-            sns.stripplot(
-                data=df_pt_cent, x=combination[0], y=ratio, hue=combination[1],
-                dodge=0.5, alpha=.5, legend=False, ax=axs[i_comb//2, i_comb%2], palette="tab10",
-            )
-            sns.pointplot(
-                data=df_pt_cent, x=combination[0], y=ratio, hue=combination[1],
-                dodge=0.5, linestyle="none", errorbar=None, palette="tab10",
-                marker="_", markersize=20, markeredgewidth=3, ax=axs[i_comb//2, i_comb%2]
-            )
-        plt.savefig(
-            os.path.join(
-                cfg["output"]["dir"], "output", "ratio",
-                f'fig_ratio_{pt_min*10:.0f}_{pt_max*10:.0f}_{cent_min}_{cent_max}.png'
-            ),
-            bbox_inches='tight'
-        )
+        # for i_comb, combination in enumerate(combinations):
+        #     sns.stripplot(
+        #         data=df_pt_cent, x=combination[0], y=ratio, hue=combination[1],
+        #         dodge=0.5, alpha=.5, legend=False, ax=axs[i_comb//2, i_comb%2], palette="tab10",
+        #     )
+        #     sns.pointplot(
+        #         data=df_pt_cent, x=combination[0], y=ratio, hue=combination[1],
+        #         dodge=0.5, linestyle="none", errorbar=None, palette="tab10",
+        #         marker="_", markersize=20, markeredgewidth=3, ax=axs[i_comb//2, i_comb%2]
+        #     )
+        # plt.savefig(
+        #     os.path.join(
+        #         cfg["output"]["dir"], "output", "ratio",
+        #         f'fig_ratio_{pt_min*10:.0f}_{pt_max*10:.0f}_{cent_min}_{cent_max}.png'
+        #     ),
+        #     bbox_inches='tight'
+        # )
 
 def get_input_data(cfg, pt_mins, pt_maxs, bdt_cut_mins, bdt_cut_maxs):  # pylint: disable=too-many-locals # noqa: 501
     """
@@ -619,6 +622,98 @@ def get_rms_shift_sum_quadrature(ratio, central_ratio, rel=False):
         (np.mean(ratio) - central_ratio)**2
     )
 
+def initialise_signal(fitter, fit_config, idx):
+    """
+    Initialise the signal parameters for the fitter based on the provided configuration.
+
+    Parameters:
+    - fitter (object): The fitter object that will be used to set the signal parameters.
+    - fit_config (dict): A dictionary containing the configuration for the signal functions and their parameters.
+    - idx (int): The index of the signal function to be initialised.
+    """
+
+    if f"mu_init_{idx}" in fit_config:
+        fitter.set_signal_initpar(
+            idx, "mu", fit_config.get(f"mu_init_{idx}", 1.9),
+            limits=[fit_config.get(f"mu_min_{idx}", 0.), fit_config.get(f"mu_max_{idx}", 10.)],
+            fix=fit_config.get(f"mu_fix_{idx}", False)
+        )
+    if fit_config["sgn_funcs"][idx] == "gaussian":
+        fitter.set_signal_initpar(
+            idx, "sigma", fit_config.get(f"sigma_init_{idx}", 0.01),
+            limits=[fit_config.get(f"sigma_min_{idx}", 0.001), fit_config.get(f"sigma_max_{idx}", 0.03)],
+            fix=fit_config.get(f"sigma_fix_{idx}", False)
+        )
+    elif fit_config["sgn_funcs"][idx] == "doublegaus": # double gauss
+        fitter.set_signal_initpar(
+            idx, "sigma1", fit_config.get(f"sigma1_init_{idx}", 0.01),
+            limits=[fit_config.get(f"sigma1_min_{idx}", 0.001), fit_config.get(f"sigma1_max_{idx}", 0.03)],
+            fix=fit_config.get(f"sigma1_fix_{idx}", False)
+        )
+        fitter.set_signal_initpar(
+            idx, "sigma2", fit_config.get(f"sigma2_init_{idx}", 0.01),
+            limits=[fit_config.get(f"sigma2_min_{idx}", 0.001), fit_config.get(f"sigma2_max_{idx}", 0.03)],
+            fix=fit_config.get(f"sigma2_fix_{idx}", False)
+        )
+        fitter.set_signal_initpar(
+            idx, "frac1", fit_config.get(f"frac1_init_{idx}", 0.01),
+            limits=[fit_config.get(f"frac1_min_{idx}", 0.), fit_config.get(f"frac1_max_{idx}", 1.)],
+            fix=fit_config.get(f"frac1_fix_{idx}", False)
+        )
+    elif fit_config["sgn_funcs"][idx] == "doublecb":
+        fitter.set_signal_initpar(
+            idx, "sigma", fit_config.get(f"sigma_init_{idx}", 0.01),
+            limits=[fit_config.get(f"sigma_min_{idx}", 0.001), fit_config.get(f"sigma_max_{idx}", 0.03)],
+            fix=fit_config.get(f"sigma_fix_{idx}", False)
+        )
+        fitter.set_signal_initpar(
+            idx, "alphar", fit_config.get(f"alphar_init_{idx}", 0.5),
+            limits=[fit_config.get(f"alphar_min_{idx}", 0.), fit_config.get(f"alphar_max_{idx}", 10.)],
+            fix=fit_config.get(f"alphar_fix_{idx}", False)
+        )
+        fitter.set_signal_initpar(
+            idx, "alphal", fit_config.get(f"alphal_init_{idx}", 0.5),
+            limits=[fit_config.get(f"alphal_min_{idx}", 0.), fit_config.get(f"alphal_max_{idx}", 10.)],
+            fix=fit_config.get(f"alphal_fix_{idx}", False)
+        )
+        fitter.set_signal_initpar(
+            idx, "nl", fit_config.get(f"nl_init_{idx}", 1.),
+            limits=[fit_config.get(f"nl_min_{idx}", 0.), fit_config.get(f"nl_max_{idx}", 10.)],
+            fix=fit_config.get(f"nl_fix_{idx}", False)
+        )
+        fitter.set_signal_initpar(
+            idx, "nr", fit_config.get(f"nr_init_{idx}", 1.),
+            limits=[fit_config.get(f"nr_min_{idx}", 0.), fit_config.get(f"nr_max_{idx}", 10.)],
+            fix=fit_config.get(f"nr_fix_{idx}", False)
+        )
+    elif fit_config["sgn_funcs"][idx] == "doublecbsymm":
+        fitter.set_signal_initpar(
+            idx, "sigma", fit_config.get(f"sigma_init_{idx}", 0.01),
+            limits=[fit_config.get(f"sigma_min_{idx}", 0.001), fit_config.get(f"sigma_max_{idx}", 0.03)],
+            fix=fit_config.get(f"sigma_fix_{idx}", False)
+        )
+        fitter.set_signal_initpar(
+            idx, "alpha", fit_config.get(f"alpha_init_{idx}", 5.),
+            limits=[fit_config.get(f"alpha_min_{idx}", 0.5), fit_config.get(f"alpha_max_{idx}", 10.)],
+            fix=fit_config.get(f"alpha_fix_{idx}", False)
+        )
+        fitter.set_signal_initpar(
+            idx, "n", fit_config.get(f"n_init_{idx}", 10.),
+            limits=[fit_config.get(f"n_min_{idx}", 5.), fit_config.get(f"n_max_{idx}", 100.)],
+            fix=fit_config.get(f"n_fix_{idx}", False)
+        )
+    elif fit_config["sgn_funcs"][idx] == "genergausexptailsymm":
+        fitter.set_signal_initpar(
+            idx, "sigma", fit_config.get(f"sigma_init_{idx}", 0.01),
+            limits=[fit_config.get(f"sigma_min_{idx}", 0.001), fit_config.get(f"sigma_max_{idx}", 0.03)],
+            fix=fit_config.get(f"sigma_fix_{idx}", False)
+        )
+        fitter.set_signal_initpar(
+            idx, "alpha", fit_config.get(f"alpha_init_{idx}", 3.),
+            limits=[fit_config.get(f"alpha_min_{idx}", 0.), fit_config.get(f"alpha_max_{idx}", 10.)],
+            fix=fit_config.get(f"alpha_fix_{idx}", False)
+        )
+    fitter.set_signal_initpar(idx, "frac", 0.1, limits=[0.0002, 1.])
 
 def initialise_pars(fitter, fit_config, params):  # pylint: disable=too-many-branches
     """
@@ -632,10 +727,12 @@ def initialise_pars(fitter, fit_config, params):  # pylint: disable=too-many-bra
     Returns:
     - None
     """
+    initialise_signal(fitter, fit_config, 0)
+    initialise_signal(fitter, fit_config, 1)
     if params is not None:
         signal_params = params["signal"]
         bkg_params = params["bkg"]
-        for i_func, _ in enumerate(signal_params):
+        for i_func, params in enumerate(signal_params):
             fitter.set_signal_initpar(i_func, "frac", 0.1, limits=[0.0002, 1.])
             #for param, value in signal_params[i_func].items():
             #    fitter.set_signal_initpar(i_func, param, value)
@@ -656,6 +753,9 @@ def initialise_pars(fitter, fit_config, params):  # pylint: disable=too-many-bra
                     fitter.set_signal_initpar(
                         i_func, "sigma", signal_params[i_func]['sigma'], fix=True
                     )
+                for par, par_value in params.items():
+                    if par not in ["sigma", "frac", "sigma_unc", "mu"]:
+                        fitter.set_signal_initpar(i_func, par, par_value, fix=True)
         #for i_func, _ in enumerate(bkg_params):
         #    for param, value in bkg_params[i_func].items():
         #        fitter.set_background_initpar(i_func, param, value)
@@ -665,10 +765,6 @@ def initialise_pars(fitter, fit_config, params):  # pylint: disable=too-many-bra
                 0, 1, bkg_params[0]['frac'] / signal_params[1]['frac']
             )
     else:
-        fitter.set_particle_mass(0, pdg_id=431)
-        fitter.set_particle_mass(1, pdg_id=411)
-        for i_func, _ in enumerate(fitter.get_name_signal_pdf()):
-            fitter.set_signal_initpar(i_func, "sigma", 0.01, limits=[0.001, 0.05])
         for i_func, bkg_func in enumerate(fitter.get_name_background_pdf()):
             if bkg_func == "expo":
                 fitter.set_background_initpar(i_func, "lam", -2)
@@ -776,7 +872,7 @@ def do_fit(fit_config, cfg, params=None):  # pylint: disable=too-many-locals, to
         fitter = F2MassFitter(
             data_hdl, name_signal_pdf=fit_config["sgn_funcs"],
             name_background_pdf=bkg_funcs,
-            name=f"ds_pt{pt_min*10:.0f}_{pt_max*10:.0f}", chi2_loss=True,
+            name=f"ds_pt{pt_min*10:.0f}_{pt_max*10:.0f}_{fit_config['index']}", chi2_loss=True,
             label_signal_pdf=label_signal_pdfs,
             label_bkg_pdf=label_bkg_pdfs,
             verbosity=7, tol=1.e-1
@@ -784,25 +880,20 @@ def do_fit(fit_config, cfg, params=None):  # pylint: disable=too-many-locals, to
         fitter.set_background_template(0, data_corr_bkg)
         fitter.set_background_initpar(0, "frac", 0.01, limits=[0., 1.])
 
-        fitter.set_signal_initpar(0, "sigma", 0.01, limits=[0.001, 0.05])
-        fitter.set_signal_initpar(1, "sigma", 0.01, limits=[0.001, 0.05])
-        fitter.set_signal_initpar(0, "frac", 0.1, limits=[0.0002, 1.])
-        fitter.set_signal_initpar(1, "frac", 0.1, limits=[0.0002, 1.])
-
     else:
         fitter = F2MassFitter(
             data_hdl, name_signal_pdf=fit_config["sgn_funcs"],
             name_background_pdf=fit_config["bkg_funcs"],
-            name=f"ds_pt{pt_min*10:.0f}_{pt_max*10:.0f}", chi2_loss=True,
+            name=f"ds_pt{pt_min*10:.0f}_{pt_max*10:.0f}_{fit_config['index']}", chi2_loss=True,
             label_signal_pdf=label_signal_pdfs,
             label_bkg_pdf=label_bkg_pdfs,
             verbosity=1, tol=1.e-1
         )
 
 
-    fitter.set_background_initpar(1, "c0", 0.6)
-    fitter.set_background_initpar(1, "c1", -0.2)
-    fitter.set_background_initpar(1, "c2", 0.01)
+    # fitter.set_background_initpar(1, "c0", 0.6)
+    # fitter.set_background_initpar(1, "c1", -0.2)
+    # fitter.set_background_initpar(1, "c2", 0.01)
     # signals initialisation
     fitter.set_particle_mass(0, pdg_id=431)
     fitter.set_particle_mass(1, pdg_id=411)
@@ -825,7 +916,8 @@ def do_fit(fit_config, cfg, params=None):  # pylint: disable=too-many-locals, to
             style="ATLAS",
             show_extra_info = (bkg_funcs != ["nobkg"]),
             figsize=(8, 8), extra_info_loc=loc,
-            extra_info_massrange=[1.8, 2.2],
+            legend_loc="upper right",
+            #extra_info_massrange=[1.8, 2.2],
             axis_title=ax_title
         )
         figres = fitter.plot_raw_residuals(
@@ -834,9 +926,9 @@ def do_fit(fit_config, cfg, params=None):  # pylint: disable=too-many-locals, to
         )
         for frmt in cfg["output"]["formats"]:
             if cent_min is not None and cent_max is not None:
-                suffix = f"_{pt_min * 10:.0f}_{pt_max * 10:.0f}_cent_{cent_min:.0f}_{cent_max:.0f}_"  # pylint: disable=line-too-long # noqa: E501
+                suffix = f"_{pt_min * 10:.0f}_{pt_max * 10:.0f}_cent_{cent_min:.0f}_{cent_max:.0f}_{fit_config['index']}__"  # pylint: disable=line-too-long # noqa: E501
             else:
-                suffix = f"_{pt_min * 10:.0f}_{pt_max * 10:.0f}_"
+                suffix = f"_{pt_min * 10:.0f}_{pt_max * 10:.0f}_{fit_config['index']}_"
             suffix += cfg["output"]["suffix"]
             fig.savefig(f"{output_dir}/ds_mass_pt{suffix}.{frmt}")
             figres.savefig(f"{output_dir}/ds_massres_pt{suffix}.{frmt}")
@@ -857,6 +949,7 @@ def do_fit(fit_config, cfg, params=None):  # pylint: disable=too-many-locals, to
         ) * corr_bkg_over_dplus_signal
         out_dict = {
             "raw_yields": [fitter.get_raw_yield(i) for i in range(n_signal)],
+            **{f"raw_yields_bincounting_{nsigma}": [fitter.get_raw_yield_bincounting(i, nsigma=nsigma) for i in range(n_signal)] for nsigma in cfg["multitrial"]["bincounting_nsigma"]},
             "mean": [fitter.get_mass(i) for i in range(n_signal)],
             "chi2": float(fitter.get_chi2_ndf()),
             "significance": [fitter.get_significance(i, min=1.8, max=2.2) for i in range(n_signal)],
@@ -926,6 +1019,7 @@ def do_fit(fit_config, cfg, params=None):  # pylint: disable=too-many-locals, to
             "fracs": None,
             "converged": False
         }
+    del fitter, data_hdl, data_corr_bkg, fig, figres
     return out_dict, fitter
 
 
@@ -1029,19 +1123,50 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
     multitrial_cfg = cfg["multitrial"]
 
     # define all the trials
-    trials = list(itertools.product(*(multitrial_cfg[var] for var in MULTITRIAL_PARAMS)))
-    trials = itertools.product(trials, [*zip(cent_mins, cent_maxs)], [*zip(pt_mins, pt_maxs)])
-    trials = [(*trial, *cent, *pt) for trial, cent, pt in trials]
-    trials = [dict(
-        zip(MULTITRIAL_PARAMS + ["cent_min", "cent_max", "pt_min", "pt_max"], trial)
-    ) for trial in trials]
+    trials_no_index = list(itertools.product(*(multitrial_cfg[var] for var in MULTITRIAL_PARAMS)))
+    trials_no_index = itertools.product(trials_no_index, [*zip(cent_mins, cent_maxs)], [*zip(pt_mins, pt_maxs)])
+    trials_no_index = [(*trial, *cent, *pt) for trial, cent, pt in trials_no_index]
 
-    mb_trials = list(itertools.product(*(multitrial_cfg[var] for var in MULTITRIAL_PARAMS)))
-    mb_trials = itertools.product(mb_trials, [(0, 100)], [*zip(pt_mins, pt_maxs)])
-    mb_trials = [(*trial, *cent, *pt) for trial, cent, pt in mb_trials]
+    trials_no_index.sort(key=lambda x: (x[-4], x[-3], x[-2], x[-1]))  # Sort by cent_min, cent_max, pt_min, pt_max
+    trials = []
+    trials_pars_init = []
+    for (key, group) in itertools.groupby(trials_no_index, key=lambda x: (x[-4], x[-3], x[-2], x[-1])):  # Group by cent and pt
+        for idx, trial in enumerate(group):
+            pt_bin_index = pt_mins.index(trial[-2])
+            sgn_funcs_index = multitrial_cfg["sgn_funcs"].index(trial[MULTITRIAL_PARAMS.index("sgn_funcs")])
+            pars_init = {
+                **{f"{par}_init_{i_func}": sgn_func[par]['init'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
+                **{f"{par}_min_{i_func}": sgn_func[par]['min'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
+                **{f"{par}_max_{i_func}": sgn_func[par]['max'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
+                **{f"{par}_fix_{i_func}": sgn_func[par]['fix'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func}
+            }
+            trials_pars_init.append(pars_init)
+            trials.append((*trial, idx))
+    trials = [dict(
+        zip(MULTITRIAL_PARAMS + ["cent_min", "cent_max", "pt_min", "pt_max", "index"] + list(pars_init.keys()), list(trial) + list(pars_init.values()))
+    ) for trial, pars_init in zip(trials, trials_pars_init)]
+
+    mb_trials_no_index = list(itertools.product(*(multitrial_cfg[var] for var in MULTITRIAL_PARAMS)))
+    mb_trials_no_index = itertools.product(mb_trials_no_index, [(0, 100)], [*zip(pt_mins, pt_maxs)])
+    mb_trials_no_index = [(*trial, *cent, *pt) for trial, cent, pt in mb_trials_no_index]
+    mb_trials_no_index.sort(key=lambda x: (x[-4], x[-3], x[-2], x[-1]))  # Sort by cent_min, cent_max, pt_min, pt_max
+    mb_trials = []
+    trials_pars_init_mb = []
+    for (key, group) in itertools.groupby(mb_trials_no_index, key=lambda x: (x[-4], x[-3], x[-2], x[-1])):  # Group by cent and pt
+        for idx, trial in enumerate(group):
+            pt_bin_index = pt_mins.index(trial[-2])
+            sgn_funcs_index = multitrial_cfg["sgn_funcs"].index(trial[MULTITRIAL_PARAMS.index("sgn_funcs")])
+            pars_init = {
+                **{f"{par}_init_{i_func}": sgn_func[par]['init'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
+                **{f"{par}_min_{i_func}": sgn_func[par]['min'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
+                **{f"{par}_max_{i_func}": sgn_func[par]['max'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
+                **{f"{par}_fix_{i_func}": sgn_func[par]['fix'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func}
+            }
+            trials_pars_init_mb.append(pars_init)
+            mb_trials.append((*trial, idx))
     mb_trials = [dict(
-        zip(MULTITRIAL_PARAMS + ["cent_min", "cent_max", "pt_min", "pt_max"], trial)
-    ) for trial in mb_trials]
+        zip(MULTITRIAL_PARAMS + ["cent_min", "cent_max", "pt_min", "pt_max", "index"] + list(pars_init.keys()), list(trial) + list(pars_init.values()))
+    ) for trial, pars_init in zip(mb_trials, trials_pars_init_mb)]
 
     if not draw:
         futures = []
@@ -1086,4 +1211,5 @@ if __name__ == '__main__':
         "mins", "maxs", "rebins", "sgn_funcs", "bkg_funcs", "sigma",
         "fix_sigma_to_mb", "fix_corr_bkg_to_mb", "mean", "use_bkg_templ"
     ]
+    zfit.run.set_cpus_explicit(intra=10, inter=10)
     multi_trial(args.configFile, args.draw)
