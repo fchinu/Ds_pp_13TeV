@@ -8,6 +8,7 @@ Usage:
 import re
 import argparse
 import itertools
+import gc
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""  # pylint: disable=wrong-import-position
 from concurrent.futures import ProcessPoolExecutor
@@ -122,14 +123,14 @@ def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst): 
             axs[0, 0].errorbar(
                 x=list(range(n_trials * (i_nsigma + 1) + 1, n_trials * (i_nsigma + 2) + 1)),
                 y=raw_yields_ds_nsigma[i_nsigma],
-                yerr=raw_yields_ds_nsigma_unc, fmt='o',
+                yerr=raw_yields_ds_nsigma_unc[i_nsigma], fmt='o',
                 label=fr'Bin counting {nsigma}$\sigma$',
                 zorder=1
             )
             axs[0, 0].errorbar(
                 x=list(range(n_trials * (i_nsigma + 1) + 1, n_trials * (i_nsigma + 2) + 1)),
                 y=raw_yields_dplus_nsigma[i_nsigma],
-                yerr=raw_yields_dplus_nsigma_unc, fmt='o',
+                yerr=raw_yields_dplus_nsigma_unc[i_nsigma], fmt='o',
                 label=fr'Bin counting {nsigma}$\sigma$',
                 zorder=1
             )
@@ -295,7 +296,7 @@ def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst): 
             n_rows = len(combinations) // 2
         else:
             n_rows = len(combinations) // 2 + 1
-        fig, axs = plt.subplots(n_rows, 2, figsize=(20, 5 * len(combinations)/2))
+        # fig, axs = plt.subplots(n_rows, 2, figsize=(20, 5 * len(combinations)/2))
         # for i_comb, combination in enumerate(combinations):
         #     sns.stripplot(
         #         data=df_pt_cent, x=combination[0], y=ratio, hue=combination[1],
@@ -313,53 +314,6 @@ def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst): 
         #     ),
         #     bbox_inches='tight'
         # )
-
-def get_input_data(cfg, pt_mins, pt_maxs, bdt_cut_mins, bdt_cut_maxs):  # pylint: disable=too-many-locals # noqa: 501
-    """
-    Retrieve input data based on the given configuration and selection criteria.
-
-    Parameters:
-    - cfg (dict): Configuration dictionary.
-    - pt_mins (list): List of minimum pt values.
-    - pt_maxs (list): List of maximum pt values.
-    - bdt_cut_mins (list): List of minimum BDT cut values.
-    - bdt_cut_maxs (list): List of maximum BDT cut values.
-
-    Returns:
-    - tuple: A tuple containing:
-        - df (pandas.DataFrame): DataFrame containing the selected data.
-        - df_mc_sig (pandas.DataFrame): DataFrame containing the selected signal MC data.
-        - df_mc_prd_bkg (pandas.DataFrame): DataFrame containing the selected
-            partially reco decays background MC data.
-    """
-    selection_string = ""
-    for ipt, (pt_min, pt_max, bdt_cut_min, bdt_cut_max) in enumerate(zip(pt_mins, pt_maxs, bdt_cut_mins, bdt_cut_maxs)):  # pylint: disable=line-too-long # noqa: 501
-        if ipt == 0:
-            selection_string += f"({pt_min} < fPt < {pt_max} and\
-                {bdt_cut_min} < ML_output < {bdt_cut_max})"
-        else:
-            selection_string += f" or ({pt_min} < fPt < {pt_max} and\
-                {bdt_cut_min} < ML_output < {bdt_cut_max})"
-
-    # load data
-    df = pd.DataFrame()
-    for file in cfg["inputs"]["data"]:
-        df = pd.concat([df, pd.read_parquet(file)])
-    df.query(selection_string, inplace=True)
-
-    # load mc
-    df_mc = pd.DataFrame()
-    for file in cfg["inputs"]["mc"]:
-        df_mc = pd.concat([df_mc, pd.read_parquet(file)])
-    df_mc.query(selection_string, inplace=True)
-
-    df_mc_sig = df_mc.query("fFlagMcMatchRec == -1 or fFlagMcMatchRec == 1")
-    if any(cfg["multitrial"]["use_bkg_templ"]):
-        df_mc_prd_bkg = df_mc.query("fFlagMcMatchRec == 8")  # prd = partly reco decays
-    else:
-        df_mc_prd_bkg = None
-
-    return df, df_mc_sig, df_mc_prd_bkg
 
 
 def get_fixed_parameter(par, unc, string):
@@ -832,59 +786,89 @@ def do_fit(fit_config, cfg, params=None):  # pylint: disable=too-many-locals, to
     """Fit the invariant mass spectrum for a given configuration."""
     pt_min = fit_config["pt_min"]
     pt_max = fit_config["pt_max"]
+    suffix = f"{pt_min * 10:.0f}_{pt_max * 10:.0f}"
 
     cent_min, cent_max = None, None
     if "cent_min" in fit_config and "cent_max" in fit_config:
         cent_min = fit_config["cent_min"]
         cent_max = fit_config["cent_max"]
+        suffix += f"_cent_{cent_min:.0f}_{cent_max:.0f}"
 
-        data_hdl = DataHandler(
-            data=cfg["inputs"]["data"],
-            histoname=f'h_mass_{pt_min*10:.0f}_{pt_max*10:.0f}_cent_{cent_min:.0f}_{cent_max:.0f}',
-            limits=[fit_config["mins"], fit_config["maxs"]], rebin=fit_config["rebins"]
-        )
-    else:
-        data_hdl = DataHandler(
-            data=cfg["inputs"]["data"],
-            histoname=f'h_mass_{pt_min*10:.0f}_{pt_max*10:.0f}',
-            limits=[fit_config["mins"], fit_config["maxs"]], rebin=fit_config["rebins"]
-        )
+    data_hdl = DataHandler(
+        data=cfg["inputs"]["data"],
+        histoname=f'h_mass_{suffix}',
+        limits=[fit_config["mins"], fit_config["maxs"]], rebin=fit_config["rebins"]
+    )
 
     bkg_funcs = fit_config["bkg_funcs"].copy()
     label_signal_pdfs = [r"$\mathrm{D_{s}^{+}}$ signal", r"$\mathrm{D^{+}}$ signal"]
     label_bkg_pdfs = ["Combinatorial background"]
     if fit_config["use_bkg_templ"]:
-        bkg_funcs.insert(0, "hist")
-        label_bkg_pdfs.insert(
-            0,
-            r"$\mathrm{D^{+}}\rightarrow K^{-}\pi^{+}\pi^{+}$"
-            "\ncorrelated background"
-        )
-
-        data_corr_bkg = DataHandler(
-            data=cfg["inputs"]["template"]["file"],
-            histoname=cfg["inputs"]["template"]["hist_name"].format(
-                pt_min=f"{pt_min*10:.0f}", pt_max=f"{pt_max*10:.0f}",
-                cent_min=cent_min, cent_max=cent_max
-            ),
-            limits=[fit_config["mins"], fit_config["maxs"]], rebin=fit_config["rebins"]
-        )
+        bkg_cfg = cfg["multitrial"]["backgrounds"]
+        data_corr_bkgs = []
+        for i_bkg, bkg in enumerate(bkg_cfg):
+            bkg_funcs.insert(i_bkg, "hist")
+            label_bkg_pdfs.insert(
+                i_bkg,
+                bkg["name"] + "\ncorrelated background"
+            )
+            data_corr_bkgs.append(DataHandler(
+                data=bkg["template_file"],
+                histoname=bkg["template_hist_name"].format(
+                    pt_min=f"{pt_min*10:.0f}", pt_max=f"{pt_max*10:.0f}",
+                    cent_min=cent_min, cent_max=cent_max
+                ),
+                limits=[fit_config["mins"], fit_config["maxs"]], rebin=fit_config["rebins"]
+            ))
         fitter = F2MassFitter(
             data_hdl, name_signal_pdf=fit_config["sgn_funcs"],
             name_background_pdf=bkg_funcs,
-            name=f"ds_pt{pt_min*10:.0f}_{pt_max*10:.0f}_{fit_config['index']}", chi2_loss=True,
+            name=f"ds_pt_{suffix}_{fit_config['index']}", chi2_loss=True,
             label_signal_pdf=label_signal_pdfs,
             label_bkg_pdf=label_bkg_pdfs,
-            verbosity=7, tol=1.e-1
+            verbosity=1, tol=1.e-1
         )
-        fitter.set_background_template(0, data_corr_bkg)
-        fitter.set_background_initpar(0, "frac", 0.01, limits=[0., 1.])
+
+        if fit_config["fix_corr_bkg_with_br"]:
+            data_signal_reference = DataHandler(
+                data=cfg["multitrial"]["signal"]["file_norm"],
+                histoname=cfg["multitrial"]["signal"]["hist_name"].format(
+                    pt_min=f"{pt_min*10:.0f}", pt_max=f"{pt_max*10:.0f}",
+                    cent_min=cent_min, cent_max=cent_max
+                ),
+                limits=[fit_config["mins"], fit_config["maxs"]], rebin=fit_config["rebins"]
+            )
+            for i_func, data_corr_bkg in enumerate(data_corr_bkgs):
+                fitter.set_background_template(i_func, data_corr_bkg)
+                fitter.set_background_initpar(i_func, "frac", 0.01, limits=[0., 1.])
+                if fit_config["fix_corr_bkg_with_br"]:
+                    data_corr_bkg_reference = DataHandler(
+                        data=bkg_cfg[i_func]["file_norm"],
+                        histoname=bkg_cfg[i_func]["norm_hist_name"].format(
+                            pt_min=f"{pt_min*10:.0f}", pt_max=f"{pt_max*10:.0f}",
+                            cent_min=cent_min, cent_max=cent_max
+                        ),
+                        limits=[fit_config["mins"], fit_config["maxs"]], rebin=fit_config["rebins"]
+                    )
+                    fitter.fix_bkg_frac_to_signal_pdf(
+                        i_func, 1, # correlated bkg to D+ signal
+                        data_corr_bkg_reference.get_norm() *\
+                            bkg_cfg[i_func]["br"]["pdg"] / bkg_cfg[i_func]["br"]["simulations"]
+                        / (
+                            data_signal_reference.get_norm() *\
+                                cfg["multitrial"]["signal"]["br"]["pdg"] /\
+                                    cfg["multitrial"]["signal"]["br"]["simulations"]
+                        )
+                    )
+        else:
+            fitter.set_background_template(0, data_corr_bkg)
+            fitter.set_background_initpar(0, "frac", 0.01, limits=[0., 1.])
 
     else:
         fitter = F2MassFitter(
             data_hdl, name_signal_pdf=fit_config["sgn_funcs"],
             name_background_pdf=fit_config["bkg_funcs"],
-            name=f"ds_pt{pt_min*10:.0f}_{pt_max*10:.0f}_{fit_config['index']}", chi2_loss=True,
+            name=f"ds_pt_{suffix}", chi2_loss=True,
             label_signal_pdf=label_signal_pdfs,
             label_bkg_pdf=label_bkg_pdfs,
             verbosity=1, tol=1.e-1
@@ -900,114 +884,140 @@ def do_fit(fit_config, cfg, params=None):  # pylint: disable=too-many-locals, to
     initialise_pars(fitter, fit_config, params)
 
     n_signal = len(fit_config["sgn_funcs"])
-    fit_result = fitter.mass_zfit()
-    #if fit_result.converged:
-    if cfg["output"]["save_all_fits"]:
-        output_dir = os.path.join(
-            os.path.expanduser(cfg["output"]["dir"]),
-            cfg["output"]["dir_fits"]
-        )
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+    try:
+        fit_result = fitter.mass_zfit()
+        #if fit_result.converged:
+        if cfg["output"]["save_all_fits"]:
+            output_dir = os.path.join(
+                os.path.expanduser(cfg["output"]["dir"]),
+                cfg["output"]["dir_fits"]
+            )
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
 
-        loc = ["lower left", "upper left"]
-        ax_title = r"$M(\mathrm{KK\pi})$ GeV$/c^2$"
-        fig, _ = fitter.plot_mass_fit(
-            style="ATLAS",
-            show_extra_info = (bkg_funcs != ["nobkg"]),
-            figsize=(8, 8), extra_info_loc=loc,
-            legend_loc="upper right",
-            #extra_info_massrange=[1.8, 2.2],
-            axis_title=ax_title
-        )
-        figres = fitter.plot_raw_residuals(
-            figsize=(8, 8), style="ATLAS",
-            extra_info_loc=loc, axis_title=ax_title
-        )
-        for frmt in cfg["output"]["formats"]:
-            if cent_min is not None and cent_max is not None:
-                suffix = f"_{pt_min * 10:.0f}_{pt_max * 10:.0f}_cent_{cent_min:.0f}_{cent_max:.0f}_{fit_config['index']}__"  # pylint: disable=line-too-long # noqa: E501
-            else:
-                suffix = f"_{pt_min * 10:.0f}_{pt_max * 10:.0f}_{fit_config['index']}_"
-            suffix += cfg["output"]["suffix"]
-            fig.savefig(f"{output_dir}/ds_mass_pt{suffix}.{frmt}")
-            figres.savefig(f"{output_dir}/ds_massres_pt{suffix}.{frmt}")
-            if frmt == "root":
-                fitter.dump_to_root(
-                    f"{output_dir}/fits_{cfg['output']['suffix']}.{frmt}",
-                    option="update", suffix=suffix, num=5000
+            loc = ["lower left", "upper left"]
+            ax_title = r"$M(\mathrm{KK\pi})$ GeV$/c^2$"
+            try:
+                fig, ax = fitter.plot_mass_fit(
+                    style="ATLAS",
+                    show_extra_info = (bkg_funcs != ["nobkg"]),
+                    figsize=(8, 8), extra_info_loc=loc,
+                    legend_loc="upper right",
+                    #extra_info_massrange=[1.8, 2.2],
+                    axis_title=ax_title
                 )
-        plt.close(fig)
-        plt.close(figres)
+            except:
+                fig, ax = fitter.plot_mass_fit(
+                    style="ATLAS",
+                    show_extra_info = False,
+                    figsize=(8, 8), extra_info_loc=loc,
+                    legend_loc="upper right",
+                    #extra_info_massrange=[1.8, 2.2],
+                    axis_title=ax_title
+                )
+            figres = fitter.plot_raw_residuals(
+                figsize=(8, 8), style="ATLAS",
+                extra_info_loc=loc, axis_title=ax_title
+            )
+            for frmt in cfg["output"]["formats"]:
+                fig_suffix = f"_{suffix}_{fit_config['index']}_"
+                fig_suffix += cfg["output"]["suffix"]
+                fig.savefig(f"{output_dir}/ds_mass_pt{fig_suffix}.{frmt}")
+                figres.savefig(f"{output_dir}/ds_massres_pt{fig_suffix}.{frmt}")
+                if frmt == "root":
+                    fitter.dump_to_root(
+                        f"{output_dir}/fits_{cfg['output']['suffix']}.{frmt}",
+                        option="update", suffix=fig_suffix, num=5000
+                    )
+            fig.clf()       # Clear figure content
+            figres.clf()
+            plt.close(fig)  # Close figure
+            plt.close(figres)
+            del fig, figres # Delete references
 
-        fracs = fitter._F2MassFitter__get_all_fracs() # pylint: disable=protected-access
-        corr_bkg_frac = fracs[1][0]
-        corr_bkg_frac_err = fracs[4][0]
-        corr_bkg_over_dplus_signal = fracs[1][0] / fracs[0][1]
-        corr_bkg_over_dplus_signal_err = np.sqrt(
-            (fracs[4][0] / fracs[1][0])**2 + (fracs[3][1] / fracs[0][1])**2
-        ) * corr_bkg_over_dplus_signal
-        out_dict = {
-            "raw_yields": [fitter.get_raw_yield(i) for i in range(n_signal)],
-            **{f"raw_yields_bincounting_{nsigma}": [fitter.get_raw_yield_bincounting(i, nsigma=nsigma) for i in range(n_signal)] for nsigma in cfg["multitrial"]["bincounting_nsigma"]},
-            "mean": [fitter.get_mass(i) for i in range(n_signal)],
-            "chi2": float(fitter.get_chi2_ndf()),
-            "significance": [fitter.get_significance(i, min=1.8, max=2.2) for i in range(n_signal)],
-            "signal": [fitter.get_signal(i, min=1.8, max=2.) for i in range(n_signal)],
-            "background": [fitter.get_background(i, min=1.8, max=2.) for i in range(n_signal)],
-            "bkg_frac": (corr_bkg_frac, corr_bkg_frac_err),
-            "fracs": fracs,
-            "converged": fit_result.converged, 
-            "corr_bkg_over_dplus_signal": (corr_bkg_over_dplus_signal, corr_bkg_over_dplus_signal_err)  # pylint: disable=line-too-long # noqa: E501
-        }
+            fracs = fitter._F2MassFitter__get_all_fracs() # pylint: disable=protected-access
+            corr_bkg_frac = fracs[1][0]
+            corr_bkg_frac_err = fracs[4][0]
+            corr_bkg_over_dplus_signal = fracs[1][0] / fracs[0][1]
+            corr_bkg_over_dplus_signal_err = np.sqrt(
+                (fracs[4][0] / fracs[1][0])**2 + (fracs[3][1] / fracs[0][1])**2
+            ) * corr_bkg_over_dplus_signal
+            out_dict = {
+                "raw_yields": [fitter.get_raw_yield(i) for i in range(n_signal)],
+                **{f"raw_yields_bincounting_{nsigma}": [fitter.get_raw_yield_bincounting(i, nsigma=nsigma) for i in range(n_signal)] for nsigma in cfg["multitrial"]["bincounting_nsigma"]},
+                "mean": [fitter.get_mass(i) for i in range(n_signal)],
+                "chi2": float(fitter.get_chi2_ndf()),
+                "significance": [fitter.get_significance(i, min=1.8, max=2.2) for i in range(n_signal)],
+                "signal": [fitter.get_signal(i, min=1.8, max=2.) for i in range(n_signal)],
+                "background": [fitter.get_background(i, min=1.8, max=2.) for i in range(n_signal)],
+                "bkg_frac": (corr_bkg_frac, corr_bkg_frac_err),
+                "fracs": fracs,
+                "converged": fit_result.converged, 
+                "corr_bkg_over_dplus_signal": (corr_bkg_over_dplus_signal, corr_bkg_over_dplus_signal_err)  # pylint: disable=line-too-long # noqa: E501
+            }
 
-        if fit_config["sgn_funcs"][0] == "doublegaus":
-            out_dict["sigma1"] = [
-                fitter.get_signal_parameter(i, "sigma1") for i in range(n_signal)
-                ]
-            out_dict["sigma2"] = [
-                fitter.get_signal_parameter(i, "sigma2") for i in range(n_signal)
-                ]
-            out_dict["frac1"] = [
-                fitter.get_signal_parameter(i, "frac1") for i in range(n_signal)
-                ]
-        elif fit_config["sgn_funcs"][0] == "gaussian":
-            out_dict["sigma"] = [
-                fitter.get_sigma(i) for i in range(n_signal)]
-        elif fit_config["sgn_funcs"][0] == "doublecb":
-            out_dict["sigma"] = [
-                fitter.get_signal_parameter(i, "sigma") for i in range(n_signal)
-                ]
-            out_dict["alphar"] = [
-                fitter.get_signal_parameter(i, "alphar") for i in range(n_signal)
-                ]
-            out_dict["alphal"] = [
-                fitter.get_signal_parameter(i, "alphal") for i in range(n_signal)
-                ]
-            out_dict["nl"] = [
-                fitter.get_signal_parameter(i, "nl") for i in range(n_signal)
-                ]
-            out_dict["nr"] = [
-                fitter.get_signal_parameter(i, "nr") for i in range(n_signal)
-                ]
-        elif fit_config["sgn_funcs"][0] == "doublecbsymm":
-            out_dict["sigma"] = [
-                fitter.get_signal_parameter(i, "sigma") for i in range(n_signal)
-                ]
-            out_dict["alpha"] = [
-                fitter.get_signal_parameter(i, "alpha") for i in range(n_signal)
-                ]
-            out_dict["n"] = [
-                fitter.get_signal_parameter(i, "n") for i in range(n_signal)
-                ]
-        elif fit_config["sgn_funcs"][0] == "genergausexptailsymm":
-            out_dict["sigma"] = [
-                fitter.get_signal_parameter(i, "sigma") for i in range(n_signal)
-                ]
-            out_dict["alpha"] = [
-                fitter.get_signal_parameter(i, "alpha") for i in range(n_signal)
-                ]
-    else:
+            if fit_config["sgn_funcs"][0] == "doublegaus":
+                out_dict["sigma1"] = [
+                    fitter.get_signal_parameter(i, "sigma1") for i in range(n_signal)
+                    ]
+                out_dict["sigma2"] = [
+                    fitter.get_signal_parameter(i, "sigma2") for i in range(n_signal)
+                    ]
+                out_dict["frac1"] = [
+                    fitter.get_signal_parameter(i, "frac1") for i in range(n_signal)
+                    ]
+            elif fit_config["sgn_funcs"][0] == "gaussian":
+                out_dict["sigma"] = [
+                    fitter.get_sigma(i) for i in range(n_signal)]
+            elif fit_config["sgn_funcs"][0] == "doublecb":
+                out_dict["sigma"] = [
+                    fitter.get_signal_parameter(i, "sigma") for i in range(n_signal)
+                    ]
+                out_dict["alphar"] = [
+                    fitter.get_signal_parameter(i, "alphar") for i in range(n_signal)
+                    ]
+                out_dict["alphal"] = [
+                    fitter.get_signal_parameter(i, "alphal") for i in range(n_signal)
+                    ]
+                out_dict["nl"] = [
+                    fitter.get_signal_parameter(i, "nl") for i in range(n_signal)
+                    ]
+                out_dict["nr"] = [
+                    fitter.get_signal_parameter(i, "nr") for i in range(n_signal)
+                    ]
+            elif fit_config["sgn_funcs"][0] == "doublecbsymm":
+                out_dict["sigma"] = [
+                    fitter.get_signal_parameter(i, "sigma") for i in range(n_signal)
+                    ]
+                out_dict["alpha"] = [
+                    fitter.get_signal_parameter(i, "alpha") for i in range(n_signal)
+                    ]
+                out_dict["n"] = [
+                    fitter.get_signal_parameter(i, "n") for i in range(n_signal)
+                    ]
+            elif fit_config["sgn_funcs"][0] == "genergausexptailsymm":
+                out_dict["sigma"] = [
+                    fitter.get_signal_parameter(i, "sigma") for i in range(n_signal)
+                    ]
+                out_dict["alpha"] = [
+                    fitter.get_signal_parameter(i, "alpha") for i in range(n_signal)
+                    ]
+        else:
+            out_dict = {
+                "raw_yields": [None] * n_signal,
+                "sigma": [None] * n_signal,
+                "mean": [None] * n_signal,
+                "chi2": None,
+                "significance": [None] * n_signal,
+                "signal": [None] * n_signal,
+                "background": [None] * n_signal,
+                "fracs": None,
+                "converged": False
+            }
+        del data_hdl, data_corr_bkg, fit_result, fracs
+        gc.collect()
+        return out_dict, fitter
+    except:
         out_dict = {
             "raw_yields": [None] * n_signal,
             "sigma": [None] * n_signal,
@@ -1019,8 +1029,7 @@ def do_fit(fit_config, cfg, params=None):  # pylint: disable=too-many-locals, to
             "fracs": None,
             "converged": False
         }
-    del fitter, data_hdl, data_corr_bkg, fig, figres
-    return out_dict, fitter
+        return out_dict, fitter
 
 
 def get_matching_trial(trial_to_match, trials, cent_min, cent_max, pt_min, pt_max):  # pylint: disable=too-many-arguments, too-many-positional-arguments
@@ -1083,6 +1092,10 @@ def run_pt_trial(mb_trial, trials, cfg, pt_min, pt_max, cent_mins, cent_maxs):  
     mb_params['bkg'] = mb_fitter.get_bkg_pars()
     mb_params['signal'][0]['sigma_unc'] = mb_fitter.get_sigma(0)[1]
     mb_params['signal'][1]['sigma_unc'] = mb_fitter.get_sigma(1)[1]
+    trial_mb_cfg = mb_trial.copy()
+    for key in mb_trial:
+        trial_mb_cfg[key + "_cfg"] = trial_mb_cfg.pop(key)
+    mb_result.update(trial_mb_cfg)
     results = []
     for cent_min, cent_max in zip(cent_mins, cent_maxs):
         trial_cent = get_matching_trial(mb_trial, trials, cent_min, cent_max, pt_min, pt_max)
@@ -1192,13 +1205,14 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
                 df_cent.append(result)
         df_mb = pd.DataFrame(df_mb)
         df_cent = pd.DataFrame(df_cent)
-        df_mb.to_parquet(os.path.join(cfg["output"]["dir"], "mb_results.parquet"))
-        df_cent.to_parquet(os.path.join(cfg["output"]["dir"], "cent_results.parquet"))
+        df_mb.to_parquet(os.path.join(cfg["output"]["dir"], f"mb_results{cfg["output"]['suffix']}.parquet"))
+        df_cent.to_parquet(os.path.join(cfg["output"]["dir"], f"cent_results{cfg["output"]['suffix']}.parquet"))
     else:
-        df_mb = pd.read_parquet(os.path.join(cfg["output"]["dir"], "mb_results.parquet"))
-        df_cent = pd.read_parquet(os.path.join(cfg["output"]["dir"], "cent_results.parquet"))
+        df_mb = pd.read_parquet(os.path.join(cfg["output"]["dir"], f"mb_results{cfg["output"]['suffix']}.parquet"))
+        df_cent = pd.read_parquet(os.path.join(cfg["output"]["dir"], f"cent_results{cfg["output"]['suffix']}.parquet"))
 
     draw_multitrial(df_cent, cfg)
+    draw_multitrial(df_mb, cfg)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Fit Ds')
@@ -1209,7 +1223,8 @@ if __name__ == '__main__':
     # "bincounting_nsigma" removed so that we do not fit multiple times for each nsigma
     MULTITRIAL_PARAMS = [
         "mins", "maxs", "rebins", "sgn_funcs", "bkg_funcs", "sigma",
-        "fix_sigma_to_mb", "fix_corr_bkg_to_mb", "mean", "use_bkg_templ"
+        "fix_sigma_to_mb", "fix_corr_bkg_to_mb", "fix_corr_bkg_with_br",
+        "mean", "use_bkg_templ"
     ]
     zfit.run.set_cpus_explicit(intra=10, inter=10)
     multi_trial(args.configFile, args.draw)
