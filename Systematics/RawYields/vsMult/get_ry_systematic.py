@@ -9,8 +9,10 @@ import re
 import argparse
 import itertools
 import gc
+import ast
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""  # pylint: disable=wrong-import-position
+import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import yaml
@@ -27,7 +29,7 @@ import pandas as pd
 #zfit.run.set_n_cpu(1)
 
 
-def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst):  # pylint: disable=too-many-locals, too-many-statements # noqa: 501
+def draw_multitrial(df_multitrial, cfg):  # pylint: disable=too-many-locals, too-many-statements # noqa: 501
     """
     Produce a plot with the results of the multitrial procedure.
 
@@ -199,13 +201,13 @@ def draw_multitrial(df_multitrial, cfg): #, pt_min, pt_max, idx_assigned_syst): 
         # Draw the rms + shift from the central value
         central_ratio = central_rawy_ds / central_rawy_dplus
         axs[0, 1].axvline(x=central_ratio, color='r', linestyle='--')
-        rms_shift = get_rms_shift_sum_quadrature(ratio, central_ratio,i_pt)
+        rms_shift = get_rms_shift_sum_quadrature(ratio, central_ratio, False)
         axs[0, 1].add_patch(
             Rectangle(
                 (central_ratio - rms_shift, 0),
                 2 * rms_shift, axs[0, 1].get_ylim()[1],
                 color='r', alpha=0.3, zorder=0,
-                label=r'$\mathrm{\sqrt{RMS^2 + \Delta^2}}$'
+                label=r'$\mathrm{\sqrt{RMS^2 + \Delta^2}}$'f' = {rms_shift/central_ratio*100:.2f}%'
             )
         )
         axs[0, 1].add_artist(anchored_text_fit)
@@ -487,79 +489,13 @@ def build_fitter(
     return fitter
 
 
-def fit(fitter, cfg, i_trial, suffix):  # pylint: disable=too-many-locals
-    """
-    Perform a fit using the given fitter object and configuration.
-
-    Parameters:
-    - fitter (flarefly.F2MassFitter): The mass fitter object.
-    - cfg (dict): Configuration dictionary.
-    - i_trial (int): The trial number.
-    - suffix (str): The suffix for the output file.
-
-    Returns:
-    - output_dict (dict): A dictionary containing the fit results.
-    """
-    result = fitter.mass_zfit()
-    if result.converged:
-        rawy, rawy_unc = fitter.get_raw_yield(0)
-        if cfg["multitrial"]["bincounting_nsigma"]:  # if there is at least one nsigma
-            rawy_bincounting, rawy_bincounting_unc = zip(
-                *[fitter.get_raw_yield_bincounting(0, nsigma=nsigma)
-                    for nsigma in cfg["multitrial"]["bincounting_nsigma"]]
-            )
-        else:
-            rawy_bincounting, rawy_bincounting_unc = None, None
-        significance, significance_unc = fitter.get_significance(0)
-        soverb, soverb_unc = fitter.get_signal_over_background(0)
-        mean, mean_unc = fitter.get_mass(0)
-        sigma, sigma_unc = fitter.get_sigma(0)
-        chi2_ndf = fitter.get_chi2_ndf()
-        if cfg["save_all_fits"]:
-            fig, _ = fitter.plot_mass_fit(
-                style="ATLAS",
-                figsize=(8, 8),
-                axis_title=r"$M(\mathrm{D^-\pi^+})$ (GeV/$c^2$)"
-            )
-            if not os.path.exists(os.path.join(cfg["output_dir"], cfg["output_dir_fits"])):
-                os.makedirs(os.path.join(cfg["output_dir"], cfg["output_dir_fits"]))
-            fig.savefig(
-                os.path.join(cfg["output_dir"], cfg["output_dir_fits"], f"mass_fit_{suffix}.pdf")
-            )
-    else:
-        rawy, rawy_unc = None, None
-        rawy_bincounting, rawy_bincounting_unc = [None] * len(cfg["multitrial"]["bincounting_nsigma"]), [None] * len(cfg["multitrial"]["bincounting_nsigma"])  # pylint: disable=line-too-long # noqa: 501
-        significance, significance_unc = None, None
-        soverb, soverb_unc = None, None
-        mean, mean_unc = None, None
-        sigma, sigma_unc = None, None
-        chi2_ndf = None
-        Logger(
-            f"The fit for the trial {i_trial} did not converge, skipping this trial",
-            "WARNING"
-        )
-
-    output_dict = {
-        "rawy": rawy, "rawy_unc": rawy_unc, "significance": significance,
-        "significance_unc": significance_unc, "soverb": soverb, "soverb_unc": soverb_unc,
-        "mean": mean, "mean_unc": mean_unc, "sigma": sigma, "sigma_unc": sigma_unc,
-        "chi2_ndf": chi2_ndf
-    }
-    for i_nsigma, nsigma in enumerate(cfg["multitrial"]["bincounting_nsigma"]):
-        output_dict[f"rawy_bincounting_{nsigma}"] = rawy_bincounting[i_nsigma]
-        output_dict[f"rawy_bincounting_{nsigma}_unc"] = rawy_bincounting_unc[i_nsigma]
-
-    return output_dict
-
-
 def get_rms_shift_sum_quadrature(ratio, central_ratio, rel=False):
     """
     Calculate the sum in quadrature of the RMS and shift from the central value for raw yields.
 
     Parameters:
-        df (pandas.DataFrame): DataFrame containing the raw yields.
-        cfg (dict): Configuration dictionary.
-        i_pt (int): Index of pt.
+        ratio (pandas.DataFrame): DataFrame containing the ratios.
+        central_ratio (dict): value of the central ratio.
         rel (bool): If True, return the relative uncertainty.
 
     Returns:
@@ -576,6 +512,32 @@ def get_rms_shift_sum_quadrature(ratio, central_ratio, rel=False):
         (np.mean(ratio) - central_ratio)**2
     )
 
+
+def set_fitter_param(fitter, idx, param, fit_config, defaults):
+    """
+    Set the signal parameters for the fitter with default values.
+
+    Parameters:
+    - fitter: The mass fitter object.
+    - idx: The index of the signal function.
+    - param: The parameter to set (e.g., "sigma", "mu").
+    - fit_config: Dictionary containing the fit configuration.
+    - defaults: Dictionary with default values for parameters.
+
+    Returns:
+    - None
+    """
+    fitter.set_signal_initpar(
+        idx, param,
+        fit_config.get(f"{param}_init_{idx}", defaults[param]["init"]),
+        limits=[
+            fit_config.get(f"{param}_min_{idx}", defaults[param]["min"]),
+            fit_config.get(f"{param}_max_{idx}", defaults[param]["max"])
+        ],
+        fix=fit_config.get(f"{param}_fix_{idx}", defaults[param]["fix"])
+    )
+
+
 def initialise_signal(fitter, fit_config, idx):
     """
     Initialise the signal parameters for the fitter based on the provided configuration.
@@ -585,6 +547,24 @@ def initialise_signal(fitter, fit_config, idx):
     - fit_config (dict): A dictionary containing the configuration for the signal functions and their parameters.
     - idx (int): The index of the signal function to be initialised.
     """
+    DEFAULTS = {
+        # gaussian
+        "sigma": {"init": 0.01, "min": 0.001, "max": 0.03, "fix": False},
+        # doublegaus
+        "sigma1": {"init": 0.01, "min": 0.001, "max": 0.03, "fix": False},
+        "sigma2": {"init": 0.01, "min": 0.001, "max": 0.03, "fix": False},
+        "frac1": {"init": 0.01, "min": 0., "max": 1., "fix": False},
+        # doublecb
+        "alphar": {"init": 0.5, "min": 0.0, "max": 10.0, "fix": False},
+        "alphal": {"init": 0.5, "min": 0.0, "max": 10.0, "fix": False},
+        "nl": {"init": 1.0, "min": 0.0, "max": 10.0, "fix": False},
+        "nr": {"init": 1.0, "min": 0.0, "max": 10.0, "fix": False},
+        # doublecbsymm
+        "alpha": {"init": 5., "min": 0.5, "max": 10.0, "fix": False},
+        "n": {"init": 10., "min": 5., "max": 100.0, "fix": False},
+        # genergausexptailsymm
+        "alpha": {"init": 3., "min": 0., "max": 10.0, "fix": False}
+    }
 
     if f"mu_init_{idx}" in fit_config:
         fitter.set_signal_initpar(
@@ -593,80 +573,25 @@ def initialise_signal(fitter, fit_config, idx):
             fix=fit_config.get(f"mu_fix_{idx}", False)
         )
     if fit_config["sgn_funcs"][idx] == "gaussian":
-        fitter.set_signal_initpar(
-            idx, "sigma", fit_config.get(f"sigma_init_{idx}", 0.01),
-            limits=[fit_config.get(f"sigma_min_{idx}", 0.001), fit_config.get(f"sigma_max_{idx}", 0.03)],
-            fix=fit_config.get(f"sigma_fix_{idx}", False)
-        )
+        # Inside the fitting function, call it like this:
+        set_fitter_param(fitter, idx, "sigma", fit_config, DEFAULTS)
+
     elif fit_config["sgn_funcs"][idx] == "doublegaus": # double gauss
-        fitter.set_signal_initpar(
-            idx, "sigma1", fit_config.get(f"sigma1_init_{idx}", 0.01),
-            limits=[fit_config.get(f"sigma1_min_{idx}", 0.001), fit_config.get(f"sigma1_max_{idx}", 0.03)],
-            fix=fit_config.get(f"sigma1_fix_{idx}", False)
-        )
-        fitter.set_signal_initpar(
-            idx, "sigma2", fit_config.get(f"sigma2_init_{idx}", 0.01),
-            limits=[fit_config.get(f"sigma2_min_{idx}", 0.001), fit_config.get(f"sigma2_max_{idx}", 0.03)],
-            fix=fit_config.get(f"sigma2_fix_{idx}", False)
-        )
-        fitter.set_signal_initpar(
-            idx, "frac1", fit_config.get(f"frac1_init_{idx}", 0.01),
-            limits=[fit_config.get(f"frac1_min_{idx}", 0.), fit_config.get(f"frac1_max_{idx}", 1.)],
-            fix=fit_config.get(f"frac1_fix_{idx}", False)
-        )
+        for param in ["sigma1", "sigma2", "frac1"]:
+            set_fitter_param(fitter, idx, param, fit_config, DEFAULTS)
+
     elif fit_config["sgn_funcs"][idx] == "doublecb":
-        fitter.set_signal_initpar(
-            idx, "sigma", fit_config.get(f"sigma_init_{idx}", 0.01),
-            limits=[fit_config.get(f"sigma_min_{idx}", 0.001), fit_config.get(f"sigma_max_{idx}", 0.03)],
-            fix=fit_config.get(f"sigma_fix_{idx}", False)
-        )
-        fitter.set_signal_initpar(
-            idx, "alphar", fit_config.get(f"alphar_init_{idx}", 0.5),
-            limits=[fit_config.get(f"alphar_min_{idx}", 0.), fit_config.get(f"alphar_max_{idx}", 10.)],
-            fix=fit_config.get(f"alphar_fix_{idx}", False)
-        )
-        fitter.set_signal_initpar(
-            idx, "alphal", fit_config.get(f"alphal_init_{idx}", 0.5),
-            limits=[fit_config.get(f"alphal_min_{idx}", 0.), fit_config.get(f"alphal_max_{idx}", 10.)],
-            fix=fit_config.get(f"alphal_fix_{idx}", False)
-        )
-        fitter.set_signal_initpar(
-            idx, "nl", fit_config.get(f"nl_init_{idx}", 1.),
-            limits=[fit_config.get(f"nl_min_{idx}", 0.), fit_config.get(f"nl_max_{idx}", 10.)],
-            fix=fit_config.get(f"nl_fix_{idx}", False)
-        )
-        fitter.set_signal_initpar(
-            idx, "nr", fit_config.get(f"nr_init_{idx}", 1.),
-            limits=[fit_config.get(f"nr_min_{idx}", 0.), fit_config.get(f"nr_max_{idx}", 10.)],
-            fix=fit_config.get(f"nr_fix_{idx}", False)
-        )
+        for param in ["sigma", "alphal", "alphar", "nl", "nr"]:
+            set_fitter_param(fitter, idx, param, fit_config, DEFAULTS)
+
     elif fit_config["sgn_funcs"][idx] == "doublecbsymm":
-        fitter.set_signal_initpar(
-            idx, "sigma", fit_config.get(f"sigma_init_{idx}", 0.01),
-            limits=[fit_config.get(f"sigma_min_{idx}", 0.001), fit_config.get(f"sigma_max_{idx}", 0.03)],
-            fix=fit_config.get(f"sigma_fix_{idx}", False)
-        )
-        fitter.set_signal_initpar(
-            idx, "alpha", fit_config.get(f"alpha_init_{idx}", 5.),
-            limits=[fit_config.get(f"alpha_min_{idx}", 0.5), fit_config.get(f"alpha_max_{idx}", 10.)],
-            fix=fit_config.get(f"alpha_fix_{idx}", False)
-        )
-        fitter.set_signal_initpar(
-            idx, "n", fit_config.get(f"n_init_{idx}", 10.),
-            limits=[fit_config.get(f"n_min_{idx}", 5.), fit_config.get(f"n_max_{idx}", 100.)],
-            fix=fit_config.get(f"n_fix_{idx}", False)
-        )
+        for param in ["sigma", "alpha", "n"]:
+            set_fitter_param(fitter, idx, param, fit_config, DEFAULTS)
+
     elif fit_config["sgn_funcs"][idx] == "genergausexptailsymm":
-        fitter.set_signal_initpar(
-            idx, "sigma", fit_config.get(f"sigma_init_{idx}", 0.01),
-            limits=[fit_config.get(f"sigma_min_{idx}", 0.001), fit_config.get(f"sigma_max_{idx}", 0.03)],
-            fix=fit_config.get(f"sigma_fix_{idx}", False)
-        )
-        fitter.set_signal_initpar(
-            idx, "alpha", fit_config.get(f"alpha_init_{idx}", 3.),
-            limits=[fit_config.get(f"alpha_min_{idx}", 0.), fit_config.get(f"alpha_max_{idx}", 10.)],
-            fix=fit_config.get(f"alpha_fix_{idx}", False)
-        )
+        for param in ["sigma", "alpha"]:
+            set_fitter_param(fitter, idx, param, fit_config, DEFAULTS)
+
     fitter.set_signal_initpar(idx, "frac", 0.1, limits=[0.0002, 1.])
 
 def initialise_pars(fitter, fit_config, params):  # pylint: disable=too-many-branches
@@ -683,6 +608,7 @@ def initialise_pars(fitter, fit_config, params):  # pylint: disable=too-many-bra
     """
     initialise_signal(fitter, fit_config, 0)
     initialise_signal(fitter, fit_config, 1)
+
     if params is not None:
         signal_params = params["signal"]
         bkg_params = params["bkg"]
@@ -691,6 +617,7 @@ def initialise_pars(fitter, fit_config, params):  # pylint: disable=too-many-bra
             #for param, value in signal_params[i_func].items():
             #    fitter.set_signal_initpar(i_func, param, value)
             if fit_config['fix_sigma_to_mb']:
+
                 if fit_config['sigma'] == "fixed_plus_unc":
                     fitter.set_signal_initpar(
                         i_func, "sigma",
@@ -710,6 +637,24 @@ def initialise_pars(fitter, fit_config, params):  # pylint: disable=too-many-bra
                 for par, par_value in params.items():
                     if par not in ["sigma", "frac", "sigma_unc", "mu"]:
                         fitter.set_signal_initpar(i_func, par, par_value, fix=True)
+        ratio_ds_dplus_width = fit_config["fix_ratio_ds_dplus_width"]
+        if ratio_ds_dplus_width is not None and not (fit_config["cent_min"]==0 and fit_config["cent_max"]==100):
+            if fit_config['sigma'] == "fixed_plus_unc":
+                fitter.set_signal_initpar(
+                    1, "sigma",
+                    ratio_ds_dplus_width * (signal_params[0]['sigma'] + signal_params[0]['sigma_unc']),
+                    fix=True
+                )
+            elif fit_config['sigma'] == "fixed_minus_unc":
+                fitter.set_signal_initpar(
+                    1, "sigma",
+                    ratio_ds_dplus_width * (signal_params[0]['sigma'] - signal_params[0]['sigma_unc']),
+                    fix=True
+                )
+            else:
+                fitter.set_signal_initpar(
+                    1, "sigma", ratio_ds_dplus_width * signal_params[0]['sigma'], fix=True
+                )
         #for i_func, _ in enumerate(bkg_params):
         #    for param, value in bkg_params[i_func].items():
         #        fitter.set_background_initpar(i_func, param, value)
@@ -718,19 +663,26 @@ def initialise_pars(fitter, fit_config, params):  # pylint: disable=too-many-bra
             fitter.fix_bkg_frac_to_signal_pdf(
                 0, 1, bkg_params[0]['frac'] / signal_params[1]['frac']
             )
-    else:
-        for i_func, bkg_func in enumerate(fitter.get_name_background_pdf()):
-            if bkg_func == "expo":
-                fitter.set_background_initpar(i_func, "lam", -2)
-            elif bkg_func == "chebpol2":
-                fitter.set_background_initpar(i_func, "c0", 0.6)
-                fitter.set_background_initpar(i_func, "c1", -0.2)
-                fitter.set_background_initpar(i_func, "c2", 0.01)
-            elif bkg_func == "chebpol3":
-                fitter.set_background_initpar(i_func, "c0", 0.4)
-                fitter.set_background_initpar(i_func, "c1", -0.2)
-                fitter.set_background_initpar(i_func, "c2", -0.01)
-                fitter.set_background_initpar(i_func, "c3", 0.01)
+    for i_func, bkg_func in enumerate(fitter.get_name_background_pdf()):
+        if bkg_func == "expo":
+            fitter.set_background_initpar(i_func, "lam", -2)
+        elif bkg_func == "chebpol2":
+            fitter.set_background_initpar(i_func, "c0", 0.6)
+            fitter.set_background_initpar(i_func, "c1", -0.2)
+            fitter.set_background_initpar(i_func, "c2", 0.01)
+        elif bkg_func == "chebpol3":
+            fitter.set_background_initpar(i_func, "c0", 0.4)
+            fitter.set_background_initpar(i_func, "c1", -0.2)
+            fitter.set_background_initpar(i_func, "c2", -0.01)
+            fitter.set_background_initpar(i_func, "c3", 0.01)
+
+    # Set the D+ sigma for MB
+    ratio_ds_dplus_width = fit_config["fix_ratio_ds_dplus_width"]
+    if ratio_ds_dplus_width is not None and fit_config["cent_min"]==0 and fit_config["cent_max"]==100:
+        fitter.mass_zfit()
+        sigma = fitter.get_sigma(0)[0]
+        fitter.set_signal_initpar(1, "sigma", ratio_ds_dplus_width * sigma, fix=True)
+
 
 def dump_results_to_root(dfs, cfg, cut_set):  # pylint: disable=too-many-locals
     """
@@ -943,17 +895,17 @@ def do_fit(fit_config, cfg, params=None):  # pylint: disable=too-many-locals, to
                 (fracs[4][0] / fracs[1][0])**2 + (fracs[3][1] / fracs[0][1])**2
             ) * corr_bkg_over_dplus_signal
             out_dict = {
-                "raw_yields": [fitter.get_raw_yield(i) for i in range(n_signal)],
-                **{f"raw_yields_bincounting_{nsigma}": [fitter.get_raw_yield_bincounting(i, nsigma=nsigma) for i in range(n_signal)] for nsigma in cfg["multitrial"]["bincounting_nsigma"]},
-                "mean": [fitter.get_mass(i) for i in range(n_signal)],
+                "raw_yields": [list(fitter.get_raw_yield(i)) for i in range(n_signal)],
+                **{f"raw_yields_bincounting_{nsigma}": [list(fitter.get_raw_yield_bincounting(i, nsigma=nsigma)) for i in range(n_signal)] for nsigma in cfg["multitrial"]["bincounting_nsigma"]},
+                "mean": [list(fitter.get_mass(i)) for i in range(n_signal)],
                 "chi2": float(fitter.get_chi2_ndf()),
-                "significance": [fitter.get_significance(i, min=1.8, max=2.2) for i in range(n_signal)],
-                "signal": [fitter.get_signal(i, min=1.8, max=2.) for i in range(n_signal)],
-                "background": [fitter.get_background(i, min=1.8, max=2.) for i in range(n_signal)],
-                "bkg_frac": (corr_bkg_frac, corr_bkg_frac_err),
-                "fracs": fracs,
+                "significance": [list(fitter.get_significance(i, min=1.8, max=2.2)) for i in range(n_signal)],
+                "signal": [list(fitter.get_signal(i, min=1.8, max=2.)) for i in range(n_signal)],
+                "background": [list(fitter.get_background(i, min=1.8, max=2.)) for i in range(n_signal)],
+                "bkg_frac": [corr_bkg_frac, corr_bkg_frac_err],
+                "fracs": list(fracs),
                 "converged": fit_result.converged, 
-                "corr_bkg_over_dplus_signal": (corr_bkg_over_dplus_signal, corr_bkg_over_dplus_signal_err)  # pylint: disable=line-too-long # noqa: E501
+                "corr_bkg_over_dplus_signal": [corr_bkg_over_dplus_signal, corr_bkg_over_dplus_signal_err]  # pylint: disable=line-too-long # noqa: E501
             }
 
             if fit_config["sgn_funcs"][0] == "doublegaus":
@@ -1014,7 +966,9 @@ def do_fit(fit_config, cfg, params=None):  # pylint: disable=too-many-locals, to
                 "fracs": None,
                 "converged": False
             }
-        del data_hdl, data_corr_bkg, fit_result, fracs
+        del data_hdl, fit_result, fracs
+        for data_corr_bkg in data_corr_bkgs:
+            del data_corr_bkg
         gc.collect()
         return out_dict, fitter
     except:
@@ -1032,7 +986,7 @@ def do_fit(fit_config, cfg, params=None):  # pylint: disable=too-many-locals, to
         return out_dict, fitter
 
 
-def get_matching_trial(trial_to_match, trials, cent_min, cent_max, pt_min, pt_max):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+def get_matching_trial(trial_to_match, trials, cent_min, cent_max, pt_min, pt_max, keys_to_exclude=[]):  # pylint: disable=too-many-arguments, too-many-positional-arguments
     """
     Find a trial in the list of trials that matches the given trial_to_match 
     based on the specified centrality range (cent_min to cent_max).
@@ -1057,7 +1011,7 @@ def get_matching_trial(trial_to_match, trials, cent_min, cent_max, pt_min, pt_ma
             continue
         match = True
         for key in trial:
-            if key not in ["cent_min", "cent_max"]:
+            if key not in ["cent_min", "cent_max"] + keys_to_exclude:
                 if trial[key] != trial_to_match[key]:
                     match = False
                     break
@@ -1105,6 +1059,8 @@ def run_pt_trial(mb_trial, trials, cfg, pt_min, pt_max, cent_mins, cent_maxs):  
             trial_cent_cfg[key + "_cfg"] = trial_cent_cfg.pop(key)
         result.update(trial_cent_cfg)
         results.append(result)
+    del mb_fitter
+    gc.collect()
     return mb_result, results
 
 def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-locals, too-many-statements
@@ -1138,7 +1094,7 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
     # define all the trials
     trials_no_index = list(itertools.product(*(multitrial_cfg[var] for var in MULTITRIAL_PARAMS)))
     trials_no_index = itertools.product(trials_no_index, [*zip(cent_mins, cent_maxs)], [*zip(pt_mins, pt_maxs)])
-    trials_no_index = [(*trial, *cent, *pt) for trial, cent, pt in trials_no_index]
+    trials_no_index = [[*trial, *cent, *pt] for trial, cent, pt in trials_no_index]
 
     trials_no_index.sort(key=lambda x: (x[-4], x[-3], x[-2], x[-1]))  # Sort by cent_min, cent_max, pt_min, pt_max
     trials = []
@@ -1161,7 +1117,7 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
 
     mb_trials_no_index = list(itertools.product(*(multitrial_cfg[var] for var in MULTITRIAL_PARAMS)))
     mb_trials_no_index = itertools.product(mb_trials_no_index, [(0, 100)], [*zip(pt_mins, pt_maxs)])
-    mb_trials_no_index = [(*trial, *cent, *pt) for trial, cent, pt in mb_trials_no_index]
+    mb_trials_no_index = [[*trial, *cent, *pt] for trial, cent, pt in mb_trials_no_index]
     mb_trials_no_index.sort(key=lambda x: (x[-4], x[-3], x[-2], x[-1]))  # Sort by cent_min, cent_max, pt_min, pt_max
     mb_trials = []
     trials_pars_init_mb = []
@@ -1183,30 +1139,76 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
 
     if not draw:
         futures = []
-        with ProcessPoolExecutor(max_workers=cfg["max_workers"]) as executor:
-            for i_pt, (pt_min, pt_max) in enumerate(zip(pt_mins, pt_maxs)):
-                if multitrial_cfg["pt_bins"] is not None and i_pt not in multitrial_cfg["pt_bins"]:
-                    continue
+        batch_size = cfg["batch_size"]
+        trial_counter = 0
 
-                for mb_trial in mb_trials:
-                    if mb_trial["pt_min"] != pt_min or mb_trial["pt_max"] != pt_max:
-                        continue
-                    futures.append(executor.submit(
-                        run_pt_trial, mb_trial, trials, cfg,
-                        pt_min,pt_max, cent_mins, cent_maxs
-                    ))
+        # overwrite the output file
+        if os.path.exists(os.path.join(cfg["output"]["dir"], f"mb_results_unlisted_{cfg['output']['suffix']}.parquet")):
+            print(os.path.join(cfg["output"]["dir"], f"mb_results_unlisted_{cfg['output']['suffix']}.parquet"))
+            replace = input("Output file already exists. Do you want to replace it? (y/n): ")
+            if replace.lower() == "y":
+                os.remove(os.path.join(cfg["output"]["dir"], f"mb_results_unlisted_{cfg['output']['suffix']}.parquet"))
+        if os.path.exists(os.path.join(cfg["output"]["dir"], f"cent_results_unlisted_{cfg['output']['suffix']}.parquet")):
+            replace = input("Output file already exists. Do you want to replace it? (y/n): ")
+            if replace.lower() == "y":
+                os.remove(os.path.join(cfg["output"]["dir"], f"cent_results_unlisted_{cfg['output']['suffix']}.parquet"))
 
+        # Initialize DataFrames to append results later
         df_mb = []
         df_cent = []
-        for future in futures:
-            mb_result, cent_result = future.result()
-            df_mb.append(mb_result)
-            for result in cent_result:
-                df_cent.append(result)
-        df_mb = pd.DataFrame(df_mb)
-        df_cent = pd.DataFrame(df_cent)
-        df_mb.to_parquet(os.path.join(cfg["output"]["dir"], f"mb_results{cfg["output"]['suffix']}.parquet"))
-        df_cent.to_parquet(os.path.join(cfg["output"]["dir"], f"cent_results{cfg["output"]['suffix']}.parquet"))
+
+        for i_pt, (pt_min, pt_max) in enumerate(zip(pt_mins, pt_maxs)):
+            if multitrial_cfg["pt_bins"] is not None and i_pt not in multitrial_cfg["pt_bins"]:
+                continue
+            mb_trials_pt = [trial for trial in mb_trials if trial["pt_min"] == pt_min and trial["pt_max"] == pt_max]
+            # Process `mb_trials` in chunks of `batch_size`
+            for start in range(0, len(mb_trials_pt), batch_size):
+                batch = mb_trials_pt[start:start + batch_size]
+                batch_futures = []
+                executor = ProcessPoolExecutor(max_workers=cfg["max_workers"])
+
+                for mb_trial in batch:
+                    if mb_trial["pt_min"] != pt_min or mb_trial["pt_max"] != pt_max:
+                        continue
+                    
+                    batch_futures.append(executor.submit(
+                        run_pt_trial, mb_trial, trials, cfg,
+                        pt_min, pt_max, cent_mins, cent_maxs
+                    ))
+
+                # Wait for batch results
+                df_mb, df_cent = [], []
+                for future in batch_futures:
+                    mb_result, cent_result = future.result()
+                    df_mb.append(mb_result)
+                    df_cent.extend(cent_result)
+
+                # Convert to DataFrame
+                df_mb_new = pd.DataFrame(df_mb)
+                df_cent_new = pd.DataFrame(df_cent)
+
+                # Check if files exist to set the append flag
+                mb_file = os.path.join(cfg["output"]["dir"], f"mb_results_unlisted_{cfg['output']['suffix']}.parquet")
+                cent_file = os.path.join(cfg["output"]["dir"], f"cent_results_unlisted_{cfg['output']['suffix']}.parquet")
+                append_mb = os.path.exists(mb_file)
+                append_cent = os.path.exists(cent_file)
+
+                # Save to Parquet with append behavior
+                df_mb_new.to_parquet(mb_file, engine="fastparquet", append=append_mb, index=False)
+                df_cent_new.to_parquet(cent_file, engine="fastparquet", append=append_cent, index=False)
+
+                # Clean up workers for this batch
+                executor.shutdown(wait=True)      
+        # Convert bytes to lists
+        df_mb = pd.read_parquet(os.path.join(cfg["output"]["dir"], f"mb_results_unlisted_{cfg['output']['suffix']}.parquet"))
+        df_cent = pd.read_parquet(os.path.join(cfg["output"]["dir"], f"cent_results_unlisted_{cfg['output']['suffix']}.parquet"))
+        for col in df_mb.columns:
+            df_mb[col] = df_mb[col].apply(lambda x: ast.literal_eval(x.decode("utf-8")) if isinstance(x, bytes) else x)
+        for col in df_cent.columns:
+            df_cent[col] = df_cent[col].apply(lambda x: ast.literal_eval(x.decode("utf-8")) if isinstance(x, bytes) else x)
+        df_mb.to_parquet(os.path.join(cfg["output"]["dir"], f"mb_results{cfg['output']['suffix']}.parquet"))
+        df_cent.to_parquet(os.path.join(cfg["output"]["dir"], f"cent_results{cfg['output']['suffix']}.parquet"))
+
     else:
         df_mb = pd.read_parquet(os.path.join(cfg["output"]["dir"], f"mb_results{cfg["output"]['suffix']}.parquet"))
         df_cent = pd.read_parquet(os.path.join(cfg["output"]["dir"], f"cent_results{cfg["output"]['suffix']}.parquet"))
@@ -1223,8 +1225,9 @@ if __name__ == '__main__':
     # "bincounting_nsigma" removed so that we do not fit multiple times for each nsigma
     MULTITRIAL_PARAMS = [
         "mins", "maxs", "rebins", "sgn_funcs", "bkg_funcs", "sigma",
-        "fix_sigma_to_mb", "fix_corr_bkg_to_mb", "fix_corr_bkg_with_br",
-        "mean", "use_bkg_templ"
+        "fix_sigma_to_mb", "fix_ratio_ds_dplus_width", "fix_corr_bkg_to_mb",
+        "fix_corr_bkg_with_br", "mean", "use_bkg_templ"
     ]
+
     zfit.run.set_cpus_explicit(intra=10, inter=10)
     multi_trial(args.configFile, args.draw)
