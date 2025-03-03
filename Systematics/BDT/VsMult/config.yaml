@@ -1,0 +1,86 @@
+inputs:
+  directory: "Systematics/BDT/VsMult"
+  commonfilenames:
+    rawyield: "Projections_RawYields/doublecb/mass_fits"
+    efficiency: "Efficiency/efficiency_"
+  prompt_frac_ds: "FD_Fraction/data_driven/VsMult/mult_differential/2023/ds/doublecb/CutVarDs_pp13TeV_MB.root" #MB one
+  prompt_frac_dplus: "FD_Fraction/data_driven/VsMult/mult_differential/2023/dplus/doublecb/CutVarDs_pp13TeV_MB.root" #MB one
+  cutsets: [
+    "_outBkg_pos00_outPrompt_pos00",
+    "_outBkg_neg01_outPrompt_neg01",
+    "_outBkg_neg01_outPrompt_neg02",
+    "_outBkg_neg01_outPrompt_neg03",
+    "_outBkg_neg01_outPrompt_pos00",
+    "_outBkg_neg01_outPrompt_pos01",
+    "_outBkg_neg01_outPrompt_pos02",
+    "_outBkg_neg01_outPrompt_pos03",
+    "_outBkg_neg02_outPrompt_neg01",
+    "_outBkg_neg02_outPrompt_neg02",
+    "_outBkg_neg02_outPrompt_neg03",
+    "_outBkg_neg02_outPrompt_pos00",
+    "_outBkg_neg02_outPrompt_pos01",
+    "_outBkg_neg02_outPrompt_pos02",
+    "_outBkg_neg02_outPrompt_pos03",
+    "_outBkg_neg03_outPrompt_neg01",
+    "_outBkg_neg03_outPrompt_neg02",
+    "_outBkg_neg03_outPrompt_neg03",
+    "_outBkg_neg03_outPrompt_pos00",
+    "_outBkg_neg03_outPrompt_pos01",
+    "_outBkg_neg03_outPrompt_pos02",
+    "_outBkg_neg03_outPrompt_pos03",
+    "_outBkg_pos00_outPrompt_neg01",
+    "_outBkg_pos00_outPrompt_neg02",
+    "_outBkg_pos00_outPrompt_neg03",
+    "_outBkg_pos00_outPrompt_pos01",
+    "_outBkg_pos00_outPrompt_pos02",
+    "_outBkg_pos00_outPrompt_pos03",
+    "_outBkg_pos01_outPrompt_neg01",
+    "_outBkg_pos01_outPrompt_neg02",
+    "_outBkg_pos01_outPrompt_neg03",
+    "_outBkg_pos01_outPrompt_pos00",
+    "_outBkg_pos01_outPrompt_pos01",
+    "_outBkg_pos01_outPrompt_pos02",
+    "_outBkg_pos01_outPrompt_pos03",
+    "_outBkg_pos02_outPrompt_neg01",
+    "_outBkg_pos02_outPrompt_neg02",
+    "_outBkg_pos02_outPrompt_neg03",
+    "_outBkg_pos02_outPrompt_pos00",
+    "_outBkg_pos02_outPrompt_pos01",
+    "_outBkg_pos02_outPrompt_pos02",
+    "_outBkg_pos02_outPrompt_pos03",
+    "_outBkg_pos03_outPrompt_neg01",
+    "_outBkg_pos03_outPrompt_neg02",
+    "_outBkg_pos03_outPrompt_neg03",
+    "_outBkg_pos03_outPrompt_pos00",
+    "_outBkg_pos03_outPrompt_pos01",
+    "_outBkg_pos03_outPrompt_pos02",
+    "_outBkg_pos03_outPrompt_pos03",
+  ]
+    # Add more cut sets as needed
+
+cutset_file: Projections_RawYields/configs/cutset_pp13TeV_multiplicity.yml
+
+br:
+  ds_to_phipi_to_kkpi: 2.21e-2  #https://pdglive.lbl.gov/BranchingRatio.action?pdgid=S034.114&home=MXXX040
+  dplus_to_phipi_to_kkpi: 2.69e-3  #https://pdglive.lbl.gov/BranchingRatio.action?pdgid=S031.89&home=MXXX035
+
+outfilename: "Systematics/BDT/VsMult/output/output.root"
+
+quality:
+  maxchisquare: 50.
+  minsignif: 3.0
+  minrelsignif: 0.
+  minreleff: 0.
+  maxreleff: 5
+  fillthrreleff: 0.05
+
+plots:
+  plotrelativevar: true
+  relassignedsyst: [
+    [0.01, 0.02, 0.03, 0.04, 0.05, 0.06],
+    [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+    [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+    [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+    [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+    [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+    ]  # Add systematic variations if needed
