@@ -87,6 +87,8 @@ def PlotCutVariationsOnePtBin(cfgFileName):
     nFiles = len(cutSetSuffix)
 
     outFileName = config["outfilename"]
+    outFile = ROOT.TFile(outFileName, "RECREATE")
+    outFile.Close()
 
     maxChi2 = config["quality"]["maxchisquare"]
     minSignif = config["quality"]["minsignif"]
@@ -161,6 +163,7 @@ def PlotCutVariationsOnePtBin(cfgFileName):
         infile_DplusPromptFrac.Close()
 
         hSyst = hRawYieldsDs[0].Clone("hSyst")
+        hAssignedSyst = hRawYieldsDs[0].Clone("hAssignedSyst")
 
         for iPt in range(hRawYieldsDs[0].GetNbinsX()):
             
@@ -197,21 +200,23 @@ def PlotCutVariationsOnePtBin(cfgFileName):
             FDFracsDsErr = []
             FDFracsDplusErr = []
 
+            pass_counter = 0
             for iFile in range(nFiles):
                 
-                # # chi2 quality check
-                # if hchi2s[iFile].GetBinContent(iPt+1) > 2:
-                #     continue
+                # chi2 quality check
+                if hchi2s[iFile].GetBinContent(iPt+1) > maxChi2:
+                    continue
 
-                # # Significance quality check
-                # if hSignificancesDs[iFile].GetBinContent(iPt+1) < minSignif or hSignificancesDplus[iFile].GetBinContent(iPt+1) < minSignif:
-                #     continue
-                # if hSignificancesDs[iFile].GetBinContent(iPt+1) < hSignificancesDs[0].GetBinContent(iPt+1) * minRelSignif or hSignificancesDplus[iFile].GetBinContent(iPt+1) < hSignificancesDplus[0].GetBinContent(iPt+1) * minRelSignif:
-                #     continue
+                # Significance quality check
+                if hSignificancesDs[iFile].GetBinContent(iPt+1) < minSignif or hSignificancesDplus[iFile].GetBinContent(iPt+1) < minSignif:
+                    continue
+                if hSignificancesDs[iFile].GetBinContent(iPt+1) < hSignificancesDs[0].GetBinContent(iPt+1) * minRelSignif or hSignificancesDplus[iFile].GetBinContent(iPt+1) < hSignificancesDplus[0].GetBinContent(iPt+1) * minRelSignif:
+                    continue
                 
-                # # Efficiency quality check
-                # if hEffPromptsDs[iFile].GetBinContent(iPt+1) < hEffPromptsDs[0].GetBinContent(iPt+1) * minRelEff or hEffPromptsDplus[iFile].GetBinContent(iPt+1) < hEffPromptsDplus[iFile].GetBinContent(iPt+1) * minRelEff:
-                #     continue
+                # Efficiency quality check
+                if hEffPromptsDs[iFile].GetBinContent(iPt+1) < hEffPromptsDs[0].GetBinContent(iPt+1) * minRelEff or hEffPromptsDplus[iFile].GetBinContent(iPt+1) < hEffPromptsDplus[iFile].GetBinContent(iPt+1) * minRelEff:
+                    continue
+
 
                 RawYieldsDs.append(hRawYieldsDs[iFile].GetBinContent(iPt+1))
                 RawYieldsDsErr.append(hRawYieldsDs[iFile].GetBinError(iPt+1))
@@ -252,8 +257,8 @@ def PlotCutVariationsOnePtBin(cfgFileName):
                     hRawYieldsDplus[iFile].GetBinContent(iPt+1),
                     hEffPromptsDs[iFile].GetBinContent(iPt+1),
                     hEffPromptsDplus[iFile].GetBinContent(iPt+1),
-                    PromptFracsDs[iFile],
-                    PromptFracsDplus[iFile],
+                    PromptFracsDs[pass_counter],
+                    PromptFracsDplus[pass_counter],
                     config
                 ))
                 ratio_err = Ratios[-1] * np.sqrt(
@@ -264,6 +269,7 @@ def PlotCutVariationsOnePtBin(cfgFileName):
                 )
                 RatiosErr.append(ratio_err)
                 chi2s.append(hchi2s[iFile].GetBinContent(iPt+1))
+                pass_counter += 1
             
             # Create figures
             fig, axs = plt.subplots(2, 4, figsize=(32, 20))
@@ -336,15 +342,17 @@ def PlotCutVariationsOnePtBin(cfgFileName):
 
             rms = np.std(Ratios)
             mean = np.mean(Ratios)
-            rmsAndShift = np.sqrt(rms**2 + (mean/Ratios[0] - 1)**2)
+            rmsAndShift = np.sqrt((rms/Ratios[0])**2 + (mean/Ratios[0] - 1)**2)
 
             print(f"{hRawYieldsDs[0].GetBinLowEdge(iPt+1)} < pT < {hRawYieldsDs[0].GetBinLowEdge(iPt+1)+hRawYieldsDs[0].GetBinWidth(iPt+1)}: RMS+shift = {rmsAndShift}")
             hSyst.SetBinContent(iPt+1, rmsAndShift)
             hSyst.SetBinError(iPt+1, 0)
 
-            axs[1, 3].add_patch(Rectangle((1 - rmsAndShift/Ratios[0], 0), 2*rmsAndShift/Ratios[0], axs[1, 3].get_ylim()[1], facecolor="dodgerblue", alpha=0.4, ec='darkblue', lw=5, label=f'$\sqrt{{RMS^2 + shift^2}}$ = {rmsAndShift/Ratios[0]*100:.2f}%'))
+            axs[1, 3].add_patch(Rectangle((1 - rmsAndShift, 0), 2*rmsAndShift, axs[1, 3].get_ylim()[1], facecolor="dodgerblue", alpha=0.4, ec='darkblue', lw=5, label=f'$\sqrt{{RMS^2 + shift^2}}$ = {rmsAndShift*100:.2f}%'))
             syst = config['plots']['relassignedsyst'][iPt][i_cent]
             axs[1, 3].add_patch(Rectangle((1 - syst, 0), 2*syst, axs[1, 3].get_ylim()[1], facecolor="r", alpha=0.5, ec='firebrick', lw=5, label='Assigned syst'))
+            hAssignedSyst.SetBinContent(iPt+1, syst)
+            hAssignedSyst.SetBinError(iPt+1, 0)
 
             xMax = max(1+rmsAndShift, 1+syst, max(Ratios)/Ratios[0])
             xMin = min(1-rmsAndShift, 1-syst, min(Ratios)/Ratios[0])
@@ -355,8 +363,9 @@ def PlotCutVariationsOnePtBin(cfgFileName):
             # Save figure and ROOT file
             plt.savefig(f"{outFileName}_pt_{hRawYieldsDs[0].GetBinLowEdge(iPt+1)}_{hRawYieldsDs[0].GetBinLowEdge(iPt+1)+hRawYieldsDs[0].GetBinWidth(iPt+1)}_{cent_min}_{cent_max}.png", bbox_inches='tight')
 
-        outFile = ROOT.TFile(f"{outFileName}_{cent_min}_{cent_max}.root", "RECREATE")
-        hSyst.Write()
+        outFile = ROOT.TFile(outFileName, "UPDATE")
+        hSyst.Write(f"rms_shifts_sum_quadrature_{cent_min}_{cent_max}")
+        hAssignedSyst.Write(f"assigned_syst_{cent_min}_{cent_max}")
         outFile.Close()
 
 if __name__ == "__main__":
