@@ -1,0 +1,86 @@
+
+! This file will generate inelastic events primarily to compare with ALICE data
+! Command file for PbPb collision to study charm hadrons production
+! Note that for the various output functionalities to work,
+! HepMC, YODA, RIVET and ROOT respectively needs to either
+! be installed to system path, or appended before compiling.
+
+! 1) Settings related to the physics processes generated. Here
+Beams:idA = 1000822080              ! first beam, Pb goes toward +ve $\eta$
+Beams:idB = 1000822080              ! second beam, Pb goes towards -ve $\eta$
+Beams:eCM = 5360
+
+!Cu = 1000290630, O = 1000080160, Xe = 1000541290, Au = 1000791970, Pb = 1000822080
+
+HeavyIon:mode = 1                 !To generate HI events in Angantyr
+
+! 2) Settings related to the run
+Main:numberOfEvents = 50          ! number of events to generate
+Main:timesAllowErrors = 10          ! abort run after this many flawed events
+Random:setSeed = on
+Random:seed = 1000000
+
+Init:showChangedSettings = on      ! list changed settings
+Next:numberCount = 500000            ! print message every n events
+Next:numberShowLHA = 1             ! print LHA information n times
+Next:numberShowInfo = 1            ! print event information n times
+Next:numberShowProcess = 1         ! print process record n times
+Next:numberShowEvent = 1           ! print event record n times
+Stat:showPartonLevel = on          ! additional statistics on MPI
+
+# Settings related to colour reconnection Global QCDCR
+PartonVertex:setVertex = on
+ColourReconnection:mode = 1
+ColourReconnection:timeDilationMode = 0
+ColourReconnection:allowDoubleJunRem = off
+ColourReconnection:allowJunctions = on
+ColourReconnection:lambdaForm = 1
+
+# Changes introduced in QCDCR for spatial constraint in CR
+# Global CR enable
+ColourReconnection:reconnect = off
+ColourReconnection:forceHadronLevelCR = on
+
+# QCDCR + spatial constriant
+ColourReconnection:m0 = 1.05
+ColourReconnection:mPseudo = 1.05
+ColourReconnection:junctionCorrection = 1.37
+ColourReconnection:dipoleMaxDist = 0.5
+MultipartonInteractions:pT0Ref = 2.37
+HIMultipartonInteractions:pT0Ref = 2.37
+
+StringPT:sigma = 0.335
+StringZ:aLund = 0.36
+StringZ:bLund = 0.56
+StringFlav:probQQtoQ = 0.078
+StringFlav:probStoUD = 0.4
+StringFlav:probQQ1toQQ0join = 0.5,0.7,0.9,1.0
+BeamRemnants:remnantMode = 1
+BeamRemnants:saturation = 5
+BeamRemnants:beamJunction = on
+HIBeamRemnants:beamJunction = on
+HIBeamRemnants:remnantMode = 1
+HIBeamRemnants:saturation = 5
+
+# Allow additional trial for failed string fragmentation
+MiniStringFragmentation:tryAfterFailedFrag = on
+
+# Changes related to heavy quarks lambda measure + junction fragmentation
+ColourReconnection:heavyLambdaForm = 1         ! only modifies lambda for junctions
+StringFragmentation:pearlFragmentation = on    ! allows fragmentation in heavy-quark rest frame
+                                                !I think!
+
+# Modification of secondary ND in HI, appropriate for the global CR
+HISigmaDiffractive:mode = 0
+HISigmaDiffractive:PomFlux = 3
+
+
+# Slightly changed c-mass, will increase the charm cross section
+
+4:m0 = 1.3           ! set charm mass
+5:m0 = 4.2           ! set bottom mass
+
+! 3) Other settings. Can be expanded as desired.
+! Note: may overwrite some of the values above, so watch out.
+ParticleDecays:limitTau0 = on      ! set long-lived particle stable ...
+ParticleDecays:tau0Max = 10        ! ... if c*tau0 > 10 mm
