@@ -1,0 +1,47 @@
+Executable = "/alice/cern.ch/user/f/fchinu/pythia_sim/sendJobs.sh";
+
+JobTag =
+{
+  "comment:sim tests"
+};
+
+Packages =
+{
+  "VO_ALICE@ROOT::v6-32-06-alice1-3"
+};
+
+Split = "production:$1-$2";
+
+InputFile = 
+{
+    "LF:/alice/cern.ch/user/f/fchinu/pythia_sim/pythia8311.tar.gz"
+};
+
+OutputDir = "/alice/cern.ch/user/f/fchinu/pythia_sim/output/#alien_counter#";
+
+Email="fabrizio.chinu@cern.ch";
+
+Output =
+{
+  "*.txt@disk=1",
+  "*.cmnd@disk=1",
+  "*.log@disk=1"
+};
+
+Arguments = "#alien_counter#";
+
+Requirements = member(other.GridPartitions,"multicore_8");
+
+TTL = "42000";
+
+Price = "100";
+
+CPULimit="10";
+CPUCores = "1";
+
+JDLVariables = {
+"Packages",
+"OutputDir",
+"CPULimit",
+"CPUCores"
+};
