@@ -1,13 +1,13 @@
 input: # files to use, set FD to null for binary classification
     prompt: [
-        /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train271382/LHC24d3b_PromptDs.parquet,
-        /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train271350/LHC24d3a_PromptDs.parquet
+        /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train276845/LHC24d3b_PromptDs.parquet,
+        /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train276788/LHC24d3a_PromptDs.parquet
     ]
     FD: [
-        /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train271382/LHC24d3b_NonPromptDs.parquet,
-        /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train271350/LHC24d3a_NonPromptDs.parquet
+        /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train276845/LHC24d3b_NonPromptDs.parquet,
+        /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train276788/LHC24d3a_NonPromptDs.parquet
     ]
-    data: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Data/Train271461/LHC22o.parquet
+    data: /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Data/Train276243/LHC22o_pass7.parquet
     treename: null
 
 output:
@@ -33,6 +33,7 @@ data_prep:
     bkg_mult: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # list of multipliers for (nPrompt + nFD) used to determine nCandBkg in the 'max_signal' option
     seed_split: 42 # seed used for train_test_split(...)
     test_fraction: 0.2 # fraction of data used for test set and efficiencies --> set to 1. if you want to apply the model to the full dataframes 
+    swap_prongs: True #wheter to always order the prongs as KKPi
     
 ml:
     raw_output: False # use raw_output (True) of probability (False) as output of the model
