@@ -188,22 +188,28 @@ def draw_alice_pbpb(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
 
 
 def draw_alice_pp(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
-    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/Ratios/VsMult/ratio_new_models.root") as infile:
-        graph_stat = infile.Get(f"g_ratio_dndeta_{pt_min*10:.0f}_{pt_max*10:.0f}")
-        #graph_syst = infile.Get(f"pt_{pt_min}_{pt_max}/graph_syst_pbpb2018_pt{pt_min}_{pt_max}")
+    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/Ratios/VsMult/w_syst/ratio_with_syst.root") as infile:
+        graph_stat = infile.Get(f"g_stat_{pt_min*10:.0f}_{pt_max*10:.0f}")
+        graph_syst = infile.Get(f"g_syst_{pt_min*10:.0f}_{pt_max*10:.0f}")
+    
+    #set x unc. for the systematic box
+    for i in range(graph_syst.GetN()):
+        graph_syst.SetPointEXlow(i, graph_syst.GetPointX(i)*0.075)
+        graph_syst.SetPointEXhigh(i, graph_syst.GetPointX(i)*0.075)
+
     graph_stat.SetMarkerStyle(m)
     graph_stat.SetMarkerSize(s)
     graph_stat.SetMarkerColor(c)
     graph_stat.SetLineColor(c)
     graph_stat.SetLineWidth(1)
-    #graph_syst.SetMarkerStyle(m)
-    #graph_syst.SetMarkerSize(s)
-    #graph_syst.SetMarkerColor(c)
-    #graph_syst.SetLineColor(c)
-    #graph_syst.SetLineWidth(1)
-    #graph_syst.SetFillStyle(0)
-    graph_stat.Draw("pz, same")
-    #graph_syst.Draw("pz2, same")
+    graph_syst.SetMarkerStyle(m)
+    graph_syst.SetMarkerSize(s)
+    graph_syst.SetMarkerColor(c)
+    graph_syst.SetLineColor(c)
+    graph_syst.SetLineWidth(1)
+    graph_syst.SetFillStyle(0)
+    graph_stat.DrawClone("pz, same")
+    graph_syst.DrawClone("pz2, same")
     return graph_stat #, graph_syst
 
 if __name__ == '__main__':
@@ -218,7 +224,7 @@ if __name__ == '__main__':
     ROOT.gStyle.SetTitleSize(0.05, "XYZ")
     ROOT.gStyle.SetTitleOffset(1.1, "X")
     colors, _ = get_discrete_matplotlib_palette('tab10')
-    alice_text = ROOT.TLatex(0.18, 0.88, 'This work')
+    alice_text = ROOT.TLatex(0.18, 0.88, 'ALICE Preliminary')
     alice_text.SetNDC()
     alice_text.SetTextFont(42)
     alice_text.SetTextSize(0.05)
@@ -228,7 +234,7 @@ if __name__ == '__main__':
     y_text.SetTextFont(42)
     y_text.SetTextSize(0.04)
 
-    pt_text = ROOT.TLatex(0.6, 0.17, '')
+    pt_text = ROOT.TLatex(0.6, 0.88, '')
     pt_text.SetNDC()
     pt_text.SetTextFont(42)
     pt_text.SetTextSize(0.04)
@@ -237,18 +243,18 @@ if __name__ == '__main__':
     c.Divide(3, 2, 0.0001, 0.0001)
     c.cd(1)
     h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#sigma_{D_{s}^{+}}/#sigma_{D^{+}}")
-    g_alice_pp_0_2 = draw_alice_pp(0, 2, c=colors[3], s=2.5, m=ROOT.kFullCircle)
+    g_alice_pp_1_2 = draw_alice_pp(1, 2, c=colors[3], s=2.5, m=ROOT.kFullCircle)
     alice_text.Draw()
     #y_text.Draw()
-    pt_text.DrawLatexNDC(0.6, 0.17, '0 < #it{p}_{T} < 2 GeV/#it{c}')
+    pt_text.DrawLatexNDC(0.6, 0.88, '1#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{2} GeV/#it{c}')
 
-    legend_alice_pp = ROOT.TLegend(0.175, 0.66, 0.485, 0.86)
+    legend_alice_pp = ROOT.TLegend(0.175, 0.76, 0.485, 0.86)
     legend_alice_pp.SetBorderSize(0)
     legend_alice_pp.SetFillStyle(0)
     legend_alice_pp.SetTextFont(42)
     legend_alice_pp.SetTextSize(0.04)
-    legend_alice_pp.AddEntry(g_alice_pp_0_2, '#splitline{pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < 0.5}{Mult. estim.: #kern[-0.3]{#font[122]{-}3.3} < #kern[-0.9]{#it{#eta}} < #kern[-0.3]{#font[122]{-}2.1} #kern[-0.9]{#vee} 3.5 < #kern[-0.2]{#it{#eta} < 4.9}}', 'pl')
-    legend_alice_pp.AddEntry('', '#splitline{pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < 0.5}{Mult. estim.: |#it{#eta}| < 0.8}', 'pl')
+    legend_alice_pp.AddEntry(g_alice_pp_1_2, '#splitline{pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < 0.5}{Mult. estim.: #kern[-0.3]{#font[122]{-}3.3} < #kern[-0.9]{#it{#eta}} < #kern[-0.3]{#font[122]{-}2.1} #kern[-0.9]{#vee} 3.5 < #kern[-0.2]{#it{#eta} < 4.9}}', 'pl')
+    #legend_alice_pp.AddEntry('', '#splitline{pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < 0.5}{Mult. estim.: |#it{#eta}| < 0.8}', 'pl')
     legend_alice_pp.Draw()
 
     c.cd(2)
@@ -261,15 +267,7 @@ if __name__ == '__main__':
     g_alice_pp_2_4 = draw_alice_pp(2, 4, c=colors[3], s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
     #y_text.Draw()
-    pt_text.DrawLatexNDC(0.6, 0.17, '2 < #it{p}_{T} < 4 GeV/#it{c}')
-
-    legend_alice_pbpb = ROOT.TLegend(0.175, 0.25, 0.485, 0.35)
-    legend_alice_pbpb.SetBorderSize(0)
-    legend_alice_pbpb.SetFillStyle(0)
-    legend_alice_pbpb.SetTextFont(42)
-    legend_alice_pbpb.SetTextSize(0.04)
-    legend_alice_pbpb.AddEntry(graph_stat_alice_2_4, '#splitline{ALICE, Pb#font[122]{-}Pb, #sqrt{#it{s}_{NN}} = 5.02 TeV, |#it{y}| < 0.5}{Mult. estim.: #kern[-0.3]{#font[122]{-}3.7} < #kern[-0.9]{#it{#eta}} < #kern[-0.3]{#font[122]{-}1.7} #kern[-0.9]{#vee} 2.8 < #kern[-0.2]{#it{#eta} < 5.1}}', 'pl')
-    legend_alice_pbpb.Draw()
+    pt_text.DrawLatexNDC(0.6, 0.88, '2#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{4} GeV/#it{c}')
 
     c.cd(3)
     h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#sigma_{D_{s}^{+}}/#sigma_{D^{+}}")
@@ -281,7 +279,15 @@ if __name__ == '__main__':
     draw_alice_pp(4, 6, c=colors[3], s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
     #y_text.Draw()
-    pt_text.DrawLatexNDC(0.6, 0.17, '4 < #it{p}_{T} < 6 GeV/#it{c}')
+    pt_text.DrawLatexNDC(0.6, 0.88, '4#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{6} GeV/#it{c}')
+
+    legend_alice_pbpb = ROOT.TLegend(0.175, 0.76, 0.485, 0.86)
+    legend_alice_pbpb.SetBorderSize(0)
+    legend_alice_pbpb.SetFillStyle(0)
+    legend_alice_pbpb.SetTextFont(42)
+    legend_alice_pbpb.SetTextSize(0.04)
+    legend_alice_pbpb.AddEntry(graph_stat_alice_2_4, '#splitline{ALICE, Pb#font[122]{-}Pb, #sqrt{#it{s}_{NN}} = 5.02 TeV, |#it{y}| < 0.5}{Mult. estim.: #kern[-0.3]{#font[122]{-}3.7} < #kern[-0.9]{#it{#eta}} < #kern[-0.3]{#font[122]{-}1.7} #kern[-0.9]{#vee} 2.8 < #kern[-0.2]{#it{#eta} < 5.1}}', 'pl')
+    legend_alice_pbpb.Draw()
 
     c.cd(4)
     h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#sigma_{D_{s}^{+}}/#sigma_{D^{+}}")
@@ -293,7 +299,7 @@ if __name__ == '__main__':
     draw_alice_pp(6, 8, c=colors[3], s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
     #y_text.Draw()
-    pt_text.DrawLatexNDC(0.6, 0.17, '6 < #it{p}_{T} < 8 GeV/#it{c}')
+    pt_text.DrawLatexNDC(0.6, 0.88, '6#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{8} GeV/#it{c}')
 
     legend_lhcb_f = ROOT.TLegend(0.175, 0.25, 0.485, 0.4)
     legend_lhcb_f.SetBorderSize(0)
@@ -314,7 +320,7 @@ if __name__ == '__main__':
     draw_alice_pp(8, 12, c=colors[3], s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
     #y_text.Draw()
-    pt_text.DrawLatexNDC(0.6, 0.17, '8 < #it{p}_{T} < 12 GeV/#it{c}')
+    pt_text.DrawLatexNDC(0.6, 0.88, '8#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[.5]{12} GeV/#it{c}')
 
     legend_lhcb_b = ROOT.TLegend(0.175, 0.25, 0.485, 0.4)
     legend_lhcb_b.SetBorderSize(0)
@@ -330,10 +336,12 @@ if __name__ == '__main__':
     draw_alice_pp(12, 24, c=colors[3], s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
     #y_text.Draw()
-    pt_text.DrawLatexNDC(0.6, 0.17, '12 < #it{p}_{T} < 24 GeV/#it{c}')
+    pt_text.DrawLatexNDC(0.6, 0.88, '12#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[.5]{24} GeV/#it{c}')
+    c.Modified()
+    c.Update()
 
-
-    c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/Ratio/VsMult/ratio_vs_lhcb.pdf")
+    c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/Ratio/VsMult/ratio_vs_lhcb_2023_fix_template_w_syst.pdf")
+    c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/Ratio/VsMult/ratio_vs_lhcb_2023_fix_template_w_syst.root")
 
 
 
