@@ -247,6 +247,49 @@ def draw_pythia_pp_sccr_ft0m(pt_min, pt_max, c=ROOT.kBlack, s=3, a=0.5, m=ROOT.k
     graph_ft0.Draw("3, same")
     return graph_ft0
 
+def draw_pythia_pbpb_sccr_mid(pt_min, pt_max, c=ROOT.kBlack, s=3, a=0.5, m=ROOT.kOpenDiamond):
+    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/PYTHIA_Simulations/pbpb/CharmHadRatiosVsMult_merge_cut.root") as infile:
+        hist_mid = infile.Get(f"hDsDpRatioMidMultPt{pt_min:.0f}{pt_max:.0f}")
+        hist_mid.SetDirectory(0)
+    # Divide x values by eta gap
+    deta = (3.3-2.1) + (4.9-3.5) 
+    for i in range(hist_mid.GetN()):
+        x, y = ROOT.Double(0), ROOT.Double(0)
+        hist_mid.GetPoint(i, x, y)
+        hist_mid.SetPoint(i, x/deta, y)
+        hist_mid.SetPointEXlow(i, 0)
+        hist_mid.SetPointEXhigh(i, 0)
+    hist_mid.SetMarkerStyle(m)
+    hist_mid.SetMarkerSize(s)
+    hist_mid.SetMarkerColor(c)
+    hist_mid.SetLineColor(c)
+    hist_mid.SetLineWidth(0)
+    hist_mid.SetFillStyle(1001)
+    hist_mid.SetFillColorAlpha(c, a)
+    hist_mid.Draw("E3, same")
+    return hist_mid
+
+def draw_pythia_pbpb_sccr_ft0m(pt_min, pt_max, c=ROOT.kBlack, s=3, a=0.5, m=ROOT.kFullCircle):
+    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/PYTHIA_Simulations/pbpb/CharmHadRatiosVsMult_merge_cut.root") as infile:
+        hist_ft0 = infile.Get(f"hDsDpRatioFwdMultPt{pt_min:.0f}{pt_max:.0f}")
+        hist_ft0.SetDirectory(0)
+    deta = (3.3-2.1) + (4.9-3.5) 
+    for i in range(hist_ft0.GetN()):
+        x, y = ROOT.Double(0), ROOT.Double(0)
+        hist_ft0.GetPoint(i, x, y)
+        hist_ft0.SetPoint(i, x/deta, y)
+        hist_ft0.SetPointEXlow(i, 0)
+        hist_ft0.SetPointEXhigh(i, 0)
+    hist_ft0.SetMarkerStyle(m)
+    hist_ft0.SetMarkerSize(s)
+    hist_ft0.SetMarkerColor(c)
+    hist_ft0.SetLineColor(c)
+    hist_ft0.SetLineWidth(0)
+    hist_ft0.SetFillStyle(1001)
+    hist_ft0.SetFillColorAlpha(c, a)
+    hist_ft0.Draw("E3, same")
+    return hist_ft0
+
 if __name__ == '__main__':
     ROOT.gStyle.SetPadTickX(1)
     ROOT.gStyle.SetPadTickY(1)
@@ -288,6 +331,8 @@ if __name__ == '__main__':
     pythia_mid_mod_mode2 = draw_pythia_pp_mod_mode2_mid(1, 2, c=colors[9], s=2, m=ROOT.kOpenCross)
     pythia_ft0m_sccr = draw_pythia_pp_sccr_ft0m(1, 2, c=colors[10], s=2, m=ROOT.kFullFourTrianglesPlus)
     pythia_mid_sccr = draw_pythia_pp_sccr_mid(1, 2, c=colors[11], s=2, m=ROOT.kOpenFourTrianglesPlus)
+    pythia_pbpb_ft0m_sccr = draw_pythia_pbpb_sccr_ft0m(1, 2, c=colors[11], s=0, m=ROOT.kFullFourTrianglesPlus)
+    pythia_pbpb_mid_sccr = draw_pythia_pbpb_sccr_mid(1, 2, c=colors[10], s=0, m=ROOT.kFullFourTrianglesPlus)
     g_alice_pp_1_2 = draw_alice_pp(1, 2, c=colors[6], s=2.5, m=ROOT.kFullCircle)
     alice_text.Draw()
     #y_text.Draw()
@@ -317,6 +362,8 @@ if __name__ == '__main__':
     draw_pythia_pp_mod_mode2_mid(2, 4, c=colors[9], s=2, m=ROOT.kOpenCross)
     draw_pythia_pp_sccr_ft0m(2, 4, c=colors[10], s=2, m=ROOT.kFullFourTrianglesPlus)
     draw_pythia_pp_sccr_mid(2, 4, c=colors[11], s=2, m=ROOT.kOpenFourTrianglesPlus)
+    draw_pythia_pbpb_sccr_ft0m(2, 4, c=colors[11], s=0, m=ROOT.kFullFourTrianglesPlus)
+    draw_pythia_pbpb_sccr_mid(2, 4, c=colors[10], s=0, m=ROOT.kFullFourTrianglesPlus)
     g_alice_pp_2_4 = draw_alice_pp(2, 4, c=colors[6], s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
     #y_text.Draw()
@@ -346,6 +393,8 @@ if __name__ == '__main__':
     draw_pythia_pp_mod_mode2_mid(4, 6, c=colors[9], s=2, m=ROOT.kOpenCross)
     draw_pythia_pp_sccr_ft0m(4, 6, c=colors[10], s=2, m=ROOT.kFullFourTrianglesPlus)
     draw_pythia_pp_sccr_mid(4, 6, c=colors[11], s=2, m=ROOT.kOpenFourTrianglesPlus)
+    draw_pythia_pbpb_sccr_ft0m(4, 6, c=colors[11], s=0, m=ROOT.kFullFourTrianglesPlus)
+    draw_pythia_pbpb_sccr_mid(4, 6, c=colors[10], s=0, m=ROOT.kFullFourTrianglesPlus)
     draw_alice_pbpb(4, 6, c=colors[6], s=2.5, m=ROOT.kOpenCircle)
     draw_alice_pp(4, 6, c=colors[6], s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
@@ -384,6 +433,8 @@ if __name__ == '__main__':
     draw_pythia_pp_mod_mode2_mid(6, 8, c=colors[9], s=2, m=ROOT.kOpenCross)
     draw_pythia_pp_sccr_ft0m(6, 8, c=colors[10], s=2, m=ROOT.kFullFourTrianglesPlus)
     draw_pythia_pp_sccr_mid(6, 8, c=colors[11], s=2, m=ROOT.kOpenFourTrianglesPlus)
+    draw_pythia_pbpb_sccr_ft0m(6, 8, c=colors[11], s=0, m=ROOT.kFullFourTrianglesPlus)
+    draw_pythia_pbpb_sccr_mid(6, 8, c=colors[10], s=0, m=ROOT.kFullFourTrianglesPlus)
     draw_alice_pbpb(6, 8, c=colors[6], s=2.5, m=ROOT.kOpenCircle)
     draw_alice_pp(6, 8, c=colors[6], s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
@@ -414,6 +465,8 @@ if __name__ == '__main__':
     draw_pythia_pp_mod_mode2_mid(8, 12, c=colors[9], s=2, m=ROOT.kOpenCross)
     draw_pythia_pp_sccr_ft0m(8, 12, c=colors[10], s=2, m=ROOT.kFullFourTrianglesPlus)
     draw_pythia_pp_sccr_mid(8, 12, c=colors[11], s=2, m=ROOT.kOpenFourTrianglesPlus)
+    draw_pythia_pbpb_sccr_ft0m(8, 12, c=colors[11], s=0, m=ROOT.kFullFourTrianglesPlus)
+    draw_pythia_pbpb_sccr_mid(8, 12, c=colors[10], s=0, m=ROOT.kFullFourTrianglesPlus)
     draw_alice_pbpb(8, 12, c=colors[6], s=2.5, m=ROOT.kOpenCircle)
     draw_alice_pp(8, 12, c=colors[6], s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
@@ -444,6 +497,8 @@ if __name__ == '__main__':
     draw_pythia_pp_mod_mode2_mid(12, 24, c=colors[9], s=2, m=ROOT.kOpenCross)
     draw_pythia_pp_sccr_ft0m(12, 24, c=colors[10], s=2, m=ROOT.kFullFourTrianglesPlus)
     draw_pythia_pp_sccr_mid(12, 24, c=colors[11], s=2, m=ROOT.kOpenFourTrianglesPlus)
+    draw_pythia_pbpb_sccr_ft0m(12, 24, c=colors[11], s=0, m=ROOT.kFullFourTrianglesPlus)
+    draw_pythia_pbpb_sccr_mid(12, 24, c=colors[10], s=0, m=ROOT.kFullFourTrianglesPlus)
     draw_alice_pp(12, 24, c=colors[6], s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
     #y_text.Draw()

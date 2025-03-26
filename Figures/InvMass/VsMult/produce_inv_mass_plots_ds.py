@@ -132,7 +132,7 @@ def plot(infile_name, colors, pt_min, pt_max, cent_min, cent_max):
     lat_small.SetTextSize(0.04)
 
     leg = ROOT.TLegend(0.55, 0.6, 0.85, 0.93)
-    leg.SetTextSize(0.03)
+    leg.SetTextSize(0.035)
     leg.SetBorderSize(0)
     leg.SetFillStyle(0)
     leg.AddEntry(hist_mass, "Data", "p")
@@ -143,7 +143,7 @@ def plot(infile_name, colors, pt_min, pt_max, cent_min, cent_max):
     leg.AddEntry(func_totfunc, "Total fit function", "l")
 
     leg2 = ROOT.TLegend(0.55, 0.6, 0.85, 0.93)
-    leg2.SetTextSize(0.03)
+    leg2.SetTextSize(0.035)
     leg2.SetBorderSize(0)
     leg2.SetFillStyle(0)
     leg2.AddEntry(hist_mass, "Data", "p")
@@ -156,7 +156,7 @@ def plot(infile_name, colors, pt_min, pt_max, cent_min, cent_max):
     canv_masses = ROOT.TCanvas("canv_masses", "", 500, 500)
     h_frame = canv_masses.DrawFrame(
         hist_mass.GetBinLowEdge(1),
-        0.1,
+        0.,
         hist_mass.GetBinLowEdge(hist_mass.GetNbinsX()) + hist_mass.GetBinWidth(hist_mass.GetNbinsX())-0.0002,
         hist_mass.GetMaximum() * 1.3,
         ";#it{M}(K^{#pm}K^{#mp}#pi^{#pm}) (GeV/#it{c}^{2})"f";Counts per {hist_mass.GetBinWidth(1)*1000:.0f} MeV/#it{{c}}^{{2}}"
@@ -170,6 +170,7 @@ def plot(infile_name, colors, pt_min, pt_max, cent_min, cent_max):
     h_frame.GetYaxis().SetLabelSize(0.045)
     h_frame.GetYaxis().SetDecimals()
     h_frame.GetYaxis().SetMaxDigits(3)
+    h_frame.GetYaxis().ChangeLabel(1, 1, 0)
     hist_mass.DrawCopy("same")
     corr_bkg_stack.Draw("NOCLEAR hist same")
     hist_bkg.Draw("histsame")
