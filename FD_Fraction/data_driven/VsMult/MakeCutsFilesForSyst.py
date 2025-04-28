@@ -65,33 +65,35 @@ def make_cuts():
         yaml.dump(cutset_central, outfile, default_flow_style=False)
 
     for name, key, edge, step, histo_lim in zip(var_name, var_key, edge_to_vary, step_variation, histo_lims):
-        loose_values = cutset_loose['cutvars'][key][edge]
+        loose_values = cutset_loose[key][edge]
         for kind in variation_kind:
             cutset_mod = copy.deepcopy(cutset)
             mult_value = get_variation_mult(edge, kind)
             modified_list = []
-            for value, cut_lim in zip(cutset_mod['cutvars'][key][edge], loose_values):
+            for value, cut_lim in zip(cutset_mod[key][edge], loose_values):
                 new_value = value + step * mult_value
                 if check_value(new_value, cut_lim, histo_lim, edge):
                     modified_list.append(new_value)
                 else:
                     modified_list.append(value)
-            cutset_mod['cutvars'][key][edge] = modified_list
+            cutset_mod[key][edge] = modified_list
             cut_file_mod = cut_file_central.replace('central_2018', name + '_' + kind)
             with open(out_dir + cut_file_mod, 'w') as outfile_mod:
                 yaml.dump(cutset_mod, outfile_mod, default_flow_style=False)
 
 def make_cuts_ml():
-    var_key = ['ML_output_FD']
+    var_key = ['ml_output_fd']
     var_tag = ['outFD'] # used in file names to reduce length
-    step_variation = [{"0.0": 0.05, "2.0": 0.05, "4.0": 0.05, "6.0": 0.05, "8.0": 0.05, "12.0": 0.05}]
+    step_variation = [{"1.0": 0.05, "2.0": 0.05, "4.0": 0.05, "6.0": 0.05, "8.0": 0.04, "12.0": 0.04}]
     num_step_pos = 15
+    num_step_pos_half_step = 5
     num_step_neg = 0
+    num_step_neg_half_step = 0
     edge_to_vary = ['min']
 
     in_dir = '/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/VsMult/'
     cut_file_central = 'cutset_pp13TeV_multiplicity.yml'
-    out_dir = '/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/VsMult/configs/'
+    out_dir = '/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/VsMult/mult_differential/2023/configs/cutsets/'
     out_file_tag = 'cutset_ML_FD'
 
     if not os.path.exists(out_dir):
@@ -101,8 +103,10 @@ def make_cuts_ml():
 
     #same number of steps for all variables
     neg_steps = [-i for i in range(1, num_step_neg + 1)]
+    neg_steps += [-num_step_neg- i/2 for i in range(1, num_step_neg_half_step + 1)]
     neg_steps = neg_steps[::-1]
     pos_steps = list(range(0, num_step_pos + 1))
+    pos_steps += [num_step_pos + i/2 for i in range(1, num_step_pos_half_step + 1)]
     steps = neg_steps + pos_steps
 
     n_combinations = len(var_key)
@@ -113,8 +117,8 @@ def make_cuts_ml():
         file_tag = str()
         for i, step in enumerate(prod_steps):
             modified_list = []
-            cuts = cutset_mod['cutvars'][var_key[i]]
-            for min_val, max_val, pt_min in zip(cuts['min'], cuts['max'], cutset_mod['cutvars']['Pt']['min']):
+            cuts = cutset_mod[var_key[i]]
+            for min_val, max_val, pt_min in zip(cuts['min'], cuts['max'], cutset_mod['pt']['min']):
                 if edge_to_vary[i] == 'min':
                     new_value = min_val + step * step_variation[i][f'{pt_min:.1f}']
                     if(new_value < 0. or new_value >= max_val):
@@ -128,11 +132,13 @@ def make_cuts_ml():
                 modified_list.append(new_value)
             cuts[edge_to_vary[i]] = modified_list
             step_name = 'pos'
+            step_idx = pos_steps.index(step)
             if step < 0.:
                 step_name = 'neg'
+                step_idx = neg_steps.index(step)
                 step += num_step_neg + 1
             # more than 100 files unlikely
-            name = f'_{var_tag[i]}_{step_name}{str(int(step)).zfill(2)}'
+            name = f'_{var_tag[i]}_{step_name}{str(int(step_idx)).zfill(2)}'
             file_tag += name
         cut_file_mod = f'{out_file_tag}{file_tag}.yml'
         with open(out_dir + cut_file_mod, 'w') as outfile_mod:
