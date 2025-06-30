@@ -1,0 +1,11 @@
+Number of finished trials: 15
+Best trial:
+Value: 0.9375707214537012
+Params: 
+    max_depth: 4
+    learning_rate: 0.05664563642093759
+    n_estimators: 514
+    min_child_weight: 6
+    subsample: 0.8898797823312201
+    colsample_bytree: 0.8615264208067381
+    lambda: 0.0007742922273094579

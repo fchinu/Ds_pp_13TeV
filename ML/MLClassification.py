@@ -24,12 +24,41 @@ from hipe4ml.model_handler import ModelHandler
 from hipe4ml.tree_handler import TreeHandler
 from hipe4ml_converter.h4ml_converter import H4MLConverter
 
-def GetNsigComb(row, particle, num):
-    if not row[f'fNSigTpc{particle}{num}']:
-        return row[f'fNSigTof{particle}{num}']
-    if not row[f'fNSigTpc{particle}{num}']:
-        return row[f'fNSigTof{particle}{num}']
-    return np.sqrt((row[f'fNSigTpc{particle}{num}']**2 + row[f'fNSigTof{particle}{num}']**2)/2)
+def swap_prongs(df):
+    df['fNSigTpcTofKaExpKa0'] = df.apply(
+        lambda row: row['fNSigTpcTofKa2'] if row['fIsCandidateSwapped'] else row['fNSigTpcTofKa0'],
+        axis=1
+    )
+    df['fNSigTpcTofPiExpPi2'] = df.apply(
+        lambda row: row['fNSigTpcTofPi0'] if row['fIsCandidateSwapped'] else row['fNSigTpcTofPi2'],
+        axis=1
+    )
+    df['fNSigTofKaExpKa0'] = df.apply(
+        lambda row: row['fNSigTofKa2'] if row['fIsCandidateSwapped'] else row['fNSigTofKa0'],
+        axis=1
+    )
+    df['fNSigTofPiExpPi2'] = df.apply(
+        lambda row: row['fNSigTofPi0'] if row['fIsCandidateSwapped'] else row['fNSigTofPi2'],
+        axis=1
+    )
+    df['fNSigTpcKaExpKa0'] = df.apply(
+        lambda row: row['fNSigTpcKa2'] if row['fIsCandidateSwapped'] else row['fNSigTpcKa0'],
+        axis=1
+    )
+    df['fNSigTpcPiExpPi2'] = df.apply(
+        lambda row: row['fNSigTpcPi0'] if row['fIsCandidateSwapped'] else row['fNSigTpcPi2'],
+        axis=1
+    )
+
+def swap_prongs_others(df):
+    df['fImpactParameter0Exp0'] = df.apply(
+        lambda row: row['fImpactParameter2'] if row['fIsCandidateSwapped'] else row['fImpactParameter0'],
+        axis=1
+    )
+    df['fImpactParameter2Exp2'] = df.apply(
+        lambda row: row['fImpactParameter0'] if row['fIsCandidateSwapped'] else row['fImpactParameter2'],
+        axis=1
+    )
 
 def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylint: disable=too-many-statements, too-many-branches
     '''
@@ -51,6 +80,14 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
     dataset_opt = inputCfg['data_prep']['dataset_opt']
     seed_split = inputCfg['data_prep']['seed_split']
     test_f = inputCfg['data_prep']['test_fraction']
+
+    # swap prongs so that we have always the KKpi hypothesis
+    swap_prongs(BkgDf)
+    swap_prongs(PromptDf)
+    swap_prongs(FDDf)
+    # swap_prongs_others(BkgDf)
+    # swap_prongs_others(PromptDf)
+    # swap_prongs_others(FDDf)
 
     if dataset_opt == 'equal':
         if FDDf.empty:
@@ -159,7 +196,7 @@ def train_test(inputCfg, PtBin, OutPutDirPt, TrainTestData, iBin): #pylint: disa
     function for model training and testing
     '''
     n_classes = len(np.unique(TrainTestData[3]))
-    modelClf = xgb.XGBClassifier(use_label_encoder=False)
+    modelClf = xgb.XGBClassifier()
     TrainCols = inputCfg['ml']['training_columns']
     HyperPars = inputCfg['ml']['hyper_par'][iBin]
     if not isinstance(TrainCols, list):
