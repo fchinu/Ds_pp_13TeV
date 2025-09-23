@@ -47,6 +47,7 @@ FIT_SCRIPT = get_raw_yields_ds_dplus_flarefly.py
 # Output files (adjust based on what your scripts actually produce)
 PROJ_OUTPUT = $(OUTPUT_PROJ)/projections.done
 FIT_OUTPUT = $(OUTPUT_FIT)/rawYields.done
+SOURCE_FILE = $(TRIAL_DIR)/source.sh
 
 # Define the targets
 .PHONY: all clean-output help setup
@@ -75,7 +76,7 @@ help:
 	@echo "Note: Config files are automatically modified to use correct output directories"
 
 # Setup directories and copy configs
-setup: $(OUTPUT_PROJ) $(OUTPUT_FIT) $(DEST_CONFIG_PROJ) $(DEST_CONFIG_FIT) $(DEST_CONFIG_CUTSET)
+setup: $(OUTPUT_PROJ) $(OUTPUT_FIT) $(DEST_CONFIG_PROJ) $(DEST_CONFIG_FIT) $(DEST_CONFIG_CUTSET) $(SOURCE_FILE)
 
 # Create directories
 $(OUTPUT_PROJ):
@@ -83,6 +84,16 @@ $(OUTPUT_PROJ):
 
 $(OUTPUT_FIT):
 	@mkdir -p $@
+
+
+# Create source file with environment variables
+$(SOURCE_FILE):
+	@echo "Creating source file with environment variables..."
+	@echo "#!/bin/bash" > $@
+	@echo "export NAME=$(NAME)" >> $@
+	@echo "export ISDATA=$(ISDATA)" >> $@
+
+source: $(SOURCE_FILE)
 
 # Copy and modify configuration files
 $(DEST_CONFIG_PROJ): $(SRC_CONFIG_PROJ) $(DEST_CONFIG_CUTSET) | $(OUTPUT_PROJ)
