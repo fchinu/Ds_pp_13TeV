@@ -1,5 +1,5 @@
 inputs:
-  names: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/MC/Train389985/AnalysisResults_LHC25a5.root # string or list of strings
+  names: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/MC/Train493072/AnalysisResults_LHC25a5_small_0.root # string or list of strings
   sparses: [
     hf-task-ds/Data/hSparseMass,
     hf-task-ds/MC/Ds/Prompt/hSparseMass,
@@ -8,9 +8,9 @@ inputs:
     hf-task-ds/MC/Dplus/NonPrompt/hSparseMass,
     hf-task-ds/MC/Dplus/Bkg/hSparseMass
   ]
-  event_histogram: bc-selection-task/hCounterTVXafterBCcuts
+  event_histogram: eventselection-run3/luminosity/hCounterTVXafterBCcuts
 
-cut_set_file_name: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/configs/cutset_pp13TeV_no_mult_no_bdt_MC.yml
+  cutset: /home/fchinu/Run3/Ds_OO_5TeV/Projections_RawYields/configs/cutset_OO5TeV.yml
 
 max_workers: 10
 
