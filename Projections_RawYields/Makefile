@@ -97,9 +97,9 @@ help:
 
 # Setup directories and copy configs
 ifeq ($(ISDATA),true)
-setup: $(OUTPUT_PROJ) $(OUTPUT_FIT) $(DEST_CONFIG_PROJ) $(DEST_CONFIG_FIT) $(DEST_CONFIG_CUTSET)
+setup: $(OUTPUT_PROJ) $(OUTPUT_FIT) $(DEST_CONFIG_PROJ) $(DEST_CONFIG_FIT) $(DEST_CONFIG_CUTSET) $(SOURCE_FILE)
 else
-setup: $(OUTPUT_PROJ) $(DEST_CONFIG_PROJ) $(DEST_CONFIG_CUTSET) $(OUTPUT_PROJ_TEMPLATE) $(DEST_CONFIG_PROJ_TEMPLATE) $(DEST_CONFIG_CUTSET_TEMPLATE)
+setup: $(OUTPUT_PROJ) $(DEST_CONFIG_PROJ) $(DEST_CONFIG_CUTSET) $(OUTPUT_PROJ_TEMPLATE) $(DEST_CONFIG_PROJ_TEMPLATE) $(DEST_CONFIG_CUTSET_TEMPLATE) $(SOURCE_FILE)
 endif
 
 # Create directories
@@ -144,7 +144,7 @@ $(DEST_CONFIG_CUTSET_TEMPLATE): $(SRC_CONFIG_CUTSET_TEMPLATE) | $(OUTPUT_PROJ_TE
 # Run projections
 ifeq ($(ISDATA),false)
 $(PROJ_OUTPUT): $(DEST_CONFIG_PROJ) $(DEST_CONFIG_CUTSET) $(PROJ_SCRIPT) $(DEST_CONFIG_PROJ_TEMPLATE)
-	@cd $(OUTPUT_PROJ) && find . -name "*.root" -delete && python3 $(abspath $(PROJ_SCRIPT)) $(CONFIG_PROJ) && hadd -f ./projections.root ./*.root
+	@cd $(OUTPUT_PROJ) && find . -name "*.root" -delete && python3 $(abspath $(PROJ_SCRIPT)) $(CONFIG_PROJ) && hadd -f ./projections.root ./*.root && hadd -f ./dplus.root ./dplus_nonprompt.root ./dplus_prompt.root
 	@cd $(OUTPUT_PROJ_TEMPLATE) && find . -name "*.root" -delete && python3 $(abspath $(PROJ_SCRIPT)) $(CONFIG_PROJ_TEMPLATE) && hadd -f ./projections.root ./*.root && hadd -f ./dplus.root ./dplus_nonprompt.root ./dplus_prompt.root
 	@touch $@
 else
