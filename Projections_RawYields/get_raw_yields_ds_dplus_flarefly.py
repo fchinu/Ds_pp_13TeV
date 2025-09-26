@@ -11,6 +11,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""  # pylint: disable=wrong-import-position
 from concurrent.futures import ProcessPoolExecutor  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.offsetbox import AnchoredText  # noqa: E402
+from pypdf import PdfWriter # noqa: E402
 import dataclasses  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
@@ -1045,6 +1046,41 @@ def _fix_parameter(fit_config, param_name, value, signal_idx, tolerance=0.001):
     fit_config[f"{param_name}_min{suffix}"] = value - tolerance
     fit_config[f"{param_name}_max{suffix}"] = value + tolerance
 
+def merge_pdfs(cfg):
+    """Merge individual PDF files into a single PDF."""
+    if "pdf" not in cfg["output"]["formats"]:
+        return
+
+    # if output already exists, delete it
+    if os.path.exists(os.path.join(os.path.expanduser(cfg["output"]["directory"]), "fits", "ds_mass_merged.pdf")):
+        os.remove(os.path.join(os.path.expanduser(cfg["output"]["directory"]), "fits", "ds_mass_merged.pdf"))
+    if os.path.exists(os.path.join(os.path.expanduser(cfg["output"]["directory"]), "fits", "ds_massres_merged.pdf")):
+        os.remove(os.path.join(os.path.expanduser(cfg["output"]["directory"]), "fits", "ds_massres_merged.pdf"))
+
+    output_dir = os.path.join(os.path.expanduser(cfg["output"]["directory"]), "fits")
+    pdf_files = [f for f in os.listdir(output_dir) if f.endswith('.pdf') and f.startswith('ds_mass_')]
+    pdf_files = sorted(pdf_files, key=lambda x: (
+        int(x.split('_')[3]), 
+        int(x.split('_')[4]) if 'cent' in x else -1
+    ))
+
+    pdf_files_residuals = [f for f in os.listdir(output_dir) if f.endswith('.pdf') and f.startswith('ds_massres_')]
+    pdf_files_residuals = sorted(pdf_files_residuals, key=lambda x: (
+        int(x.split('_')[3]),
+        int(x.split('_')[4]) if 'cent' in x else -1
+    ))
+
+    merger = PdfWriter()
+    for pdf in pdf_files:
+        merger.append(os.path.join(output_dir, pdf))
+    merger.write(os.path.join(output_dir, "ds_mass_merged.pdf"))
+    merger.close()
+
+    merger = PdfWriter()
+    for pdf in pdf_files_residuals:
+        merger.append(os.path.join(output_dir, pdf))
+    merger.write(os.path.join(output_dir, "ds_massres_merged.pdf"))
+    merger.close()
 
 def fit(config_file_name):
     """
@@ -1156,6 +1192,7 @@ def fit(config_file_name):
         f'mass_fits{cfg["output"]["suffix"]}.root'
     ))
 
+    merge_pdfs(cfg)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Arguments')
