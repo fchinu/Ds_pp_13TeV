@@ -10,11 +10,11 @@ import yaml
 import ROOT
 # pylint: disable=no-member
 import sys # pylint: disable=wrong-import-order
-sys.path.append("/home/fchinu/Run3/ThesisUtils")
+sys.path.append("../utils/")
 from plot_utils import get_discrete_matplotlib_palette # pylint: disable=wrong-import-position
 
 PARTICLE_CLASSES = [("Ds", "Prompt"), ("Ds", "NonPrompt"),
-    ("Dplus", "Prompt"), ("Dplus", "NonPrompt")]
+                    ("Dplus", "Prompt"), ("Dplus", "NonPrompt")] # Ds must be the first one
 ROOT.TH1.AddDirectory(False)
 ROOT.TH2.AddDirectory(False)
 
@@ -42,7 +42,7 @@ def get_weights(cfg, cuts_cfg):
     Returns:
     - dict: Dictionary containing the weights.
     """
-    
+
     histos_weights = {}
     particles = ["Ds", "Dplus"]
     origins = ["Prompt", "NonPrompt"]
@@ -54,7 +54,7 @@ def get_weights(cfg, cuts_cfg):
 
     with ROOT.TFile.Open(cfg["weights"]["file_name"]) as infile_weights:
         for particle, origin in particle_origin:
-            for i_cent, (cent_min, cent_max) in enumerate(zip(cent_mins, cent_maxs)):
+            for cent_min, cent_max in zip(cent_mins, cent_maxs):
                 histos_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"] = infile_weights.Get(
                     f"centrality_{cent_min}_{cent_max}/{particle}_{origin}/hNPvContribCands_weights_{particle}_{origin}")
                 histos_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetName(
@@ -72,15 +72,15 @@ def __create_histos(cfg, cuts_cfg):
     - cuts_cfg (dict): Configuration dictionary containing cut variables.
     Returns:
     tuple: A tuple containing the following elements:
-        - histos (list): 
+        - histos (list):
             List of ROOT.TH1F histograms for efficiency.
-        - histos_fine_bins (list): 
+        - histos_fine_bins (list):
             List of ROOT.TH1F histograms for efficiency in fine bins.
-        - histos_cent (list): 
+        - histos_cent (list):
             List of ROOT.TH1F histograms for efficiency with centrality selections.
-        - histos_cent_fine_bins (list): 
+        - histos_cent_fine_bins (list):
             List of ROOT.TH1F histograms for efficiency in fine bins with centrality selections.
-        - canvas_cent (list): 
+        - canvas_cent (list):
             List of ROOT.TCanvas objects for centrality selections.
     """
     histos = []
@@ -89,7 +89,7 @@ def __create_histos(cfg, cuts_cfg):
     histos_cent = []
     histos_cent_fine_bins = []
     histos_cent_bdt = []
-    canvas_cent = []    
+    canvas_cent = []
 
     particles = ["Ds", "Dplus"]
     origins = ["Prompt", "NonPrompt"]
@@ -115,9 +115,8 @@ def __create_histos(cfg, cuts_cfg):
         histos_bdt.append(ROOT.TH1F(f"bdt_eff_{particle}{origin}",
             "BDT efficiency; #it{p}_{T} (GeV/c); Efficiency", len(pt_edges)-1, np.asarray(pt_edges, "d")))
 
-        if cfg["weights"]["apply"]:
-
-            for i_cent, (cent_min, cent_max) in enumerate(zip(cent_mins, cent_maxs)):
+        if cfg["weights"]["apply"] or cfg["inputs"]["apply_cent_sel"]:
+            for cent_min, cent_max in zip(cent_mins, cent_maxs):
                 histos_cent.append(ROOT.TH1F(f"eff_{particle}{origin}_cent_{cent_min}_{cent_max}",
                     f"Efficiency_Cent_{cent_min}_{cent_max}; #it{{p}}_{{T}} (GeV/c); Efficiency",
                     len(pt_edges)-1, np.asarray(pt_edges, "d")))
@@ -132,8 +131,9 @@ def __create_histos(cfg, cuts_cfg):
 
             canvas_cent.append(ROOT.TCanvas(
                 f"canvas_cent_{particle}{origin}", f"canvas_cent_{particle}{origin}", 800, 600))
-    
+
     return histos, histos_fine_bins, histos_bdt, histos_cent, histos_cent_fine_bins, histos_cent_bdt, canvas_cent
+
 
 def calculate_efficiencies_with_unc(sels, gens, weights) -> tuple:
     """
@@ -158,6 +158,7 @@ def calculate_efficiencies_with_unc(sels, gens, weights) -> tuple:
     eff = tot_sel / tot_gen # pylint: disable=redefined-outer-name
     return eff, sqrt(eff * (1 - eff) / tot_gen)
 
+
 def get_integral_of_projection(hist_2d, axis, minimum, maximum):
     """
     Get the integral of a 2D histogram projection along an axis.
@@ -181,8 +182,9 @@ def get_integral_of_projection(hist_2d, axis, minimum, maximum):
     # Right edge of the bin is not included
     return hist_1d.Integral(hist_1d.FindBin(minimum), hist_1d.FindBin(maximum-0.001))
 
+
 def get_eff(cfg, h_sparses_gen_particles, h_sparses_reco_ds, particle_class, cuts, # pylint: disable=too-many-arguments, disable=too-many-positional-arguments, redefined-outer-name, too-many-locals
-    axes, pt_info, histos_weights = None, cent_info = (None, None), events_weights=None): # pylint: disable=redefined-outer-name
+    axes, pt_info, histos_weights = None, cent_info = (None, None), events_weights=None, apply_cent_sel=False, axis_cent=-1, axis_cent_gen=-1): # pylint: disable=redefined-outer-name
     """
     Calculate the efficiency of particle selection.
 
@@ -196,6 +198,9 @@ def get_eff(cfg, h_sparses_gen_particles, h_sparses_reco_ds, particle_class, cut
     - histos_weights (dict, optional): Dictionary of histograms used for weighting.
     - cent_info (tuple, optional): Tuple containing the minimum and maximum values of centrality.
     - events_weights (list, optional): List of weights for each dataset.
+    - apply_cent_sel (bool, optional): enable centrality selection
+    - axis_cent (int, optional): centrality axis (reco)
+    - axis_cent_gen (int, optional): centrality axis (gen)
 
     Returns:
     - float: Efficiency of particle selection.
@@ -208,7 +213,7 @@ def get_eff(cfg, h_sparses_gen_particles, h_sparses_reco_ds, particle_class, cut
     reco_particles = []
 
     for h_sparse_gen_particles, h_sparses_reco_ds in zip(h_sparses_gen_particles, h_sparses_reco_ds):
-        if histos_weights is not None:
+        if histos_weights is not None or apply_cent_sel:
             h_sparse_gen_sel = h_sparse_gen_particles.Clone(
                 f"hSparseGenParticlesSel_{particle}{origin}_Cent_{cent_min}_{cent_max}_{i_pt}")
             h_sparses_reco_ds_sel = h_sparses_reco_ds.Clone(
@@ -218,7 +223,6 @@ def get_eff(cfg, h_sparses_gen_particles, h_sparses_reco_ds, particle_class, cut
                 f"hSparseGenSel_{particle}{origin}")
             h_sparses_reco_ds_sel = h_sparses_reco_ds.Clone(
                 f"hSparseRecoDsSel_{particle}{origin}")
-        
 
         for i, axis in enumerate(axes):
             if axis not in [3, 4]:
@@ -237,6 +241,12 @@ def get_eff(cfg, h_sparses_gen_particles, h_sparses_reco_ds, particle_class, cut
             max_val = cuts[i][i_pt][1]
             h_sparses_reco_ds_sel.GetAxis(axis).SetRangeUser(min_val, max_val)
 
+        if apply_cent_sel:
+            if cent_info[0] is None or cent_info[1] is None:
+                print("ERROR: centrality dependent requested, but no centrality bins available. Exit")
+                sys.exit(0)
+            h_sparses_reco_ds_sel.GetAxis(axis_cent).SetRangeUser(cent_info[0], cent_info[1])
+            h_sparse_gen_sel.GetAxis(axis_cent_gen).SetRangeUser(cent_info[0], cent_info[1])
 
         # WARNING: just like TH3::Project3D("yx") and TTree::Draw("y:x"), Projection(y,x)
         # uses the first argument to define the y-axis and the second for the x-axis!
@@ -267,6 +277,7 @@ def get_eff(cfg, h_sparses_gen_particles, h_sparses_reco_ds, particle_class, cut
 
     return *calculate_efficiencies_with_unc(selected_particles, gen_particles, events_weights), selected_particles[-1] / reco_particles[-1]
 
+
 def main(config_file_name):
     # Load cuts configuration
     with open(config_file_name, 'r', encoding="utf-8") as f:
@@ -286,10 +297,10 @@ def main(config_file_name):
         centrality_selections = cuts_cfg.copy().pop('cent')
         cent_mins = centrality_selections['min']
         cent_maxs = centrality_selections['max']
+    apply_cent_sel = cfg['inputs']['apply_cent_sel']
 
     pt_mins = cuts_cfg['pt']['min']
     pt_maxs = cuts_cfg['pt']['max']
-    pt_edges = pt_mins + [pt_maxs[-1]]
 
     # Extract variable names and cuts from the config
     var_names = list(cuts_cfg.keys())
@@ -301,6 +312,8 @@ def main(config_file_name):
     cuts = [list(zip(cuts_cfg[var]['min'],
         cuts_cfg[var]['max'])) for var in var_names]
     axes = [cuts_cfg[var]['axisnum'] for var in var_names]
+    axis_cent = cuts_cfg['cent']['axisnum']
+    axis_cent_gen = cfg['inputs']['sparse']['axis_cent_gen']
 
     # Create output file
     out_file_name = os.path.join(
@@ -326,7 +339,6 @@ def main(config_file_name):
     )
 
     for idx, (particle, origin) in enumerate(PARTICLE_CLASSES):
-
         h_sparses_gen_particles = []
         h_sparses_reco = []
         n_events_mc = []
@@ -345,7 +357,7 @@ def main(config_file_name):
             if cfg["weights"]["reweight_on_data_events"]:
                 n_events_mc.append(in_file.Get("lumi-task/hCounterTVXafterBCcuts").GetEntries())
             in_file.Close()
-        
+
         n_events_data = None
         events_weights = None
         if cfg["weights"]["reweight_on_data_events"]:
@@ -364,14 +376,22 @@ def main(config_file_name):
                 print(f"Processing pT bin {pt_min} - {pt_max} for {particle} {origin}")
 
             if not cfg ["weights"]["apply"]:
-                eff, unc, bdt_eff = get_eff(cfg, h_sparses_gen_particles, h_sparses_reco,
-                    (particle, origin), cuts, axes, (i_pt, pt_min, pt_max), events_weights=events_weights)
+                if not apply_cent_sel:
+                    eff, unc, bdt_eff = get_eff(cfg, h_sparses_gen_particles, h_sparses_reco,
+                        (particle, origin), cuts, axes, (i_pt, pt_min, pt_max), events_weights=events_weights)
+                    histos[idx].SetBinContent(i_pt+1, eff)
+                    histos[idx].SetBinError(i_pt+1, unc)
+                    histos_bdt[idx].SetBinContent(i_pt+1, bdt_eff)
+                else:
+                    for i_cent, (cent_min, cent_max) in enumerate(zip(cent_mins, cent_maxs)):
+                        eff, unc, bdt_eff = get_eff(cfg, h_sparses_gen_particles, h_sparses_reco,
+                            (particle, origin), cuts, axes, (i_pt, pt_min, pt_max),
+                            None, (cent_min, cent_max), events_weights, True, axis_cent, axis_cent_gen)
+                        i_histos = idx * len(cent_mins) + i_cent
 
-                histos[idx].SetBinContent(i_pt+1, eff)
-                histos[idx].SetBinError(i_pt+1, unc)
-                histos_bdt[idx].SetBinContent(i_pt+1, bdt_eff)
-                #histos_fine_bins[idx].Divide(hPtProjectedRecoDs,
-                #   hPtProjectedGenParticles, 1, 1, "b")
+                        histos_cent[i_histos].SetBinContent(i_pt+1, eff)
+                        histos_cent[i_histos].SetBinError(i_pt+1, unc)
+                        histos_cent_bdt[i_histos].SetBinContent(i_pt+1, bdt_eff)
 
             elif cfg ["weights"]["apply"]:
                 for i_cent, (cent_min, cent_max) in enumerate(zip(cent_mins, cent_maxs)):
@@ -384,14 +404,13 @@ def main(config_file_name):
                     histos_cent[i_histos].SetBinContent(i_pt+1, eff)
                     histos_cent[i_histos].SetBinError(i_pt+1, unc)
                     histos_cent_bdt[i_histos].SetBinContent(i_pt+1, bdt_eff)
-                    #histos_cent_fine_bins[i_histos].Divide(hPtProjectedRecoDs,
-                    #   hPtProjectedGenParticles, 1, 1, "b")
 
         del h_sparses_gen_particles, h_sparses_reco
 
-    colors, _ = get_discrete_matplotlib_palette("tab20")
+    #colors, _ = get_discrete_matplotlib_palette("tab20")
+    colors = [ROOT.kBlack, ROOT.kRed+1, ROOT.kOrange+7, ROOT.kGreen+2, ROOT.kAzure+4, ROOT.kBlack]
 
-    if cfg ["weights"]["apply"]:
+    if cfg ["weights"]["apply"] or apply_cent_sel:
         legs = []
         for idx, (particle, origin) in enumerate(PARTICLE_CLASSES):
             legs.append(ROOT.TLegend(0.6, 0.2, 0.9, 0.8))
@@ -417,13 +436,61 @@ def main(config_file_name):
         histo_fine_bins.Write()
         histo_bdt.Write()
 
-    if cfg ["weights"]["apply"]:
+    if cfg ["weights"]["apply"] or apply_cent_sel:
         for histo_cent, histo_cent_fine_bins, histo_cent_bdt in zip(histos_cent, histos_cent_fine_bins, histos_cent_bdt):
             histo_cent.Write()
             histo_cent_fine_bins.Write()
             histo_cent_bdt.Write()
         for canvas in canvas_cent:
             canvas.Write()
+
+    # compute efficiency ratios Ds/D+
+    hratios, hratios_fine_bins, hratios_cent, hratios_cent_fine_bins = ([] for _ in range(4))
+    offset = 2
+    for idx, (particle, origin) in enumerate(PARTICLE_CLASSES):
+        if cfg ["weights"]["apply"] or apply_cent_sel:
+            for i_cent, (cent_min, cent_max) in enumerate(zip(cent_mins, cent_maxs)):
+                idx_cent = idx*len(cent_mins)+i_cent
+                if "Ds" in particle:
+                    hratios_cent.append(histos_cent[idx_cent].Clone(
+                        histos_cent[idx_cent].GetName().replace("eff", "effratio")))
+                    hratios_cent_fine_bins.append(histos_cent_fine_bins[idx_cent].Clone(
+                        histos_cent_fine_bins[idx_cent].GetName().replace("eff", "effratio")))
+                    histos_cent[idx_cent].SetTitle("Efficiency ratio")
+                    hratios_cent_fine_bins[idx_cent].SetTitle("Efficiency ratio")
+                else:
+                    idx_cent_woffset = (idx - offset)*len(cent_mins)+i_cent
+                    hratios_cent[idx_cent_woffset].Divide(histos_cent[idx_cent])
+                    hratios_cent_fine_bins[idx_cent_woffset].Divide(histos_cent_fine_bins[idx_cent])
+                    hratios_cent[idx_cent_woffset].SetName(
+                        hratios_cent[idx_cent_woffset].GetName().replace("ompt", f"ompt_{particle}{origin}"))
+                    hratios_cent_fine_bins[idx_cent_woffset].SetName(
+                        hratios_cent_fine_bins[idx_cent_woffset].GetName().replace("ompt", f"ompt_{particle}{origin}"))
+        else:
+            if "Ds" in particle:
+                hratios.append(histos[idx].Clone(
+                    histos[idx].GetName().replace("eff", "effratio")))
+                hratios_fine_bins.append(histos_fine_bins[idx].Clone(
+                    histos_fine_bins[idx].GetName().replace("eff", "effratio")))
+                histos_cent[idx].SetTitle("Efficiency ratio")
+                hratios_fine_bins[idx].SetTitle("Efficiency ratio")
+            else:
+                hratios[idx - offset].Divide(histos[idx])
+                hratios_fine_bins[idx - offset].Divide(histos_fine_bins[idx])
+                hratios[idx - offset].SetName(
+                    hratios[idx - offset].GetName().replace("ompt", f"ompt_{particle}{origin}"))
+                hratios_fine_bins[idx - offset].SetName(
+                    hratios_fine_bins[idx - offset].GetName().replace("ompt", f"ompt_{particle}{origin}"))
+
+    for hratio, hratio_fine_bins in zip(hratios, hratios_fine_bins):
+        hratio.Write()
+        hratio_fine_bins.Write()
+
+    if cfg ["weights"]["apply"] or apply_cent_sel:
+        for hratio_cent, hratio_cent_fine_bins in zip(hratios_cent, hratios_cent_fine_bins):
+            hratio_cent.Write()
+            hratio_cent_fine_bins.Write()
+
     output_file.Close()
 
 if __name__ == "__main__":

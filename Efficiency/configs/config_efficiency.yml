@@ -7,6 +7,7 @@ inputs:
     axis_npv_gen: 2
     axis_pt_reco: 1
     axis_npv_reco: 6
+    axis_cent_gen: 3
   task_name: 'hf-task-ds' #['hf-task-ds', 'hf-task-ds-WithNPV']
   cutset: '/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/configs/cutset_pp13TeV_multiplicity.yml'
 
