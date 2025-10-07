@@ -1,0 +1,25 @@
+inputs:
+  files:
+    raw_yields: ../../pbpb/outputs/rawyields/5090/mass_fits_norm.root
+    eff: ../../pbpb/outputs/efficiency/5090/efficiency_lhc25a5_norm.root
+    frac_ds: [null, null, null, null]
+    frac_dp: [null, null, null, null]
+  histo_names:
+    raw_yields_ds: ["h_raw_yields_ds_50_60", "h_raw_yields_ds_60_70", "h_raw_yields_ds_70_80", "h_raw_yields_ds_80_90"]
+    raw_yields_dp: ["h_raw_yields_dplus_50_60", "h_raw_yields_dplus_60_70", "h_raw_yields_dplus_70_80", "h_raw_yields_dplus_80_90"]
+    eff_ds: ["eff_DsPrompt_cent_0_100", "eff_DsPrompt_cent_0_100", "eff_DsPrompt_cent_0_100", "eff_DsPrompt_cent_0_100"] #not enough MC to do cent dependent, assume to be the same
+    eff_dp: ["eff_DplusPrompt_cent_0_100", "eff_DplusPrompt_cent_0_100", "eff_DplusPrompt_cent_0_100", "eff_DplusPrompt_cent_0_100"] #not enough MC to do cent dependent, assume to be the same
+
+centrality:
+  mins: [50, 60, 70, 80]
+  maxs: [60, 70, 80, 90]
+mult:
+  values: [205, 110, 53, 23.2]
+  unc_low: [11, 8, 5, 2.8]
+  unc_high: [11, 8, 5, 2.8]
+
+br:
+  ds_to_phipi_to_kkpi: 0.0225
+  dplus_to_phipi_to_kkpi: 0.00269
+
+output_file: ../../pbpb/outputs/ratios/5090/ds_over_dplus_ratios_5090_norm.root
