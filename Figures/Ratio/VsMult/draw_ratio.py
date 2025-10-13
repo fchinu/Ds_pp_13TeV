@@ -35,6 +35,12 @@ def draw_alice_pbpb(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
         graph_stat_0_20 = infile.Get(f"g_ratio_dndeta_{pt_min*10:.0f}_{pt_max*10:.0f}")
     with ROOT.TFile.Open("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Ratios/ds_over_dplus_ratios_5090_norm.root") as infile:
         graph_stat_50_90 = infile.Get(f"g_ratio_dndeta_{pt_min*10:.0f}_{pt_max*10:.0f}")
+
+    if (pt_min, pt_max) == (12, 24):
+        #remove first two points for 50-90%
+        graph_stat_50_90.SetPoint(2, 0, 1.e9)
+        graph_stat_50_90.SetPoint(3, 0, 1.e9)
+
     graph_stat_0_20.SetMarkerStyle(m)
     graph_stat_0_20.SetMarkerSize(s)
     graph_stat_0_20.SetMarkerColor(c)
@@ -57,8 +63,8 @@ def draw_alice_pp(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
     
     #set x unc. for the systematic box
     for i in range(graph_syst.GetN()):
-        graph_syst.SetPointEXlow(i, graph_syst.GetPointX(i)*0.075)
-        graph_syst.SetPointEXhigh(i, graph_syst.GetPointX(i)*0.075)
+        graph_syst.SetPointEXlow(i, graph_syst.GetErrorXlow(i)*5)
+        graph_syst.SetPointEXhigh(i, graph_syst.GetErrorXhigh(i)*5)
 
     graph_stat.SetMarkerStyle(m)
     graph_stat.SetMarkerSize(s)
@@ -113,6 +119,11 @@ if __name__ == '__main__':
     pt_text.SetNDC()
     pt_text.SetTextFont(43)
     pt_text.SetTextSize(35)
+
+    xunc_text = ROOT.TLatex(0.6, 0.88, '')
+    xunc_text.SetNDC()
+    xunc_text.SetTextFont(43)
+    xunc_text.SetTextSize(35)
 
     c = ROOT.TCanvas("canvas", "canvas", 2400, 1600)
     c.Divide(3, 2, 0.000, 0.000)
@@ -187,6 +198,9 @@ if __name__ == '__main__':
     #y_text.Draw()
     x, y = to_pad_coordinates(0.05, 0.85)
     pt_text.DrawLatexNDC(x, y, '6#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{8} GeV/#it{c}')
+    
+    x, y = to_pad_coordinates(0.05, 0.10)
+    xunc_text.DrawLatexNDC(x, y, 'Uncertainty on x-axis scaled by 5')
 
     c.cd(5)
     h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
