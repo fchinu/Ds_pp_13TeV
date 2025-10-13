@@ -1009,8 +1009,8 @@ def _save_fit_outputs(cfg, fitter, fit_config, bkg_funcs, pt_min, pt_max, cent_m
         
         if frmt == "root":
             fitter.dump_to_root(
-                f"{output_dir}/fits_{cfg['output']['suffix']}.{frmt}", 
-                option="update", suffix=suffix, num=5000
+                f"{output_dir}/fits_{cfg['output']['suffix']}_{suffix}_partial.root", 
+                option="recreate", suffix=suffix, num=5000
             )
         else:
             fig.savefig(f"{output_dir}/ds_mass_pt{suffix}.{frmt}")
@@ -1172,6 +1172,19 @@ def fit(config_file_name):
     with ProcessPoolExecutor(max_workers=cfg["max_workers"]) as executor:
         for fit_config in fit_configs:
             results.append((executor.submit(do_fit, fit_config, cfg), fit_config))
+
+    if "root" in cfg["output"]["formats"]:
+        # get all the partial root files in the output directory
+        output_dir = os.path.join(
+            os.path.expanduser(cfg["output"]["directory"]),
+            "fits"
+        )
+        partial_files = [f for f in os.listdir(output_dir) if f.endswith('_partial.root') and f.startswith('fits_')]
+        output_dir = os.path.join(os.path.expanduser(cfg["output"]["directory"]), "fits")
+        out_root_file = f"{output_dir}/fits_{cfg['output']['suffix']}.root"
+        print("hadd -f " + out_root_file + " " + " ".join([os.path.join(output_dir, f) for f in partial_files]))
+        os.system("hadd -f " + out_root_file + " " + " ".join([os.path.join(output_dir, f) for f in partial_files]))
+        os.system("rm " + " ".join([os.path.join(output_dir, f) for f in partial_files]))
 
     # Save results
     output_df = []
