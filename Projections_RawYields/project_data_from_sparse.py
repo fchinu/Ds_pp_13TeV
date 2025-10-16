@@ -9,6 +9,7 @@ import os
 import argparse
 from itertools import product
 from concurrent.futures import ProcessPoolExecutor
+import numpy as np
 import yaml
 import ROOT
 # pylint: disable=no-member
@@ -47,7 +48,7 @@ def load_sparse_from_task(config_input):
     return sparses
 
 
-def load_event_histogram_from_task(config_input):
+def load_event_collision_histograms_from_task(config_input):
     """
     Load event histogram from a ROOT file based on the provided configuration.
 
@@ -64,13 +65,16 @@ def load_event_histogram_from_task(config_input):
     if not isinstance(sparse_names, list):
         sparse_names = [sparse_names]
     h_evs = []
+    h_colls = []
     for i_file, file_name in enumerate(input_files_names):
         with ROOT.TFile.Open(file_name, "READ") as input_file:
             h_evs.append(input_file.Get(config_input["event_histogram"]))
             h_evs[-1].SetDirectory(0)
+            h_colls.append(input_file.Get(config_input["collision_histogram"]))
+            h_colls[-1].SetDirectory(0)
     if len(input_files_names) == 1 and len(sparse_names) > 1:
         h_evs = h_evs * len(sparse_names)
-    return h_evs
+    return h_evs, h_colls
 
 
 def get_cuts(cuts_config):
@@ -179,15 +183,28 @@ def project_sparse(config_file_name):  # pylint: disable=too-many-locals
     with open(config["inputs"]["cutset"], 'r', encoding="utf8") as cuts_config_file:
         cuts_config = yaml.load(cuts_config_file, yaml.FullLoader)
 
+    cent_mins, cent_maxs = None, None
+    if "cent" in cuts_config:
+        cent_mins = cuts_config["cent"]["min"].copy()
+        cent_maxs = cuts_config["cent"]["max"].copy()
+
+        # remove 0 - 100 centrality selection from the cuts config (for collision histogram)
+        for idx, (cent_min, cent_max) in enumerate(zip(cent_mins, cent_maxs)):
+            if cent_min == 0 and cent_max == 100:
+                cent_mins.pop(idx)
+                cent_maxs.pop(idx)
+                break
+
+
     sparses = load_sparse_from_task(config["inputs"])
-    h_evs = load_event_histogram_from_task(config["inputs"])
+    h_evs, h_colls = load_event_collision_histograms_from_task(config["inputs"])
 
     cuts = get_cuts(cuts_config)
     output_labels = config["output"]["file_names"]
     if not isinstance(output_labels, list):
         output_labels = [output_labels]
 
-    for sparse, h_ev, output_label in zip(sparses, h_evs, output_labels):
+    for sparse, h_ev, h_coll, output_label in zip(sparses, h_evs, h_colls, output_labels):
         results = []
         with ProcessPoolExecutor(max_workers=min(len(cuts), 64)) as executor:
             for cut in cuts:
@@ -201,6 +218,17 @@ def project_sparse(config_file_name):  # pylint: disable=too-many-locals
                 h_mass.Write()
                 h_pt.Write()
             h_ev.Write("h_ev")
+            h_coll.Write("h_coll")
+
+            h_coll_proj = h_coll.ProjectionX()
+            h_coll_proj.SetName(f'h_coll_proj')
+            h_coll_proj.Write()
+
+            if cent_mins and cent_maxs:
+                cent_bins = cent_mins + [cent_maxs[-1]]
+                h_coll_rebinned = h_coll_proj.Rebin(len(cent_bins) - 1, 'h_coll_rebinned', np.asarray(cent_bins, "d"))
+                h_coll_rebinned.SetName(f'h_coll_rebinned')
+                h_coll_rebinned.Write()
 
 
 if __name__ == "__main__":
