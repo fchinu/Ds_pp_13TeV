@@ -14,6 +14,7 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""  # pylint: disable=wrong-import-position
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
+import concurrent
 import numpy as np
 import yaml
 import uproot
@@ -29,7 +30,7 @@ import pandas as pd
 #zfit.run.set_n_cpu(1)
 
 
-def draw_multitrial(df_multitrial, cfg):  # pylint: disable=too-many-locals, too-many-statements # noqa: 501
+def draw_multitrial(df_multitrial, cfg, is_mb):  # pylint: disable=too-many-locals, too-many-statements # noqa: 501
     """
     Produce a plot with the results of the multitrial procedure.
 
@@ -46,6 +47,13 @@ def draw_multitrial(df_multitrial, cfg):  # pylint: disable=too-many-locals, too
     multitrial_cfg = cfg["multitrial"]
 
     df_multitrial = df_multitrial.query(f"chi2 < {multitrial_cfg['quality_selections']['chi2']}")
+    
+    # Apply significance selection
+    mask = df_multitrial['significance'].apply(lambda x: x[0][0] > multitrial_cfg['quality_selections']['significance'] and x[1][0] > multitrial_cfg['quality_selections']['significance'])
+    df_multitrial = df_multitrial[mask]
+
+    if not is_mb:
+        dump_results_to_root(df_multitrial, cfg)
 
     df_pt_cent_cfg = df_multitrial[
         ["pt_min_cfg", "pt_max_cfg", "cent_min_cfg", "cent_max_cfg"]
@@ -95,9 +103,9 @@ def draw_multitrial(df_multitrial, cfg):  # pylint: disable=too-many-locals, too
         fig, axs = plt.subplots(2, 2, figsize=(20, 15))
         with uproot.open(cfg["reference_fits"]) as f:
             h_rawy_ds = f[f"h_raw_yields_ds_{cent_min}_{cent_max}"]
-            h_sigma_ds = f["h_sigma_ds_0_100"]
+            h_sigma_ds = f[f"h_sigma_ds_{cent_min}_{cent_max}"]
             h_rawy_dplus = f[f"h_raw_yields_dplus_{cent_min}_{cent_max}"]
-            h_sigma_dplus = f["h_sigma_dplus_0_100"]
+            h_sigma_dplus = f[f"h_sigma_dplus_{cent_min}_{cent_max}"]
 
         i_pt = np.digitize((pt_min + pt_max) / 2, h_rawy_ds.axis().edges()) - 1
         central_rawy_ds = h_rawy_ds.values()[i_pt]
@@ -280,9 +288,12 @@ def draw_multitrial(df_multitrial, cfg):  # pylint: disable=too-many-locals, too
         axs[1, 1].set_ylabel(r'$\chi^2/$ndf', fontsize=14)
 
         plt.show()
+        outfolder = os.path.join(cfg["output"]["dir"], "output", "syst")
+        if not os.path.exists(outfolder):
+            os.makedirs(outfolder)
         fig.savefig(
             os.path.join(
-                cfg["output"]["dir"], "output", "syst",
+                outfolder,
                 f'fig_{pt_min*10:.0f}_{pt_max*10:.0f}_{cent_min}_{cent_max}.png'
             ), bbox_inches='tight'
         )
@@ -291,31 +302,34 @@ def draw_multitrial(df_multitrial, cfg):  # pylint: disable=too-many-locals, too
         for _, row in df_pt_cent.iterrows():
             bkg_funcs.append(row["bkg_funcs_cfg"][0])
         df_pt_cent["bkg_funcs_cfg"] = bkg_funcs
-        variations = ["mins_cfg", "maxs_cfg", "rebins_cfg", "bkg_funcs_cfg"]
+        variations = ["mins_cfg", "maxs_cfg", "rebins_cfg", "bkg_funcs_cfg", "sigma_cfg", "fix_ratio_ds_dplus_width_cfg"]
         combinations = set(itertools.combinations(variations, 2))
         n_rows = 0
-        if len(combinations) % 2 == 0:
-            n_rows = len(combinations) // 2
+        if len(combinations) % 4 == 0:
+            n_rows = len(combinations) // 4
         else:
-            n_rows = len(combinations) // 2 + 1
-        # fig, axs = plt.subplots(n_rows, 2, figsize=(20, 5 * len(combinations)/2))
-        # for i_comb, combination in enumerate(combinations):
-        #     sns.stripplot(
-        #         data=df_pt_cent, x=combination[0], y=ratio, hue=combination[1],
-        #         dodge=0.5, alpha=.5, legend=False, ax=axs[i_comb//2, i_comb%2], palette="tab10",
-        #     )
-        #     sns.pointplot(
-        #         data=df_pt_cent, x=combination[0], y=ratio, hue=combination[1],
-        #         dodge=0.5, linestyle="none", errorbar=None, palette="tab10",
-        #         marker="_", markersize=20, markeredgewidth=3, ax=axs[i_comb//2, i_comb%2]
-        #     )
-        # plt.savefig(
-        #     os.path.join(
-        #         cfg["output"]["dir"], "output", "ratio",
-        #         f'fig_ratio_{pt_min*10:.0f}_{pt_max*10:.0f}_{cent_min}_{cent_max}.png'
-        #     ),
-        #     bbox_inches='tight'
-        # )
+            n_rows = len(combinations) // 4 + 1
+        fig, axs = plt.subplots(n_rows, 4, figsize=(20, 5 * len(combinations)/4))
+        for i_comb, combination in enumerate(combinations):
+            sns.stripplot(
+                data=df_pt_cent, x=combination[0], y=ratio, hue=combination[1],
+                dodge=0.5, alpha=.5, legend=False, ax=axs[i_comb//4, i_comb%4], palette="tab10",
+            )
+            sns.pointplot(
+                data=df_pt_cent, x=combination[0], y=ratio, hue=combination[1],
+                dodge=0.5, linestyle="none", errorbar=None, palette="tab10",
+                marker="_", markersize=20, markeredgewidth=3, ax=axs[i_comb//4, i_comb%4]
+            )
+        outfolder = os.path.join(cfg["output"]["dir"], "output", "ratio")
+        if not os.path.exists(outfolder):
+            os.makedirs(outfolder)
+        plt.savefig(
+            os.path.join(
+                outfolder,
+                f'fig_ratio_{pt_min*10:.0f}_{pt_max*10:.0f}_{cent_min}_{cent_max}.png'
+            ),
+            bbox_inches='tight'
+        )
 
 
 def get_fixed_parameter(par, unc, string):
@@ -683,8 +697,7 @@ def initialise_pars(fitter, fit_config, params):  # pylint: disable=too-many-bra
         sigma = fitter.get_sigma(0)[0]
         fitter.set_signal_initpar(1, "sigma", ratio_ds_dplus_width * sigma, fix=True)
 
-
-def dump_results_to_root(dfs, cfg, cut_set):  # pylint: disable=too-many-locals
+def dump_results_to_root(df_multitrial, cfg):  # pylint: disable=too-many-locals
     """
     Dump the results to a ROOT file.
 
@@ -696,41 +709,83 @@ def dump_results_to_root(dfs, cfg, cut_set):  # pylint: disable=too-many-locals
     Returns:
         None
     """
-    pt_mins = cut_set["pt"]["mins"]
-    pt_maxs = cut_set["pt"]["maxs"]
-    pt_edges = np.asarray(pt_mins + [pt_maxs[-1]], "d")
-    pt_bins = cfg["multitrial"]["pt_bins"]
-    if pt_bins is None:
-        pt_bins = list(range(len(pt_mins)))
+    multitrial_cfg = cfg["multitrial"]
 
-    rms_shifts = []
-    assigned_syst = []
+    df_multitrial = df_multitrial.query(f"chi2 < {multitrial_cfg['quality_selections']['chi2']}")
 
-    cols_to_save = [
-        "rawy", "rawy_unc", "significance", "significance_unc",
-        "soverb", "soverb_unc", "mean", "mean_unc", "sigma", "sigma_unc", "chi2_ndf"
-    ]
+    # Apply significance selection
+    mask = df_multitrial['significance'].apply(lambda x: x[0][0] > multitrial_cfg['quality_selections']['significance'] and x[1][0] > multitrial_cfg['quality_selections']['significance'])
+    df_multitrial = df_multitrial[mask]
 
-    idx_assigned_syst = 0
-    for i_pt in range(len(pt_mins)):
-        if i_pt not in pt_bins:
-            rms_shifts.append(0)
-            assigned_syst.append(0)
-            continue
-        rms_shifts.append(get_rms_shift_sum_quadrature(dfs[i_pt], cfg, i_pt, rel=True))
-        assigned_syst.append(cfg["assigned_syst"][idx_assigned_syst])
-        idx_assigned_syst += 1
+    cent_mins = list(df_multitrial["cent_min_cfg"].unique())
+    cent_mins.sort()
+    cent_maxs = list(df_multitrial["cent_max_cfg"].unique())
+    cent_maxs.sort()
 
-    if not os.path.exists(cfg["output_dir"]):
-        os.makedirs(cfg["output_dir"])
-    output_file_name = os.path.join(cfg["output_dir"], "raw_yields_systematic.root")
+    pt_mins = list(df_multitrial["pt_min_cfg"].unique())
+    pt_mins.sort()
+    pt_maxs = list(df_multitrial["pt_max_cfg"].unique())
+    pt_maxs.sort()
+
+    pt_edges = np.array(pt_mins + [pt_maxs[-1]])
+
+    histos_rms_shifts = {}
+    histos_assigned_syst = {}
+
+    df_cent_cfg = df_multitrial[
+        ["cent_min_cfg", "cent_max_cfg"]
+    ].drop_duplicates()
+    for _, row in df_cent_cfg.iterrows():
+        cent_min = row["cent_min_cfg"]
+        cent_max = row["cent_max_cfg"]
+
+        df_cent = df_multitrial.query(
+            f"cent_min_cfg == {cent_min} and cent_max_cfg == {cent_max}"
+        )
+
+        df_pt_cent_cfg = df_cent[
+            ["pt_min_cfg", "pt_max_cfg"]
+        ].drop_duplicates()
+
+        histos_rms_shifts[f"{cent_min}_{cent_max}"] = [0.]*len(df_pt_cent_cfg)
+        histos_assigned_syst[f"{cent_min}_{cent_max}"] = [0.]*len(df_pt_cent_cfg)
+        for _, row in df_pt_cent_cfg.iterrows():
+            pt_min = row["pt_min_cfg"]
+            pt_max = row["pt_max_cfg"]
+
+            df_pt_cent = df_cent.query(
+                f"pt_min_cfg == {pt_min} and pt_max_cfg == {pt_max}"
+            )
+
+            raw_yields_ds, raw_yields_dplus, = [], []
+            for _, row in df_pt_cent.iterrows():
+                raw_yields_ds.append(row["raw_yields"][0][0])
+                raw_yields_dplus.append(row["raw_yields"][1][0])
+
+            with uproot.open(cfg["reference_fits"]) as f:
+                h_rawy_ds = f[f"h_raw_yields_ds_{cent_min}_{cent_max}"]
+                h_rawy_dplus = f[f"h_raw_yields_dplus_{cent_min}_{cent_max}"]
+
+            i_pt = np.digitize((pt_min + pt_max) / 2, h_rawy_ds.axis().edges()) - 1
+            central_rawy_ds = h_rawy_ds.values()[i_pt]
+            central_rawy_dplus = h_rawy_dplus.values()[i_pt]
+
+            ratio = np.array(raw_yields_ds) / np.array(raw_yields_dplus)
+            central_ratio = central_rawy_ds / central_rawy_dplus
+
+
+            histos_rms_shifts[f"{cent_min}_{cent_max}"][pt_mins.index(pt_min)] = get_rms_shift_sum_quadrature(ratio, central_ratio, True)
+            histos_assigned_syst[f"{cent_min}_{cent_max}"][pt_mins.index(pt_min)] = cfg["assigned_syst"][pt_mins.index(pt_min)][cent_mins.index(cent_min)]
+
+
+    if not os.path.exists(cfg["output"]["dir"]):
+        os.makedirs(cfg["output"]["dir"])
+    output_file_name = os.path.join(cfg["output"]["dir"], "raw_yields_systematic.root")
     with uproot.recreate(output_file_name) as f:
-        for pt_bin in pt_bins:
-            suffix = f"_{pt_mins[pt_bin] * 10:.0f}_{pt_maxs[pt_bin] * 10:.0f}"
-            f[f"df{suffix}"] = dfs[pt_bin][cols_to_save]
-
-        f["rms_shifts_sum_quadrature"] = (np.array(rms_shifts), pt_edges)
-        f["assigned_syst"] = (np.array(assigned_syst), pt_edges)
+        for cent_min, cent_max in zip(cent_mins, cent_maxs):
+            suffix = f"_{cent_min}_{cent_max}"
+            f[f"rms_shifts_sum_quadrature{suffix}"] = (np.array(histos_rms_shifts[f"{cent_min}_{cent_max}"]), np.array(pt_edges))
+            f[f"assigned_syst{suffix}"] = (np.array(histos_assigned_syst[f"{cent_min}_{cent_max}"]), np.array(pt_edges))
 
 
 
@@ -899,7 +954,7 @@ def do_fit(fit_config, cfg, params=None):  # pylint: disable=too-many-locals, to
                 **{f"raw_yields_bincounting_{nsigma}": [list(fitter.get_raw_yield_bincounting(i, nsigma=nsigma)) for i in range(n_signal)] for nsigma in cfg["multitrial"]["bincounting_nsigma"]},
                 "mean": [list(fitter.get_mass(i)) for i in range(n_signal)],
                 "chi2": float(fitter.get_chi2_ndf()),
-                "significance": [list(fitter.get_significance(i, min=1.8, max=2.2)) for i in range(n_signal)],
+                "significance": [list(fitter.get_significance(i)) for i in range(n_signal)],
                 "signal": [list(fitter.get_signal(i, min=1.8, max=2.)) for i in range(n_signal)],
                 "background": [list(fitter.get_background(i, min=1.8, max=2.)) for i in range(n_signal)],
                 "bkg_frac": [corr_bkg_frac, corr_bkg_frac_err],
@@ -1090,54 +1145,54 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
     cent_maxs.pop(index)
 
     multitrial_cfg = cfg["multitrial"]
-
-    # define all the trials
-    trials_no_index = list(itertools.product(*(multitrial_cfg[var] for var in MULTITRIAL_PARAMS)))
-    trials_no_index = itertools.product(trials_no_index, [*zip(cent_mins, cent_maxs)], [*zip(pt_mins, pt_maxs)])
-    trials_no_index = [[*trial, *cent, *pt] for trial, cent, pt in trials_no_index]
-
-    trials_no_index.sort(key=lambda x: (x[-4], x[-3], x[-2], x[-1]))  # Sort by cent_min, cent_max, pt_min, pt_max
-    trials = []
-    trials_pars_init = []
-    for (key, group) in itertools.groupby(trials_no_index, key=lambda x: (x[-4], x[-3], x[-2], x[-1])):  # Group by cent and pt
-        for idx, trial in enumerate(group):
-            pt_bin_index = pt_mins.index(trial[-2])
-            sgn_funcs_index = multitrial_cfg["sgn_funcs"].index(trial[MULTITRIAL_PARAMS.index("sgn_funcs")])
-            pars_init = {
-                **{f"{par}_init_{i_func}": sgn_func[par]['init'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
-                **{f"{par}_min_{i_func}": sgn_func[par]['min'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
-                **{f"{par}_max_{i_func}": sgn_func[par]['max'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
-                **{f"{par}_fix_{i_func}": sgn_func[par]['fix'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func}
-            }
-            trials_pars_init.append(pars_init)
-            trials.append((*trial, idx))
-    trials = [dict(
-        zip(MULTITRIAL_PARAMS + ["cent_min", "cent_max", "pt_min", "pt_max", "index"] + list(pars_init.keys()), list(trial) + list(pars_init.values()))
-    ) for trial, pars_init in zip(trials, trials_pars_init)]
-
-    mb_trials_no_index = list(itertools.product(*(multitrial_cfg[var] for var in MULTITRIAL_PARAMS)))
-    mb_trials_no_index = itertools.product(mb_trials_no_index, [(0, 100)], [*zip(pt_mins, pt_maxs)])
-    mb_trials_no_index = [[*trial, *cent, *pt] for trial, cent, pt in mb_trials_no_index]
-    mb_trials_no_index.sort(key=lambda x: (x[-4], x[-3], x[-2], x[-1]))  # Sort by cent_min, cent_max, pt_min, pt_max
-    mb_trials = []
-    trials_pars_init_mb = []
-    for (key, group) in itertools.groupby(mb_trials_no_index, key=lambda x: (x[-4], x[-3], x[-2], x[-1])):  # Group by cent and pt
-        for idx, trial in enumerate(group):
-            pt_bin_index = pt_mins.index(trial[-2])
-            sgn_funcs_index = multitrial_cfg["sgn_funcs"].index(trial[MULTITRIAL_PARAMS.index("sgn_funcs")])
-            pars_init = {
-                **{f"{par}_init_{i_func}": sgn_func[par]['init'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
-                **{f"{par}_min_{i_func}": sgn_func[par]['min'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
-                **{f"{par}_max_{i_func}": sgn_func[par]['max'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
-                **{f"{par}_fix_{i_func}": sgn_func[par]['fix'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func}
-            }
-            trials_pars_init_mb.append(pars_init)
-            mb_trials.append((*trial, idx))
-    mb_trials = [dict(
-        zip(MULTITRIAL_PARAMS + ["cent_min", "cent_max", "pt_min", "pt_max", "index"] + list(pars_init.keys()), list(trial) + list(pars_init.values()))
-    ) for trial, pars_init in zip(mb_trials, trials_pars_init_mb)]
-
     if not draw:
+        # define all the trials
+        trials_no_index = list(itertools.product(*(multitrial_cfg[var] for var in MULTITRIAL_PARAMS)))
+        trials_no_index = itertools.product(trials_no_index, [*zip(cent_mins, cent_maxs)], [*zip(pt_mins, pt_maxs)])
+        trials_no_index = [[*trial, *cent, *pt] for trial, cent, pt in trials_no_index]
+
+        trials_no_index.sort(key=lambda x: (x[-4], x[-3], x[-2], x[-1]))  # Sort by cent_min, cent_max, pt_min, pt_max
+        trials = []
+        trials_pars_init = []
+        for (key, group) in itertools.groupby(trials_no_index, key=lambda x: (x[-4], x[-3], x[-2], x[-1])):  # Group by cent and pt
+            for idx, trial in enumerate(group):
+                pt_bin_index = pt_mins.index(trial[-2])
+                sgn_funcs_index = multitrial_cfg["sgn_funcs"].index(trial[MULTITRIAL_PARAMS.index("sgn_funcs")])
+                pars_init = {
+                    **{f"{par}_init_{i_func}": sgn_func[par]['init'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
+                    **{f"{par}_min_{i_func}": sgn_func[par]['min'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
+                    **{f"{par}_max_{i_func}": sgn_func[par]['max'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
+                    **{f"{par}_fix_{i_func}": sgn_func[par]['fix'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func}
+                }
+                trials_pars_init.append(pars_init)
+                trials.append((*trial, idx))
+        trials = [dict(
+            zip(MULTITRIAL_PARAMS + ["cent_min", "cent_max", "pt_min", "pt_max", "index"] + list(pars_init.keys()), list(trial) + list(pars_init.values()))
+        ) for trial, pars_init in zip(trials, trials_pars_init)]
+
+        mb_trials_no_index = list(itertools.product(*(multitrial_cfg[var] for var in MULTITRIAL_PARAMS)))
+        mb_trials_no_index = itertools.product(mb_trials_no_index, [(0, 100)], [*zip(pt_mins, pt_maxs)])
+        mb_trials_no_index = [[*trial, *cent, *pt] for trial, cent, pt in mb_trials_no_index]
+        mb_trials_no_index.sort(key=lambda x: (x[-4], x[-3], x[-2], x[-1]))  # Sort by cent_min, cent_max, pt_min, pt_max
+        mb_trials = []
+        trials_pars_init_mb = []
+        for (key, group) in itertools.groupby(mb_trials_no_index, key=lambda x: (x[-4], x[-3], x[-2], x[-1])):  # Group by cent and pt
+            for idx, trial in enumerate(group):
+                pt_bin_index = pt_mins.index(trial[-2])
+                sgn_funcs_index = multitrial_cfg["sgn_funcs"].index(trial[MULTITRIAL_PARAMS.index("sgn_funcs")])
+                pars_init = {
+                    **{f"{par}_init_{i_func}": sgn_func[par]['init'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
+                    **{f"{par}_min_{i_func}": sgn_func[par]['min'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
+                    **{f"{par}_max_{i_func}": sgn_func[par]['max'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func},
+                    **{f"{par}_fix_{i_func}": sgn_func[par]['fix'][pt_bin_index] for i_func, sgn_func in enumerate(multitrial_cfg["par_init_limit"][sgn_funcs_index]) for par in sgn_func}
+                }
+                trials_pars_init_mb.append(pars_init)
+                mb_trials.append((*trial, idx))
+        mb_trials = [dict(
+            zip(MULTITRIAL_PARAMS + ["cent_min", "cent_max", "pt_min", "pt_max", "index"] + list(pars_init.keys()), list(trial) + list(pars_init.values()))
+        ) for trial, pars_init in zip(mb_trials, trials_pars_init_mb)]
+
+
         futures = []
         batch_size = cfg["batch_size"]
         trial_counter = 0
@@ -1179,9 +1234,12 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
                 # Wait for batch results
                 df_mb, df_cent = [], []
                 for future in batch_futures:
-                    mb_result, cent_result = future.result()
-                    df_mb.append(mb_result)
-                    df_cent.extend(cent_result)
+                    try:
+                        mb_result, cent_result = future.result()
+                        df_mb.append(mb_result)
+                        df_cent.extend(cent_result)
+                    except concurrent.futures.process.BrokenProcessPool:
+                        print("Job failed!")
 
                 # Convert to DataFrame
                 df_mb_new = pd.DataFrame(df_mb)
@@ -1194,8 +1252,12 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
                 append_cent = os.path.exists(cent_file)
 
                 # Save to Parquet with append behavior
-                df_mb_new.to_parquet(mb_file, engine="fastparquet", append=append_mb, index=False)
-                df_cent_new.to_parquet(cent_file, engine="fastparquet", append=append_cent, index=False)
+                if append_mb:
+                    df_mb_new = pd.concat([df_mb_new, pd.read_parquet(mb_file)])
+                if append_cent:
+                    df_cent_new = pd.concat([df_cent_new, pd.read_parquet(cent_file)])
+                df_mb_new.to_parquet(mb_file, engine="pyarrow", index=False)
+                df_cent_new.to_parquet(cent_file, engine="pyarrow", index=False)
 
                 # Clean up workers for this batch
                 executor.shutdown(wait=True)      
@@ -1210,11 +1272,20 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
         df_cent.to_parquet(os.path.join(cfg["output"]["dir"], f"cent_results{cfg['output']['suffix']}.parquet"))
 
     else:
-        df_mb = pd.read_parquet(os.path.join(cfg["output"]["dir"], f"mb_results{cfg["output"]['suffix']}.parquet"))
-        df_cent = pd.read_parquet(os.path.join(cfg["output"]["dir"], f"cent_results{cfg["output"]['suffix']}.parquet"))
+        if cfg["files_to_draw"]["mb"] is not None:
+            df_mb, df_cent = [], []
+            for file in cfg["files_to_draw"]["mb"]:
+                df_mb.append(pd.read_parquet(file))
+            df_mb = pd.concat(df_mb)
+            for file in cfg["files_to_draw"]["cent"]:
+                df_cent.append(pd.read_parquet(file))
+            df_cent = pd.concat(df_cent)
+        else:
+            df_mb = pd.read_parquet(os.path.join(cfg["output"]["dir"], f"mb_results{cfg["output"]['suffix']}.parquet"))
+            df_cent = pd.read_parquet(os.path.join(cfg["output"]["dir"], f"cent_results{cfg["output"]['suffix']}.parquet"))
 
-    draw_multitrial(df_cent, cfg)
-    draw_multitrial(df_mb, cfg)
+    draw_multitrial(df_cent, cfg, is_mb=False)
+    draw_multitrial(df_mb, cfg, is_mb=True)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Fit Ds')
