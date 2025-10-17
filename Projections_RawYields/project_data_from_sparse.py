@@ -74,6 +74,7 @@ def load_event_collision_histograms_from_task(config_input):
             h_colls[-1].SetDirectory(0)
     if len(input_files_names) == 1 and len(sparse_names) > 1:
         h_evs = h_evs * len(sparse_names)
+        h_colls = h_colls * len(sparse_names)
     return h_evs, h_colls
 
 
@@ -203,6 +204,8 @@ def project_sparse(config_file_name):  # pylint: disable=too-many-locals
     output_labels = config["output"]["file_names"]
     if not isinstance(output_labels, list):
         output_labels = [output_labels]
+
+    print(h_evs, h_colls)
 
     for sparse, h_ev, h_coll, output_label in zip(sparses, h_evs, h_colls, output_labels):
         results = []
