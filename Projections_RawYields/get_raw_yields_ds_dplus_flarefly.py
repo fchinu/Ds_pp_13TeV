@@ -74,7 +74,8 @@ class HistHandler:  # pylint: disable=too-many-instance-attributes
         self._pt_axis_title = '#it{p}_{T} (GeV/#it{c})'
         self._n_ev = None
         self._histos = {}
-        
+        self._h_collisions = None
+
         self._observable_config = self._get_observable_config()
         self._build_histos()
 
@@ -156,6 +157,10 @@ class HistHandler:  # pylint: disable=too-many-instance-attributes
     def set_n_ev(self, n_ev):
         """Set the number of events."""
         self._n_ev = n_ev
+
+    def set_h_collisions(self, h_collisions):
+        """Set the histogram for collisions."""
+        self._h_collisions = h_collisions
 
     def _get_centrality_index(self, row):
         """Get centrality index from row data."""
@@ -290,6 +295,8 @@ class HistHandler:  # pylint: disable=too-many-instance-attributes
             for histos in self._histos.values():
                 for hist in histos:
                     hist.Write()
+        with uproot.update(output_file) as f:
+            f["h_coll_rebinned"] = self._h_collisions
 
     @property
     def obs_common(self):
@@ -380,6 +387,7 @@ def load_inputs(cfg, cut_set):
     h_mass = []
     with uproot.open(cfg["inputs"]["data"]) as f:
         h_ev = f["h_ev"]
+        h_collisions = f["h_coll_rebinned"]
 
         for pt_min, pt_max in zip(pt_mins, pt_maxs):
             if cent_mins is not None and cent_maxs is not None:
@@ -390,7 +398,7 @@ def load_inputs(cfg, cut_set):
                 suffix = f"{pt_min*10:.0f}_{pt_max*10:.0f}"
                 h_mass.append(f[f'h_mass_{suffix}'])
 
-    return h_mass, h_ev
+    return h_mass, h_ev, h_collisions
 
 
 def create_fit_configs(cfg, cut_set):
@@ -1103,7 +1111,7 @@ def fit(config_file_name):
     )
 
     # load inputs
-    _, h_ev = load_inputs(cfg, cut_set)
+    _, h_ev, h_collisions = load_inputs(cfg, cut_set)
     n_ev = sum(h_ev.values())
 
     cent_mins, cent_maxs = None, None
@@ -1117,6 +1125,7 @@ def fit(config_file_name):
         cent_mins, cent_maxs
     )
     h_handler.set_n_ev(n_ev)
+    h_handler.set_h_collisions(h_collisions)
 
     fit_configs = create_fit_configs(cfg, cut_set)
 
