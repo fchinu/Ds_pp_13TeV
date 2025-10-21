@@ -11,6 +11,8 @@ import ROOT
 # pylint: disable=no-member
 import sys # pylint: disable=wrong-import-order
 sys.path.append("../utils/")
+sys.path.append("../../utils/")
+sys.path.append("../../../utils/")
 from plot_utils import get_discrete_matplotlib_palette # pylint: disable=wrong-import-position
 
 PARTICLE_CLASSES = [("Ds", "Prompt"), ("Ds", "NonPrompt"),

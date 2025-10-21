@@ -1,27 +1,47 @@
 {
   "rawyields": {
-    "inputdir": "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/VsMult/mult_differential/2023/Projections_RawYields/doublecb",
+    "inputdir": "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/norm_vars/RawYields",
     "inputfiles": [
       "mass_fits_outFD_pos01.root",
       "mass_fits_outFD_pos02.root",
       "mass_fits_outFD_pos03.root",
       "mass_fits_outFD_pos04.root",
-      "mass_fits_outFD_pos05.root"
+      "mass_fits_outFD_pos05.root",
+      "mass_fits_outFD_pos06.root",
+      "mass_fits_outFD_pos07.root",
+      "mass_fits_outFD_pos08.root",
+      "mass_fits_outFD_pos09.root",
+      "mass_fits_outFD_pos10.root",
+      "mass_fits_outFD_pos11.root",
+      "mass_fits_outFD_pos12.root",
+      "mass_fits_outFD_pos13.root",
+      "mass_fits_outFD_pos14.root",
+      "mass_fits_outFD_pos15.root"
     ],
-    "histoname": "h_raw_yields_ds_0_100"
+    "histoname": "h_raw_yields_ds_0_10"
   },
   "efficiencies": {
-    "inputdir": "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/VsMult/mult_differential/2023/Efficiency",
+    "inputdir": "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/norm_vars/Efficiencies",
     "inputfiles": [
       "efficiency__outFD_pos01.root",
       "efficiency__outFD_pos02.root",
       "efficiency__outFD_pos03.root",
       "efficiency__outFD_pos04.root",
-      "efficiency__outFD_pos05.root"
+      "efficiency__outFD_pos05.root",
+      "efficiency__outFD_pos06.root",
+      "efficiency__outFD_pos07.root",
+      "efficiency__outFD_pos08.root",
+      "efficiency__outFD_pos09.root",
+      "efficiency__outFD_pos10.root",
+      "efficiency__outFD_pos11.root",
+      "efficiency__outFD_pos12.root",
+      "efficiency__outFD_pos13.root",
+      "efficiency__outFD_pos14.root",
+      "efficiency__outFD_pos15.root"
     ],
     "histonames": {
-      "prompt": "eff_DsPrompt_cent_0_100",
-      "nonprompt": "eff_DsNonPrompt_cent_0_100"
+      "prompt": "eff_DsPrompt_cent_0_10",
+      "nonprompt": "eff_DsNonPrompt_cent_0_10"
     }
   },
   "minimisation": {
@@ -29,51 +49,26 @@
     "draw_weights": false
   },
   "central_efficiency": {
-    "computerawfrac": false,
-    "inputdir": "/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/VsMult/",
-    "inputfile": "efficiency_LHC24h1.root",
+    "computerawfrac": true,
+    "inputdir": "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Efficiency/efficiency/LHC25a5_norm_vars",
+    "inputfile": "efficiency_LHC25a5_norm_vars.root",
     "suffixes": [
-      "cent_0_100",
-      "cent_0_1",
-      "cent_1_10",
-      "cent_10_30",
-      "cent_30_50",
-      "cent_50_70",
-      "cent_70_100"
+      "cent_0_10",
+      "cent_10_20"
     ],
     "histonames": [
       {
-        "prompt": "eff_DsPrompt_cent_0_100",
-        "nonprompt": "eff_DsNonPrompt_cent_0_100"
+        "prompt": "eff_DsPrompt_cent_0_10",
+        "nonprompt": "eff_DsNonPrompt_cent_0_10"
       },
       {
-        "prompt": "eff_DsPrompt_cent_0_1",
-        "nonprompt": "eff_DsNonPrompt_cent_0_1"
-      },
-      {
-        "prompt": "eff_DsPrompt_cent_1_10",
-        "nonprompt": "eff_DsNonPrompt_cent_1_10"
-      },
-      {
-        "prompt": "eff_DsPrompt_cent_10_30",
-        "nonprompt": "eff_DsNonPrompt_cent_10_30"
-      },
-      {
-        "prompt": "eff_DsPrompt_cent_30_50",
-        "nonprompt": "eff_DsNonPrompt_cent_30_50"
-      },
-      {
-        "prompt": "eff_DsPrompt_cent_50_70",
-        "nonprompt": "eff_DsNonPrompt_cent_50_70"
-      },
-      {
-        "prompt": "eff_DsPrompt_cent_70_100",
-        "nonprompt": "eff_DsNonPrompt_cent_70_100"
+        "prompt": "eff_DsPrompt_cent_10_20",
+        "nonprompt": "eff_DsNonPrompt_cent_10_20"
       }
     ]
   },
   "output": {
-    "directory": "/home/fchinu/Run3/Ds_pp_13TeV/FD_Fraction/data_driven/VsMult/mult_differential/2023/ds/doublecb",
-    "file": "CutVarDs_pp13TeV_MB.root"
+    "directory": "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/norm_vars/Fractions/Ds",
+    "file": "CutVarDs_pp13TeV.root"
   }
 }

@@ -925,15 +925,15 @@ def _fix_signal_sigma(fitter, cfg, fit_config, signal_idx, particle_type):
     sigma_values = get_sigma_from_cfg(cfg, fit_config, particle_type)
     
     if func_type == "gaussian":
-        fitter.set_signal_initpar(signal_idx, "sigma", sigma_values, fix=True)
+        fitter.set_signal_initpar(signal_idx, "sigma", sigma_values, limits=[sigma_values-0.001, sigma_values+0.001], fix=True)
     elif func_type == "doublegaus":
-        fitter.set_signal_initpar(signal_idx, "sigma1", sigma_values[0], fix=True)
-        fitter.set_signal_initpar(signal_idx, "sigma2", sigma_values[1], fix=True)
-        fitter.set_signal_initpar(signal_idx, "frac1", sigma_values[2], fix=True)
+        fitter.set_signal_initpar(signal_idx, "sigma1", sigma_values[0], limits=[sigma_values[0]-0.001, sigma_values[0]+0.001], fix=True)
+        fitter.set_signal_initpar(signal_idx, "sigma2", sigma_values[1], limits=[sigma_values[1]-0.001, sigma_values[1]+0.001], fix=True)
+        fitter.set_signal_initpar(signal_idx, "frac1", sigma_values[2], limits=[sigma_values[2]-0.001, sigma_values[2]+0.001], fix=True)
     elif func_type == "doublecbsymm":
-        fitter.set_signal_initpar(signal_idx, "sigma", sigma_values[0], fix=True)
-        fitter.set_signal_initpar(signal_idx, "alpha", sigma_values[1], fix=True)
-        fitter.set_signal_initpar(signal_idx, "n", sigma_values[2], fix=True)
+        fitter.set_signal_initpar(signal_idx, "sigma", sigma_values[0], limits=[sigma_values[0]-0.001, sigma_values[0]+0.001], fix=True)
+        fitter.set_signal_initpar(signal_idx, "alpha", sigma_values[1], limits=[sigma_values[1]-0.001, sigma_values[1]+0.001], fix=True)
+        fitter.set_signal_initpar(signal_idx, "n", sigma_values[2], limits=[sigma_values[2]-0.001, sigma_values[2]+0.001], fix=True)
 
 
 def _extract_background_fractions(fracs):
