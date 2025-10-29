@@ -1,7 +1,7 @@
 inputs:
   sparse:
     file_names: [
-        /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/MC/Train360775/AnalysisResults_LHC24h1_0.root
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/MC/Train512716/AnalysisResults_LHC25a5_0.root
       ]
     axis_pt_gen: 0
     axis_npv_gen: 2
@@ -10,6 +10,7 @@ inputs:
     axis_cent_gen: 3
   task_name: 'hf-task-ds' #['hf-task-ds', 'hf-task-ds-WithNPV']
   cutset: '/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/configs/cutset_pp13TeV_multiplicity.yml'
+  apply_cent_sel: True
 
 weights:
   apply: False
@@ -31,4 +32,4 @@ weights:
 
 verbose: False
 output_dir: '/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/VsMult'
-suffix: 'LHC24h1' #['FT0M', 'NTracksPV']
+suffix: 'LHC25a5' #['FT0M', 'NTracksPV']

@@ -74,6 +74,7 @@ PROJ_OUTPUT = $(OUTPUT_PROJ)/projections.done
 FIT_OUTPUT = $(OUTPUT_FIT)/rawYields.done
 EFF_OUTPUT = $(OUTPUT_EFF)/efficiencies.done
 FRAC_OUTPUT = $(OUTPUT_FRAC)/fd_fraction.done
+SOURCE_FILE = $(TRIAL_DIR)/source.sh
 
 # Define the targets
 .PHONY: all clean-output help setup generate-configs
@@ -111,7 +112,7 @@ DIRECTORIES = $(OUTPUT_CONFIG) $(OUTPUT_CONFIG_CUTSET) $(OUTPUT_CONFIG_PROJ) $(O
 CONFIG_FILES = $(DEST_CONFIG_CUTSET) $(DEST_CONFIG_CUTSET_PROMPT_ENHANCED) $(DEST_CONFIG_PROJ) $(DEST_CONFIG_PROJ_PROMPT_ENHANCED) $(DEST_CONFIG_FIT) $(DEST_CONFIG_FIT_PROMPT_ENHANCED) $(DEST_CONFIG_EFF) $(DEST_CONFIG_MAKE_CUTS) $(TRIAL_GITIGNORE) $(DEST_CONFIG_CUTVAR)
 
 # Setup directories and copy configs
-setup: $(DIRECTORIES) $(CONFIG_FILES) generate-configs
+setup: $(DIRECTORIES) $(CONFIG_FILES) generate-configs $(SOURCE_FILE)
 
 # Create all directories with a single rule
 $(DIRECTORIES):
@@ -129,6 +130,11 @@ $(TRIAL_GITIGNORE): $(TRIAL_DIR)
 
 # Generate config files for each cutset
 generate-configs: $(CUTS_OUTPUT) $(CONFIG_GENERATED)
+
+# Create source file with environment variables
+$(SOURCE_FILE):
+	@echo "#!/bin/bash" > $@
+	@echo "export NAME=$(NAME)" >> $@
 
 # Create cutset files
 $(CUTS_OUTPUT): $(DEST_CONFIG_CUTSET) $(CUTS_SCRIPT) $(DEST_CONFIG_MAKE_CUTS)
