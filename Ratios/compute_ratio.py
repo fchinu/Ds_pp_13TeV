@@ -140,6 +140,24 @@ def get_prompt_fractions(config, cent_bin):
     return h_prompt_frac_ds, h_prompt_frac_dplus
 
 
+def get_collisions(config):
+    """
+    Retrieve the collisions histogram from a ROOT file.
+
+    Parameters:
+    - config (dict): Configuration dictionary containing input file paths.
+    - cent_bin (int): centrality bin
+
+    Returns:
+    - float: Number of collisions for the specified centrality bin.
+    """
+    with ROOT.TFile.Open(config['inputs']['files']['raw_yields']) as in_file_raw_yields:
+        h_collisions = in_file_raw_yields.Get('h_coll_rebinned')
+        h_collisions.SetDirectory(0)
+
+    return h_collisions
+
+
 def get_ratio_vs_pt(
     config, h_raw_yields_ds, h_raw_yields_dplus, h_eff_prompt_ds,
     h_eff_prompt_dplus, h_prompt_frac_ds, h_prompt_frac_dplus
@@ -432,6 +450,9 @@ def evaluate_ratio(config_file_name):
             for g in g_ratios_vs_dndeta:
                 g.Write()
 
+        h_collisions = get_collisions(config)
+        output_file.cd()
+        h_collisions.Write()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Calculate Ds+/D+ ratio')
