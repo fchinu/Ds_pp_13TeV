@@ -1,3 +1,5 @@
+import argparse
+import enum
 import ROOT
 import numpy as np
 import matplotlib as mpl
@@ -53,7 +55,7 @@ def draw_alice_pbpb(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
     graph_stat_50_90.SetLineColor(c)
     graph_stat_50_90.SetLineWidth(1)
     graph_stat_50_90.Draw("pz, same")
-    return graph_stat_0_20, graph_stat_50_90
+    return graph_stat_0_20#, graph_stat_50_90
 
 
 def draw_alice_pp(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
@@ -108,22 +110,17 @@ if __name__ == '__main__':
     ROOT.gStyle.SetTitleSize(55, "XYZ")
     ROOT.gStyle.SetTitleOffset(1., "X")
     ROOT.gStyle.SetLabelOffset(-0.01, "X")
-    colors, _ = get_discrete_matplotlib_palette('tab10')
+    colors, cols = get_discrete_matplotlib_palette('tab20')
 
     y_text = ROOT.TLatex(0.185, 0.83, '|#it{y}| < 0.5')
     y_text.SetNDC()
-    y_text.SetTextFont(43)
-    y_text.SetTextSize(35)
+    y_text.SetTextFont(42)
+    y_text.SetTextSize(0.04)
 
     pt_text = ROOT.TLatex(0.6, 0.88, '')
     pt_text.SetNDC()
     pt_text.SetTextFont(43)
-    pt_text.SetTextSize(35)
-
-    xunc_text = ROOT.TLatex(0.6, 0.88, '')
-    xunc_text.SetNDC()
-    xunc_text.SetTextFont(43)
-    xunc_text.SetTextSize(35)
+    pt_text.SetTextSize(40)
 
     c = ROOT.TCanvas("canvas", "canvas", 2400, 1600)
     c.Divide(3, 2, 0.000, 0.000)
@@ -133,15 +130,15 @@ if __name__ == '__main__':
         pad.SetTopMargin(0.02)
     for i_pad in range(4, 7):
         pad = c.cd(i_pad)
-        pad.SetBottomMargin(0.146)
+        pad.SetBottomMargin(0.16)
 
     c.cd(1)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
     h_frame.GetYaxis().ChangeLabel(1, 1, 0)
-    draw_alice_pbpb(1, 2, c=colors[3], s=2.5, m=ROOT.kOpenCircle)
-    g_alice_pp_1_2 = draw_alice_pp(1, 2, c=colors[3], s=2.5, m=ROOT.kFullCircle)
-    #y_text.Draw()
-    
+
+    alice_pp = draw_alice_pp(1, 2, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
+    alice_pbpb = draw_alice_pbpb(1, 2, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+
     x, y = to_pad_coordinates(0.05, 0.9)
     alice_text = ROOT.TLatex(x, y, 'ALICE Work in Progress')
     alice_text.SetNDC()
@@ -152,102 +149,82 @@ if __name__ == '__main__':
     x, y = to_pad_coordinates(0.05, 0.85)
     pt_text.DrawLatexNDC(x, y, '1#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{2} GeV/#it{c}')
 
-    legend_alice_pp = ROOT.TLegend(0.175, 0.76, 0.485, 0.86)
-    legend_alice_pp.SetBorderSize(0)
-    legend_alice_pp.SetFillStyle(0)
-    legend_alice_pp.SetTextFont(43)
-    legend_alice_pp.SetTextSize(35)
-    legend_alice_pp.AddEntry(g_alice_pp_1_2, '#splitline{pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < 0.5}{Mult. estim.: #kern[-0.3]{#font[122]{-}3.3} < #kern[-0.9]{#it{#eta}} < #kern[-0.3]{#font[122]{-}2.1} #kern[-0.9]{#vee} 3.5 < #kern[-0.2]{#it{#eta} < 4.9}}', 'pl')
-    #legend_alice_pp.AddEntry('', '#splitline{pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < 0.5}{Mult. estim.: |#it{#eta}| < 0.8}', 'pl')
-    legend_alice_pp.Draw()
+    ROOT.gPad.RedrawAxis()
 
     c.cd(2)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
-    graph_stat_alice_2_4, graph_syst_alice_2_4 = draw_alice_pbpb(2, 4, c=colors[3], s=2.5, m=ROOT.kOpenCircle)
-    g_alice_pp_2_4 = draw_alice_pp(2, 4, c=colors[3], s=2.5, m=ROOT.kFullCircle)
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    draw_alice_pp(2, 4, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
+    draw_alice_pbpb(2, 4, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
     #alice_text.Draw()
     #y_text.Draw()
-
-    x, y = to_pad_coordinates(0.05, 0.85)
+    x, y = to_pad_coordinates(0.05, 0.9)
     pt_text.DrawLatexNDC(x, y, '2#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{4} GeV/#it{c}')
 
+    ROOT.gPad.RedrawAxis()
 
     c.cd(3)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
-    draw_alice_pbpb(4, 6, c=colors[3], s=2.5, m=ROOT.kOpenCircle)
-    draw_alice_pp(4, 6, c=colors[3], s=2.5, m=ROOT.kFullCircle)
-    #alice_text.Draw()
-    #y_text.Draw()
-    x, y = to_pad_coordinates(0.05, 0.85)
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    draw_alice_pp(4, 6, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
+    draw_alice_pbpb(4, 6, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+
+    x, y = to_pad_coordinates(0.05, 0.9)
     pt_text.DrawLatexNDC(x, y, '4#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{6} GeV/#it{c}')
 
-    legend_alice_pbpb = ROOT.TLegend(0.175, 0.76, 0.485, 0.86)
-    legend_alice_pbpb.SetBorderSize(0)
-    legend_alice_pbpb.SetFillStyle(0)
-    legend_alice_pbpb.SetTextFont(43)
-    legend_alice_pbpb.SetTextSize(35)
-    legend_alice_pbpb.AddEntry(graph_stat_alice_2_4, '#splitline{ALICE, Pb#font[122]{-}Pb, #sqrt{#it{s}_{NN}} = 5.02 TeV, |#it{y}| < 0.5}{Mult. estim.: #kern[-0.3]{#font[122]{-}3.7} < #kern[-0.9]{#it{#eta}} < #kern[-0.3]{#font[122]{-}1.7} #kern[-0.9]{#vee} 2.8 < #kern[-0.2]{#it{#eta} < 5.1}}', 'pl')
-    legend_alice_pbpb.Draw()
+    ROOT.gPad.RedrawAxis()
 
     c.cd(4)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
-    h_frame.GetYaxis().ChangeLabel(11, 1, 0)
-    draw_alice_pbpb(6, 8, c=colors[3], s=2.5, m=ROOT.kOpenCircle)
-    draw_alice_pp(6, 8, c=colors[3], s=2.5, m=ROOT.kFullCircle)
-    #alice_text.Draw()
-    #y_text.Draw()
-    x, y = to_pad_coordinates(0.05, 0.85)
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    h_frame.GetYaxis().ChangeLabel(10, 1, 0)
+    draw_alice_pp(6, 8, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
+    draw_alice_pbpb(6, 8, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+    x, y = to_pad_coordinates(0.05, 0.9)
     pt_text.DrawLatexNDC(x, y, '6#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{8} GeV/#it{c}')
-    
-    x, y = to_pad_coordinates(0.05, 0.10)
-    xunc_text.DrawLatexNDC(x, y, 'Uncertainty on x-axis scaled by 5')
 
-    c.cd(5)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
-    h_frame.GetXaxis().ChangeLabel(1, 1, 0)
-    draw_alice_pbpb(8, 12, c=colors[3], s=2.5, m=ROOT.kOpenCircle)
-    draw_alice_pp(8, 12, c=colors[3], s=2.5, m=ROOT.kFullCircle)
-    #alice_text.Draw()
-    #y_text.Draw()
-    x, y = to_pad_coordinates(0.05, 0.85)
-    pt_text.DrawLatexNDC(x, y, '8#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[.5]{12} GeV/#it{c}')
-
-    x_min, y_min = to_pad_coordinates(0.05, 0.07)
+    x_min, y_min = to_pad_coordinates(0.03, 0.07)
     x_max, y_max = to_pad_coordinates(0.5, 0.17)
     legend_alice_pp = ROOT.TLegend(x_min, y_min, x_max, y_max)
     legend_alice_pp.SetBorderSize(0)
     legend_alice_pp.SetFillStyle(0)
     legend_alice_pp.SetTextFont(43)
-    legend_alice_pp.SetTextSize(35)
-    legend_alice_pp.AddEntry(g_alice_pp_1_2, '#splitline{pp,#kern[0.2]{#sqrt{#it{s}}} = 13.6 TeV, |#it{y}| < 0.5}{FT0M multiplicity estimator}', 'pl')
-    # legend_alice_pp.AddEntry('', '#splitline{pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < 0.5}{Mult. estim.: |#it{#eta}| < 0.8}', 'pl')
+    legend_alice_pp.SetTextSize(40)
+    legend_alice_pp.AddEntry(alice_pp, '#splitline{pp,#kern[0.2]{#sqrt{#it{s}}} = 13.6 TeV, |#it{y}| < 0.5}{FT0M multiplicity estimator}', 'pl')
     legend_alice_pp.Draw()
 
-    c.cd(6)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
+    ROOT.gPad.RedrawAxis()
+
+    c.cd(5)
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
     h_frame.GetXaxis().ChangeLabel(1, 1, 0)
-    draw_alice_pp(12, 24, c=colors[3], s=2.5, m=ROOT.kFullCircle)
-    draw_alice_pbpb(12, 24, c=colors[3], s=2.5, m=ROOT.kOpenCircle)
+    draw_alice_pp(8, 12, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
+    draw_alice_pbpb(8, 12, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
     #alice_text.Draw()
     #y_text.Draw()
-    x, y = to_pad_coordinates(0.05, 0.85)
-    pt_text.DrawLatexNDC(x, y, '12#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[.5]{24} GeV/#it{c}')
+    x, y = to_pad_coordinates(0.05, 0.9)
+    pt_text.DrawLatexNDC(x, y, '8#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[.5]{12} GeV/#it{c}')
 
-    x_min, y_min = to_pad_coordinates(0.05, 0.07)
+    x_min, y_min = to_pad_coordinates(0.03, 0.07)
     x_max, y_max = to_pad_coordinates(0.5, 0.17)
     legend_alice_pbpb = ROOT.TLegend(x_min, y_min, x_max, y_max)
     legend_alice_pbpb.SetBorderSize(0)
     legend_alice_pbpb.SetFillStyle(0)
     legend_alice_pbpb.SetTextFont(43)
-    legend_alice_pbpb.SetTextSize(35)
-    legend_alice_pbpb.AddEntry(graph_stat_alice_2_4, '#splitline{Pb#font[122]{-}Pb, #sqrt{#it{s}_{NN}} = 5.36 TeV, |#it{y}| < 0.5}{FT0C multiplicity estimator}', 'pl')
+    legend_alice_pbpb.SetTextSize(40)
+    legend_alice_pbpb.AddEntry(alice_pbpb, '#splitline{Pb#font[122]{-}Pb, #sqrt{#it{s}_{NN}} = 5.36 TeV, |#it{y}| < 0.5}{FT0C multiplicity estimator}', 'pl')
     legend_alice_pbpb.Draw()
 
-    c.Modified()
-    c.Update()
+    ROOT.gPad.RedrawAxis()
+
+    c.cd(6)
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    h_frame.GetXaxis().ChangeLabel(1, 1, 0)
+    draw_alice_pp(12, 24, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
+    draw_alice_pbpb(12, 24, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+    #alice_text.Draw()
+    #y_text.Draw()
+    x, y = to_pad_coordinates(0.05, 0.9)
+    pt_text.DrawLatexNDC(x, y, '12#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[.5]{24} GeV/#it{c}')
+
+    ROOT.gPad.RedrawAxis()
 
     c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_alice.pdf")
     c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_alice.root")
-
-
-
