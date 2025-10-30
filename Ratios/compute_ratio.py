@@ -194,8 +194,11 @@ def get_ratio_vs_pt(
     f_corrected_yields_dplus[0].FixParameter(3, 1.870)
     f_corrected_yields_ds[0].SetParLimits(1, 1.5, 15.)
     f_corrected_yields_dplus[0].SetParLimits(1, 1.5, 15.)
-    h_corrected_yields_ds.Fit(f_corrected_yields_ds[0], "IMEQ0")
-    h_corrected_yields_dplus.Fit(f_corrected_yields_dplus[0], "IMEQ0")
+    fitres_ds = h_corrected_yields_ds.Fit(f_corrected_yields_ds[0], "IMEQ0S")
+    fitres_dplus = h_corrected_yields_dplus.Fit(f_corrected_yields_dplus[0], "IMEQ0S")
+    # We need to retrieve the covariance matrices to compute the uncertainties on the integrals
+    cov_mat_ds = fitres_ds.GetCovarianceMatrix()
+    cov_mat_dplus = fitres_dplus.GetCovarianceMatrix()
 
     # let's also do a simultaneous fit with Tsallis
     wf_corrected_yields_ds = ROOT.Math.WrappedMultiTF1(f_corrected_yields_ds[1], 1)
@@ -235,11 +238,15 @@ def get_ratio_vs_pt(
 
     # fit FCN function
     # (specify optionally data size and flag to indicate that is a chi2 fit)
-    fitter_tsallis.FitFCN(global_chi2_functor, 0, data_ds.Size() + data_dplus.Size(), True)
+    fitter_tsallis.FitFCN(global_chi2_functor, 0, data_ds.Size() + data_dplus.Size(), 1)
     result_tsallis = fitter_tsallis.Result()
     result_tsallis.Print(ROOT.std.cout)
     f_corrected_yields_ds[1].SetFitResult(result_tsallis, pars_tsallis_ds)
     f_corrected_yields_dplus[1].SetFitResult(result_tsallis, pars_tsallis_dplus)
+
+    # We need to retrieve the covariance matrices to compute the uncertainties on the integrals
+    cov_mat_sim = ROOT.TMatrixDSym(6)
+    result_tsallis.GetCovarianceMatrix(cov_mat_sim)
 
     h_ratio = h_corrected_yields_ds.Clone("h_ratio")
     h_ratio.Divide(h_corrected_yields_dplus)
@@ -251,17 +258,29 @@ def get_ratio_vs_pt(
     ]
 
     for ifunc in range(2):
+        func_covmat_ds = cov_mat_ds if ifunc == 0 else cov_mat_sim
+        func_fitres_ds = fitres_ds if ifunc == 0 else result_tsallis
+        func_covmat_dplus = cov_mat_dplus if ifunc == 0 else cov_mat_sim
+        func_fitres_dplus = fitres_dplus if ifunc == 0 else result_tsallis
+        
+        # No need to multiply by bin width (TF1 integral already does that)
         pt_min_meas = h_corrected_yields_ds.GetBinLowEdge(1)
-        yield_ds = f_corrected_yields_ds[ifunc].Integral(0., pt_min_meas) * pt_min_meas
-        yield_dplus = f_corrected_yields_dplus[ifunc].Integral(0., pt_min_meas) * pt_min_meas
-        unc_yield_ds = f_corrected_yields_ds[ifunc].IntegralError(0., pt_min_meas)**2 * pt_min_meas**2
-        unc_yield_dplus = f_corrected_yields_dplus[ifunc].IntegralError(0., pt_min_meas)**2 * pt_min_meas**2
+        yield_ds = f_corrected_yields_ds[ifunc].Integral(0., pt_min_meas)
+        yield_dplus = f_corrected_yields_dplus[ifunc].Integral(0., pt_min_meas)
+        unc_yield_ds = f_corrected_yields_ds[ifunc].IntegralError(
+            0., pt_min_meas, 
+            func_fitres_ds.GetParams(), 
+            func_covmat_ds.GetMatrixArray())**2
+        
+        unc_yield_dplus = f_corrected_yields_dplus[ifunc].IntegralError(
+            0., pt_min_meas, 
+            func_fitres_dplus.GetParams(), 
+            func_covmat_dplus.GetMatrixArray())**2
         for ipt in range(1, h_corrected_yields_ds.GetNbinsX()+1):
-            delta_pt = h_corrected_yields_ds.GetBinWidth(ipt)
-            yield_ds += h_corrected_yields_ds.GetBinContent(ipt) * delta_pt
-            yield_dplus += h_corrected_yields_dplus.GetBinContent(ipt) * delta_pt
-            unc_yield_ds += h_corrected_yields_ds.GetBinError(ipt)**2 * delta_pt**2
-            unc_yield_dplus += h_corrected_yields_dplus.GetBinError(ipt)**2 * delta_pt**2
+            yield_ds += h_corrected_yields_ds.GetBinContent(ipt)
+            yield_dplus += h_corrected_yields_dplus.GetBinContent(ipt)
+            unc_yield_ds += h_corrected_yields_ds.GetBinError(ipt)**2
+            unc_yield_dplus += h_corrected_yields_dplus.GetBinError(ipt)**2
         unc_yield_ds = np.sqrt(unc_yield_ds)
         unc_yield_dplus = np.sqrt(unc_yield_dplus)
         ratio = yield_ds/yield_dplus
