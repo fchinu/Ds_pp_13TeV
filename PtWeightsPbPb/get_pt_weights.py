@@ -1,0 +1,386 @@
+"""
+Script for evaluation of pt weights (interpolation)
+"""
+
+import argparse
+import pandas as pd
+import ROOT
+
+
+def read_tamu(infile, graph_name, is_beauty=False):
+    """
+    Function to read TAMU files and convert predictions to a graph
+    """
+
+    df = pd.read_csv(infile, sep=" ", comment="#", header=0)
+    graph = ROOT.TGraph(1)
+    graph.SetNameTitle(graph_name, ";#it{p}_{T} (GeV/#it{c}); #it{R}_{AA}")
+    if is_beauty:
+        for ipt, (pt, raa) in enumerate(zip(df["PtCent"].to_numpy(), df["R_AA"].to_numpy())):
+            graph.SetPoint(ipt, pt, raa)
+            if ipt == len(df)-1 and pt < 50.:
+                graph.SetPoint(ipt, 50., raa)
+    else:
+        for ipt, (pt, raa_min, raa_max) in enumerate(zip(df["PtCent"].to_numpy(),
+                                            df["R_AA_min"].to_numpy(),
+                                            df["R_AA_max"].to_numpy())):
+            raa_cent = (raa_min + raa_max) / 2
+            graph.SetPoint(ipt, pt, raa_cent)
+            if ipt == len(df)-1 and pt < 50.:
+                graph.SetPoint(ipt, 50., raa_cent)
+
+    return graph
+
+
+def read_fonll(infile, hist_name, which="central"):
+    """
+    Function to read FONLL files and convert predictions to a histogram
+    """
+
+    columns = ["pt", "central", "min", "max", "min_sc", "max_sc", "min_mass", "max_mass", "min_pdf",
+               "max_pdf", "fr=.5.5", "fr=22", "fr=21", "fr=12", "fr=1.5", "fr=.51"]
+    df = pd.read_csv(infile, sep=" ", comment="#", names=columns)
+    pt_cents = df["pt"].to_numpy()
+    delta_pt = pt_cents[1]-pt_cents[0]
+    pt_min = pt_cents[0]-delta_pt/2
+    pt_max = pt_cents[-1]+delta_pt/2
+    hist = ROOT.TH1D(hist_name, ";#it{p}_{T} (GeV/#it{c}); d#sigma/d#it{p}_{T} (a.u.)",
+                    len(df), pt_min, pt_max)
+    for ipt, xsec in enumerate(df[which].to_numpy()):
+        hist.SetBinContent(ipt, xsec)
+    return hist
+
+
+def get_centrality_interpolation(graphs, base_name):
+    """
+    Function to compute centrality interpolation
+    """
+
+    cents = [0 + 10 * icent for icent in range(10)] #0-10 to 80-90
+    model_exists = {}
+    for cent_min, cent_max in zip(cents[:-1], cents[1:]):
+        cent_key = f"{cent_min}_{cent_max}"
+        model_exists[cent_key] = True
+        if cent_key not in graphs:
+            graphs[cent_key] = ROOT.TGraph(1)
+            graphs[cent_key].SetNameTitle(f"{base_name}_{cent_key}",
+                                          ";#it{p}_{T} (GeV/#it{c}); #it{R}_{AA}")
+            model_exists[cent_key] = False
+
+    for ipt in range(graphs["0_10"].GetN()): # assuming 0-10% always there
+        graph_interp = ROOT.TGraph(1)
+        func_interp = ROOT.TF1("func_interp", "pol1", 0., 90., 2)
+        icent = 0
+        for cent_key, cent_exists in model_exists.items():
+            if cent_exists:
+                cent_min = float(cent_key.split(sep="_")[0])
+                cent_max = float(cent_key.split(sep="_")[1])
+                cent_mid = (cent_min+cent_max)/2
+                graph_interp.SetPoint(
+                    icent, cent_mid, graphs[cent_key].GetPointY(ipt))
+                icent += 1
+        graph_interp.Fit(func_interp, "Q0")
+        for icent, cent_key in enumerate(model_exists.keys()):
+            if not model_exists[cent_key]:
+                cent_min = float(cent_key.split(sep="_")[0])
+                cent_max = float(cent_key.split(sep="_")[1])
+                cent_mid = (cent_min+cent_max)/2
+                graphs[cent_key].SetPoint(
+                    ipt, graphs["0_10"].GetPointX(ipt), func_interp.Eval(cent_mid))
+
+
+def get_fonll_times_raa(hist_fonll, graphs_raa, base_name):
+    """
+    Function to compute FONLL x RAA
+    """
+    cents = [0 + 10 * icent for icent in range(10)] #0-10 to 80-90
+    hists = {}
+    for cent_min, cent_max in zip(cents[:-1], cents[1:]):
+        cent_key = f"{cent_min}_{cent_max}"
+        hists[cent_key] = hist_fonll.Clone(f"{base_name}_{cent_key}")
+        hists[cent_key].SetDirectory(0)
+        for ipt in range(1, hists[cent_key].GetNbinsX()+1):
+            pt_cent = hists[cent_key].GetBinCenter(ipt)
+            hists[cent_key].SetBinContent(
+                ipt, hist_fonll.GetBinContent(ipt) * graphs_raa[cent_key].Eval(pt_cent))
+        hists[cent_key].Scale(1./hists[cent_key].Integral())
+
+    return hists
+
+
+def compute_weights(hists_dndpt, hist_mcgen, base_name):
+    """
+    Function to compute FONLL x RAA
+    """
+    hists = {}
+    for cent_key, hist_dndpt in hists_dndpt.items():
+        hists[cent_key] = hist_dndpt.Clone(f"{base_name}_{cent_key}")
+        hists[cent_key].Divide(hist_mcgen)
+
+    return hists
+
+
+def get_pt_weights(model):
+    """
+    Main function
+    """
+
+    ROOT.gStyle.SetPadTickX(1)
+    ROOT.gStyle.SetPadTickY(1)
+    ROOT.gStyle.SetPadLeftMargin(0.14)
+    ROOT.gStyle.SetPadBottomMargin(0.14)
+    ROOT.gStyle.SetPadTopMargin(0.035)
+    ROOT.gStyle.SetPadRightMargin(0.035)
+    ROOT.gStyle.SetTitleSize(0.045)
+    ROOT.gStyle.SetLabelSize(0.045)
+    ROOT.gStyle.SetOptStat(0)
+
+    # read MC gen
+    infile_mc = ROOT.TFile.Open("GenPtShapes_LHC25a5.root")
+    hist_ds_y_vs_pt = infile_mc.Get("hf-task-mc-gen-pt-rap-shapes/CharmHadrons/hRapVsPtPrompt431")
+    hist_d_y_vs_pt = infile_mc.Get("hf-task-mc-gen-pt-rap-shapes/CharmHadrons/hRapVsPtPrompt411")
+    hist_bs_y_vs_pt = infile_mc.Get("hf-task-mc-gen-pt-rap-shapes/BeautyHadrons/hRapVsPt531")
+    hist_b_y_vs_pt = infile_mc.Get("hf-task-mc-gen-pt-rap-shapes/BeautyHadrons/hRapVsPt511")
+    hist_ds_y_vs_pt.SetDirectory(0)
+    hist_d_y_vs_pt.SetDirectory(0)
+    hist_bs_y_vs_pt.SetDirectory(0)
+    hist_b_y_vs_pt.SetDirectory(0)
+    y_min_d = hist_ds_y_vs_pt.GetYaxis().FindBin(-0.4999)
+    y_max_d = hist_ds_y_vs_pt.GetYaxis().FindBin(0.4999)
+    hist_ds_mcgen = hist_ds_y_vs_pt.ProjectionX("hist_ds_mcgen", y_min_d, y_max_d)
+    hist_d_mcgen = hist_d_y_vs_pt.ProjectionX("hist_d_mcgen", y_min_d, y_max_d)
+    hist_bs_mcgen = hist_bs_y_vs_pt.ProjectionX("hist_bs_mcgen")
+    hist_b_mcgen = hist_b_y_vs_pt.ProjectionX("hist_b_mcgen")
+    for hist in [hist_ds_mcgen, hist_d_mcgen, hist_bs_mcgen, hist_b_mcgen]:
+        hist.Scale(1./hist.Integral())
+        hist.SetLineColor(ROOT.kBlack)
+        hist.SetMarkerColor(ROOT.kBlack)
+        hist.SetLineWidth(2)
+
+    # read fonll
+    hist_fonll_ds = read_fonll("FONLL_Ds_5dot36TeV.txt", "hist_fonll_ds")
+    hist_fonll_d = read_fonll("FONLL_Dp_5dot36TeV.txt", "hist_fonll_d")
+    hist_fonll_b = read_fonll("FONLL_B_5dot36TeV.txt", "hist_fonll_b")
+
+    # read RAA models
+    gr_ds_raa, gr_d_raa, gr_b_raa, gr_bs_raa = {}, {}, {}, {}
+    if model == "tamu":
+        gr_d_raa["0_10"] = read_tamu("PromptD0_TAMU_RAA_5TeV_010.txt", "gr_d_raa_tamu_010")
+        gr_d_raa["30_50"] = read_tamu("PromptD0_TAMU_RAA_5TeV_3050.txt", "gr_d_raa_tamu_3050")
+        gr_ds_raa["0_10"] = read_tamu("PromptDs_TAMU_RAA_5TeV_010.txt", "gr_ds_raa_tamu_010")
+        gr_ds_raa["30_50"] = read_tamu("PromptDs_TAMU_RAA_5TeV_3050.txt", "gr_ds_raa_tamu_3050")
+        gr_b_raa["0_10"] = read_tamu("B_TAMU_RAA_5TeV_010.txt", "gr_b_raa_tamu_010", True)
+        gr_b_raa["30_50"] = read_tamu("B_TAMU_RAA_5TeV_3050.txt", "gr_b_raa_tamu_3050", True)
+        gr_bs_raa["0_10"] = read_tamu("Bs_TAMU_RAA_5TeV_010.txt", "gr_bs_raa_tamu_3050", True)
+        gr_bs_raa["30_50"] = read_tamu("Bs_TAMU_RAA_5TeV_3050.txt", "gr_bs_raa_tamu_3050", True)
+
+        # assume most peripheral to be = 0.8
+        gr_ds_raa["80_90"] = gr_ds_raa["0_10"].Clone("gr_ds_raa_tamu_8090")
+        for ipt in range(gr_ds_raa["80_90"].GetN()):
+            gr_ds_raa["80_90"].SetPoint(ipt, gr_ds_raa["80_90"].GetPointX(ipt), 0.8)
+        gr_d_raa["80_90"] = gr_d_raa["0_10"].Clone("gr_d_raa_tamu_8090")
+        for ipt in range(gr_d_raa["80_90"].GetN()):
+            gr_d_raa["80_90"].SetPoint(ipt, gr_d_raa["80_90"].GetPointX(ipt), 0.8)
+        gr_b_raa["80_90"] = gr_b_raa["0_10"].Clone("gr_b_raa_tamu_8090")
+        for ipt in range(gr_b_raa["80_90"].GetN()):
+            gr_b_raa["80_90"].SetPoint(ipt, gr_b_raa["80_90"].GetPointX(ipt), 0.8)
+        gr_bs_raa["80_90"] = gr_bs_raa["0_10"].Clone("gr_bs_raa_tamu_8090")
+        for ipt in range(gr_bs_raa["80_90"].GetN()):
+            gr_bs_raa["80_90"].SetPoint(ipt, gr_bs_raa["80_90"].GetPointX(ipt), 0.8)
+
+    # interpolate to obtain all centralities
+    get_centrality_interpolation(gr_ds_raa, f"gr_ds_raa_{model}")
+    get_centrality_interpolation(gr_d_raa, f"gr_d_raa_{model}")
+    get_centrality_interpolation(gr_b_raa, f"gr_b_raa_{model}")
+    get_centrality_interpolation(gr_bs_raa, f"gr_bs_raa_{model}")
+
+    hist_dndpt_ds = get_fonll_times_raa(hist_fonll_ds, gr_ds_raa, f"hist_ds_dndpt_{model}")
+    hist_dndpt_d = get_fonll_times_raa(hist_fonll_d, gr_d_raa, f"hist_d_dndpt_{model}")
+    hist_dndpt_bs = get_fonll_times_raa(hist_fonll_b, gr_bs_raa, f"hist_bs_dndpt_{model}")
+    hist_dndpt_b = get_fonll_times_raa(hist_fonll_b, gr_b_raa, f"hist_b_dndpt_{model}")
+
+    hist_weights_ds = compute_weights(hist_dndpt_ds, hist_ds_mcgen, f"hist_ds_weights_{model}")
+    hist_weights_d = compute_weights(hist_dndpt_d, hist_d_mcgen, f"hist_d_weights_{model}")
+    hist_weights_bs = compute_weights(hist_dndpt_bs, hist_bs_mcgen, f"hist_bs_weights_{model}")
+    hist_weights_b = compute_weights(hist_dndpt_b, hist_b_mcgen, f"hist_b_weights_{model}")
+
+    colors = {
+        "0_10": ROOT.kRed+2,
+        "10_20": ROOT.kRed+1,
+        "20_30": ROOT.kOrange+9,
+        "30_40": ROOT.kOrange+7,
+        "40_50": ROOT.kSpring+2,
+        "50_60": ROOT.kGreen+2, 
+        "60_70": ROOT.kAzure+2,
+        "70_80": ROOT.kAzure+4,
+        "80_90": ROOT.kBlue+2
+    }
+
+    outfile = ROOT.TFile(f"ptweights_{model}.root", "recreate")
+    for hist in [hist_ds_mcgen, hist_d_mcgen, hist_bs_mcgen, hist_b_mcgen]:
+        hist.Write()
+
+    outfile.mkdir("raa")
+    canv_raa = ROOT.TCanvas("canv_raa", "", 1000, 1000)
+    canv_raa.Divide(2, 2)
+    canv_raa.cd(1).DrawFrame(0., 0., 12., 2., ";#it{p}_{T} (GeV/#it{c});#it{R}_{AA}(D)")
+    leg = ROOT.TLegend(0.2, 0.6, 0.9, 0.9)
+    leg.SetTextSize(0.04)
+    leg.SetBorderSize(0)
+    leg.SetFillStyle(0)
+    leg.SetNColumns(2)
+
+    for cent, graph in gr_d_raa.items():
+        if cent == "30_50":
+            continue
+        graph.SetLineColor(colors[cent])
+        graph.SetLineWidth(2)
+        graph.SetMarkerColor(colors[cent])
+        cent_min = int(cent.split(sep="_")[0])
+        cent_max = int(cent.split(sep="_")[1])
+        leg.AddEntry(graph, f"{cent_min}#minus{cent_max}%", "l")
+        graph.Draw()
+        outfile.cd("raa")
+        graph.Write()
+    leg.Draw()
+    canv_raa.cd(2).DrawFrame(0., 0., 12., 2., ";#it{p}_{T} (GeV/#it{c});#it{R}_{AA}(D_{s}^{#plus})")
+    for cent, graph in gr_ds_raa.items():
+        if cent == "30_50":
+            continue
+        graph.SetLineColor(colors[cent])
+        graph.SetLineWidth(2)
+        graph.SetMarkerColor(colors[cent])
+        graph.Draw()
+        outfile.cd("raa")
+        graph.Write()
+    canv_raa.cd(3).DrawFrame(0., 0., 24., 3., ";#it{p}_{T} (GeV/#it{c});#it{R}_{AA}(B)")
+    for cent, graph in gr_b_raa.items():
+        if cent == "30_50":
+            continue
+        graph.SetLineColor(colors[cent])
+        graph.SetLineWidth(2)
+        graph.SetMarkerColor(colors[cent])
+        graph.Draw()
+        outfile.cd("raa")
+        graph.Write()
+    canv_raa.cd(4).DrawFrame(0., 0., 24., 3., ";#it{p}_{T} (GeV/#it{c});#it{R}_{AA}(B_{s}^{0})")
+    for cent, graph in gr_bs_raa.items():
+        if cent == "30_50":
+            continue
+        graph.SetLineColor(colors[cent])
+        graph.SetLineWidth(2)
+        graph.SetMarkerColor(colors[cent])
+        graph.Draw()
+        outfile.cd("raa")
+        graph.Write()
+    canv_raa.Write()
+
+    outfile.cd()
+    outfile.mkdir("dndpt")
+    canv_dndpt = ROOT.TCanvas("canv_dndpt", "", 1000, 1000)
+    canv_dndpt.Divide(2, 2)
+    canv_dndpt.cd(1).DrawFrame(0., 1.e-7, 24., 1.e-1, ";#it{p}_{T} (GeV/#it{c});d#it{N}(D)/d#it{p}_{T} (a.u.)")
+    canv_dndpt.cd(1).SetLogy()
+    hist_d_mcgen.Draw("histsame")
+    for cent, hist in hist_dndpt_d.items():
+        hist.SetLineColor(colors[cent])
+        hist.SetLineWidth(2)
+        hist.SetMarkerColor(colors[cent])
+        hist.Draw("histsame")
+        outfile.cd("dndpt")
+        hist.Write()
+    canv_dndpt.cd(2).DrawFrame(0., 1.e-7, 24., 1.e-1, ";#it{p}_{T} (GeV/#it{c});d#it{N}(D_{s}^{#plus})/d#it{p}_{T} (a.u.)")
+    canv_dndpt.cd(2).SetLogy()
+    hist_ds_mcgen.Draw("histsame")
+    for cent, hist in hist_dndpt_ds.items():
+        hist.SetLineColor(colors[cent])
+        hist.SetLineWidth(2)
+        hist.SetMarkerColor(colors[cent])
+        hist.Draw("histsame")
+        outfile.cd("dndpt")
+        hist.Write()
+    canv_dndpt.cd(3).DrawFrame(0., 1.e-7, 50., 1.e-1, ";#it{p}_{T} (GeV/#it{c});d#it{N}(B)/d#it{p}_{T} (a.u.)")
+    canv_dndpt.cd(3).SetLogy()
+    hist_b_mcgen.Draw("histsame")
+    for cent, hist in hist_dndpt_b.items():
+        hist.SetLineColor(colors[cent])
+        hist.SetLineWidth(2)
+        hist.SetMarkerColor(colors[cent])
+        hist.Draw("histsame")
+        outfile.cd("dndpt")
+        hist.Write()
+    leg_dndpt = leg.Clone()
+    leg_dndpt.SetY1NDC(0.2)
+    leg_dndpt.SetY2NDC(0.45)
+    leg_dndpt.AddEntry(hist_ds_mcgen, "MC gen", "l")
+    leg_dndpt.Draw()
+    canv_dndpt.cd(4).DrawFrame(0., 1.e-7, 50., 1.e-1, ";#it{p}_{T} (GeV/#it{c});d#it{N}(B_{s}^{0})/d#it{p}_{T} (a.u.)")
+    canv_dndpt.cd(4).SetLogy()
+    hist_bs_mcgen.Draw("histsame")
+    for cent, hist in hist_dndpt_bs.items():
+        hist.SetLineColor(colors[cent])
+        hist.SetLineWidth(2)
+        hist.SetMarkerColor(colors[cent])
+        hist.Draw("histsame")
+        outfile.cd("dndpt")
+        hist.Write()
+    canv_dndpt.Write()
+
+    outfile.cd()
+    outfile.mkdir("weights")
+    canv_weights = ROOT.TCanvas("canv_weights", "", 1000, 1000)
+    canv_weights.Divide(2, 2)
+    canv_weights.cd(1).DrawFrame(0., 1.e-1, 24., 1.e1, ";#it{p}_{T} (GeV/#it{c});#it{p}_{T}-weights (D)")
+    canv_weights.cd(1).SetLogy()
+    for cent, hist in hist_weights_d.items():
+        hist.SetLineColor(colors[cent])
+        hist.SetLineWidth(2)
+        hist.SetMarkerColor(colors[cent])
+        hist.Draw("histsame")
+        outfile.cd("weights")
+        hist.Write()
+    canv_weights.cd(2).DrawFrame(0., 1.e-1, 24., 1.e1, ";#it{p}_{T} (GeV/#it{c});#it{p}_{T}-weights (D_{s}^{#plus})")
+    canv_weights.cd(2).SetLogy()
+    for cent, hist in hist_weights_ds.items():
+        hist.SetLineColor(colors[cent])
+        hist.SetLineWidth(2)
+        hist.SetMarkerColor(colors[cent])
+        hist.Draw("histsame")
+        outfile.cd("weights")
+        hist.Write()
+    canv_weights.cd(3).DrawFrame(0., 1.e-1, 50., 1.e1, ";#it{p}_{T} (GeV/#it{c});#it{p}_{T}-weights (B)")
+    canv_weights.cd(3).SetLogy()
+    for cent, hist in hist_weights_b.items():
+        hist.SetLineColor(colors[cent])
+        hist.SetLineWidth(2)
+        hist.SetMarkerColor(colors[cent])
+        hist.Draw("histsame")
+        outfile.cd("weights")
+        hist.Write()
+    leg_weights = leg.Clone()
+    leg_weights.SetY1NDC(0.2)
+    leg_weights.SetY2NDC(0.45)
+    leg_weights.Draw()
+    canv_weights.cd(4).DrawFrame(0., 1.e-1, 50., 1.e1, ";#it{p}_{T} (GeV/#it{c});#it{p}_{T}-weights (B_{s}^{0})")
+    canv_weights.cd(4).SetLogy()
+    for cent, hist in hist_weights_bs.items():
+        hist.SetLineColor(colors[cent])
+        hist.SetLineWidth(2)
+        hist.SetMarkerColor(colors[cent])
+        hist.Draw("histsame")
+        outfile.cd("weights")
+        hist.Write()
+    canv_weights.Write()
+    outfile.Close()
+
+    canv_raa.SaveAs(f"ptweights_{model}_raa.pdf")
+    canv_dndpt.SaveAs(f"ptweights_{model}_dndpt.pdf")
+    canv_weights.SaveAs(f"ptweights_{model}.pdf")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Calculate pT weights")
+    parser.add_argument("--model", "-m", metavar="text", help="Enabled model", default="tamu")
+    args = parser.parse_args()
+
+    get_pt_weights(args.model)
