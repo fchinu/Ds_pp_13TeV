@@ -1,3 +1,5 @@
+import argparse
+import enum
 import ROOT
 import numpy as np
 import matplotlib as mpl
@@ -73,23 +75,29 @@ def draw_graphs(graph_stat, graph_syst, c=ROOT.kBlack, s=1., m=ROOT.kFullCircle)
     graph_syst.Draw("pz2, same")
 
 def draw_alice_pbpb(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
-    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/Figures/Ratio/VsMult/ds_over_dplus_vs_mult_run2.root") as infile:
-        graph_stat = infile.Get(f"pt_{pt_min}_{pt_max}/graph_stat_pbpb2018_pt{pt_min}_{pt_max}")
-        graph_syst = infile.Get(f"pt_{pt_min}_{pt_max}/graph_syst_pbpb2018_pt{pt_min}_{pt_max}")
-    graph_stat.SetMarkerStyle(m)
-    graph_stat.SetMarkerSize(s)
-    graph_stat.SetMarkerColor(c)
-    graph_stat.SetLineColor(c)
-    graph_stat.SetLineWidth(1)
-    graph_syst.SetMarkerStyle(m)
-    graph_syst.SetMarkerSize(s)
-    graph_syst.SetMarkerColor(c)
-    graph_syst.SetLineColor(c)
-    graph_syst.SetLineWidth(1)
-    graph_syst.SetFillStyle(0)
-    graph_stat.Draw("pz, same")
-    graph_syst.Draw("pz2, same")
-    return graph_stat, graph_syst
+    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Ratios/ds_over_dplus_ratios_020_norm.root") as infile:
+        graph_stat_0_20 = infile.Get(f"g_ratio_dndeta_{pt_min*10:.0f}_{pt_max*10:.0f}")
+    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Ratios/ds_over_dplus_ratios_5090_norm.root") as infile:
+        graph_stat_50_90 = infile.Get(f"g_ratio_dndeta_{pt_min*10:.0f}_{pt_max*10:.0f}")
+
+    if (pt_min, pt_max) == (12, 24):
+        #remove first two points for 50-90%
+        graph_stat_50_90.SetPoint(2, 0, 1.e9)
+        graph_stat_50_90.SetPoint(3, 0, 1.e9)
+
+    graph_stat_0_20.SetMarkerStyle(m)
+    graph_stat_0_20.SetMarkerSize(s)
+    graph_stat_0_20.SetMarkerColor(c)
+    graph_stat_0_20.SetLineColor(c)
+    graph_stat_0_20.SetLineWidth(1)
+    graph_stat_0_20.Draw("pz, same")
+    graph_stat_50_90.SetMarkerStyle(m)
+    graph_stat_50_90.SetMarkerSize(s)
+    graph_stat_50_90.SetMarkerColor(c)
+    graph_stat_50_90.SetLineColor(c)
+    graph_stat_50_90.SetLineWidth(1)
+    graph_stat_50_90.Draw("pz, same")
+    return graph_stat_0_20#, graph_stat_50_90
 
 
 def draw_alice_pp(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
@@ -99,8 +107,8 @@ def draw_alice_pp(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
     
     #set x unc. for the systematic box
     for i in range(graph_syst.GetN()):
-        graph_syst.SetPointEXlow(i, graph_syst.GetPointX(i)*0.075)
-        graph_syst.SetPointEXhigh(i, graph_syst.GetPointX(i)*0.075)
+        graph_syst.SetPointEXlow(i, graph_syst.GetErrorXlow(i)*5)
+        graph_syst.SetPointEXhigh(i, graph_syst.GetErrorXhigh(i)*5)
 
     graph_stat.SetMarkerStyle(m)
     graph_stat.SetMarkerSize(s)
@@ -248,23 +256,41 @@ def draw_pythia_pp_sccr_ft0m(pt_min, pt_max, c=ROOT.kBlack, s=3, a=0.5, m=ROOT.k
     graph_ft0.Draw("3L, same")
     return graph_ft0
 
-def draw_pythia_pbpb_sccr_mid(pt_min, pt_max, c=ROOT.kBlack, s=3, a=0.5, m=ROOT.kOpenDiamond):
-    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/PYTHIA_Simulations/pbpb/CharmHadRatiosVsMult_merge_cut.root") as infile:
-        hist_mid = infile.Get(f"hDsDpRatioMidMultPt{pt_min:.0f}{pt_max:.0f}")
-    hist_mid.SetMarkerStyle(m)
-    hist_mid.SetMarkerSize(s)
-    hist_mid.SetMarkerColor(c)
-    hist_mid.SetLineColor(c)
-    hist_mid.SetLineWidth(1)
-    hist_mid.SetFillStyle(1001)
-    hist_mid.SetFillColorAlpha(c, a)
-    hist_mid.Draw("E3, same")
-    hist_mid.Draw("L, same")
-    return hist_mid
+def draw_pythia_pbpb_dstar_tune_ft0m(pt_min, pt_max, c=ROOT.kBlack, s=3, a=0.5, m=ROOT.kFullCircle):
+    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/PYTHIA_Simulations/pbpb/CharmHadRatiosVsMult_angantyr_dstar_tune.root") as infile:
+        hist_ft0 = infile.Get(f"gDsDpRatioMidMultInFwdBinsPt{pt_min:.0f}{pt_max:.0f}")
+    for i in range(hist_ft0.GetN()):
+        hist_ft0.SetPointEXlow(i, 0)
+        hist_ft0.SetPointEXhigh(i, 0)
+    hist_ft0.SetMarkerStyle(m)
+    hist_ft0.SetMarkerSize(s)
+    hist_ft0.SetMarkerColor(c)
+    hist_ft0.SetLineColor(c)
+    hist_ft0.SetLineWidth(1)
+    hist_ft0.SetFillStyle(1001)
+    hist_ft0.SetFillColorAlpha(c, a)
+    hist_ft0.Draw("3L, same")
+    return hist_ft0
+
+def draw_pythia_pbpb_ft0m(pt_min, pt_max, c=ROOT.kBlack, s=3, a=0.5, m=ROOT.kFullCircle):
+    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/PYTHIA_Simulations/pbpb/CharmHadRatiosVsMult_angantyr.root") as infile:
+        hist_ft0 = infile.Get(f"gDsDpRatioMidMultInFwdBinsPt{pt_min:.0f}{pt_max:.0f}")
+    for i in range(hist_ft0.GetN()):
+        hist_ft0.SetPointEXlow(i, 0)
+        hist_ft0.SetPointEXhigh(i, 0)
+    hist_ft0.SetMarkerStyle(m)
+    hist_ft0.SetMarkerSize(s)
+    hist_ft0.SetMarkerColor(c)
+    hist_ft0.SetLineColor(c)
+    hist_ft0.SetLineWidth(1)
+    hist_ft0.SetFillStyle(1001)
+    hist_ft0.SetFillColorAlpha(c, a)
+    hist_ft0.Draw("3L, same")
+    return hist_ft0
 
 def draw_pythia_pbpb_sccr_ft0m(pt_min, pt_max, c=ROOT.kBlack, s=3, a=0.5, m=ROOT.kFullCircle):
     with ROOT.TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/PYTHIA_Simulations/pbpb/CharmHadRatiosVsMult_merge_cut.root") as infile:
-        hist_ft0 = infile.Get(f"hDsDpRatioFwdMultPt{pt_min:.0f}{pt_max:.0f}")
+        hist_ft0 = infile.Get(f"gDsDpRatioMidMultInFwdBinsPt{pt_min:.0f}{pt_max:.0f}")
     deta = (3.3-2.1) + (4.9-3.5) 
     for i in range(hist_ft0.GetN()):
         hist_ft0.SetPointX(i, hist_ft0.GetX()[i] / deta)
@@ -345,7 +371,7 @@ def to_pad_coordinates(x=None, y=None):
 
     return x_pad, y_pad
 
-if __name__ == '__main__':
+def main(do_pythia, do_epos):
     ROOT.gStyle.SetPadTickX(1)
     ROOT.gStyle.SetPadTickY(1)
     ROOT.gStyle.SetPadRightMargin(0.03)
@@ -359,7 +385,118 @@ if __name__ == '__main__':
     ROOT.gStyle.SetTitleSize(55, "XYZ")
     ROOT.gStyle.SetTitleOffset(1., "X")
     ROOT.gStyle.SetLabelOffset(-0.01, "X")
-    colors, _ = get_discrete_matplotlib_palette('tab20')
+    colors, cols = get_discrete_matplotlib_palette('tab20')
+
+    ORDER = {
+        #'PYTHIA_PP_FT0M': 0,
+        #'PYTHIA_PP_MOD_FT0M': 1,
+        #'PYTHIA_PP_MODE2_FT0M': 2,
+        'PYTHIA_PP_MOD_MODE2_FT0M': 3,
+        'PYTHIA_PP_SCCR_FT0M': 4,
+        'PYTHIA_PBPB_SCCR_FT0M': 5,
+        'PYTHIA_PBPB_MOD_FT0M': 6,
+        #'PYTHIA_PBPB_FT0M': 7,
+        'EPOS4HQ_PP_FT0M': 8,
+        'EPOS4HQ_PBPB_FT0M': 9,
+        'ALICE_PP': 10,
+        'ALICE_PBPB': 11
+    }
+
+
+    functions = [
+        draw_pythia_pp_ft0m,
+        draw_pythia_pp_mod_ft0m,
+        draw_pythia_pp_mode2_ft0m,
+        draw_pythia_pp_mod_mode2_ft0m,
+        draw_pythia_pp_sccr_ft0m,
+        draw_pythia_pbpb_sccr_ft0m,
+        draw_pythia_pbpb_dstar_tune_ft0m,
+        draw_pythia_pbpb_ft0m,
+        draw_epos4hq_pp_ft0m,
+        draw_epos4hq_pbpb_ft0m,
+        draw_alice_pp,
+        draw_alice_pbpb
+    ]
+
+    colors_pythia = [
+        colors[2],
+        colors[0],
+        colors[4],
+        colors[2],
+        colors[0],
+        colors[1],
+        colors[3],
+        colors[18],
+        ROOT.kGray,
+        ROOT.kGray,
+        ROOT.kBlack,
+        ROOT.kBlack
+    ]
+
+    colors_epos = [
+        colors[2],
+        colors[0],
+        colors[4],
+        ROOT.kGray, #colors[2],
+        ROOT.kGray, #colors[0],
+        ROOT.kGray, #colors[1],
+        ROOT.kGray, #colors[3],
+        colors[18],
+        colors[6],
+        colors[7],
+        ROOT.kBlack,
+        ROOT.kBlack
+    ]
+
+    colors_combined = [
+        colors[2],
+        colors[0],
+        colors[4],
+        colors[2],
+        colors[0],
+        colors[1],
+        colors[3],
+        colors[18],
+        colors[6],
+        colors[7],
+        ROOT.kBlack,
+        ROOT.kBlack
+    ]
+
+    if do_pythia and do_epos:
+        colors_used = colors_combined
+    else:
+        colors_used = colors_pythia if do_pythia else colors_epos
+
+    markers_used = [
+        ROOT.kFullDoubleDiamond,
+        ROOT.kFullDiamond,
+        ROOT.kFullSquare,
+        ROOT.kFullCross,
+        ROOT.kFullFourTrianglesPlus,
+        ROOT.kFullFourTrianglesPlus,
+        ROOT.kFullFourTrianglesPlus,
+        ROOT.kFullFourTrianglesPlus,
+        ROOT.kFullFourTrianglesPlus,
+        ROOT.kFullFourTrianglesPlus,
+        ROOT.kFullCircle,
+        ROOT.kOpenCircle
+    ]
+
+    sizes_used = [
+        3,
+        3,
+        2,
+        2.5,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2.5,
+        2.5
+    ]
 
     y_text = ROOT.TLatex(0.185, 0.83, '|#it{y}| < 0.5')
     y_text.SetNDC()
@@ -369,7 +506,7 @@ if __name__ == '__main__':
     pt_text = ROOT.TLatex(0.6, 0.88, '')
     pt_text.SetNDC()
     pt_text.SetTextFont(43)
-    pt_text.SetTextSize(35)
+    pt_text.SetTextSize(40)
 
     c = ROOT.TCanvas("canvas", "canvas", 2400, 1600)
     c.Divide(3, 2, 0.000, 0.000)
@@ -379,24 +516,18 @@ if __name__ == '__main__':
         pad.SetTopMargin(0.02)
     for i_pad in range(4, 7):
         pad = c.cd(i_pad)
-        pad.SetBottomMargin(0.146)
+        pad.SetBottomMargin(0.16)
 
     c.cd(1)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#sigma_{D_{s}^{+}}/#sigma_{D^{+}}")
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
     h_frame.GetYaxis().ChangeLabel(1, 1, 0)
-    pythia_ft0m = draw_pythia_pp_ft0m(1, 2, c=colors[2], s=3, m=ROOT.kFullDoubleDiamond)
-    pythia_ft0m_mod = draw_pythia_pp_mod_ft0m(1, 2, c=colors[0], s=3, m=ROOT.kFullDiamond)
-    pythia_ft0m_mode2 = draw_pythia_pp_mode2_ft0m(1, 2, c=colors[4], s=2, m=ROOT.kFullSquare)
-    pythia_ft0m_mod_mode2 = draw_pythia_pp_mod_mode2_ft0m(1, 2, c=colors[8], s=2.5, m=ROOT.kFullCross)
-    pythia_ft0m_sccr = draw_pythia_pp_sccr_ft0m(1, 2, c=colors[10], s=2, m=ROOT.kFullFourTrianglesPlus)
-    pythia_pbpb_ft0m_sccr = draw_pythia_pbpb_sccr_ft0m(1, 2, c=colors[14], s=0, m=ROOT.kFullFourTrianglesPlus)
-    epos_pp = draw_epos4hq_pp_ft0m(1, 2, c=colors[12], s=0, m=ROOT.kFullFourTrianglesPlus)
-    epos_pbpb = draw_epos4hq_pbpb_ft0m(1, 2, c=colors[16], s=0, m=ROOT.kFullFourTrianglesPlus)
-    g_alice_pp_1_2 = draw_alice_pp(1, 2, c=colors[6], s=2.5, m=ROOT.kFullCircle)
-    #y_text.Draw()
+
+    results = [None] * (ORDER["ALICE_PBPB"] + 1)
+    for key, i in ORDER.items():
+        results[i] = functions[i](1, 2, c=colors_used[i], s=sizes_used[i], m=markers_used[i])
 
     x, y = to_pad_coordinates(0.05, 0.9)
-    alice_text = ROOT.TLatex(x, y, 'ALICE Preliminary')
+    alice_text = ROOT.TLatex(x, y, 'ALICE Work in Progress')
     alice_text.SetNDC()
     alice_text.SetTextFont(43)
     alice_text.SetTextSize(50)
@@ -409,14 +540,14 @@ if __name__ == '__main__':
     pythia_header = ROOT.TLatex()
     pythia_header.SetNDC()
     pythia_header.SetTextFont(43)
-    pythia_header.SetTextSize(35)
-    x, y = to_pad_coordinates(0.06, 0.18)
+    pythia_header.SetTextSize(40)
+    x, y = to_pad_coordinates(0.04, 0.20)
     pythia_header.DrawLatex(x, y, 'PYTHIA 8, pp,#kern[0.07]{#sqrt{#it{s}} = 13.6 TeV}')
-    x, y = to_pad_coordinates(0.06, 0.13)
+    x, y = to_pad_coordinates(0.04, 0.14)
     pythia_header.DrawLatex(x, y, 'FT0M multiplicity estimator')
 
-    x_min, y_min = to_pad_coordinates(0.05, 0.02)
-    x_max, y_max = to_pad_coordinates(0.95, 0.12)
+    x_min, y_min = to_pad_coordinates(0.03, 0.03)
+    x_max, y_max = to_pad_coordinates(0.99, 0.13)
     
     legend_pythia_no_mod = ROOT.TLegend(x_min, y_min, x_max, y_max)
     legend_pythia_no_mod.SetBorderSize(0)
@@ -424,199 +555,165 @@ if __name__ == '__main__':
     legend_pythia_no_mod.SetTextFont(43)
     legend_pythia_no_mod.SetNColumns(3)
     legend_pythia_no_mod.SetTextSize(35)
-    legend_pythia_no_mod.AddEntry(pythia_ft0m, 'Monash', 'fl')
-    legend_pythia_no_mod.AddEntry(pythia_ft0m_mode2, 'CL-BLC Mode 2', 'fl')
-    legend_pythia_no_mod.AddEntry(pythia_ft0m_sccr, 'SC#minusCR', 'fl')
+    if 'PYTHIA_PP_FT0M' in ORDER:
+        legend_pythia_no_mod.AddEntry(results[ORDER['PYTHIA_PP_FT0M']], 'Monash', 'fl')
+    if 'PYTHIA_PP_SCCR_FT0M' in ORDER:
+        legend_pythia_no_mod.AddEntry(results[ORDER['PYTHIA_PP_SCCR_FT0M']], 'SC#minusCR', 'fl')
+    if 'PYTHIA_PP_MOD_MODE2_FT0M' in ORDER:
+        legend_pythia_no_mod.AddEntry(results[ORDER['PYTHIA_PP_MOD_MODE2_FT0M']], '#splitline{StringFlav:mesonCvector=1.75}{#lower[-0.2]{CR-BLC Mode 2}}', 'fl')
+    if 'PYTHIA_PP_MODE2_FT0M' in ORDER:
+        legend_pythia_no_mod.AddEntry(results[ORDER['PYTHIA_PP_MODE2_FT0M']], 'CR-BLC Mode 2', 'fl')
     legend_pythia_no_mod.Draw()
 
     ROOT.gPad.RedrawAxis()
 
     c.cd(2)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#sigma_{D_{s}^{+}}/#sigma_{D^{+}}")
-    draw_pythia_pp_ft0m(2, 4, c=colors[2], s=3, m=ROOT.kFullDoubleDiamond)
-    draw_pythia_pp_mod_ft0m(2, 4, c=colors[0], s=3, m=ROOT.kFullDiamond)
-    draw_pythia_pp_mode2_ft0m(2, 4, c=colors[4], s=2, m=ROOT.kFullSquare)
-    draw_pythia_pp_mod_mode2_ft0m(2, 4, c=colors[8], s=2.5, m=ROOT.kFullCross)
-    draw_pythia_pp_sccr_ft0m(2, 4, c=colors[10], s=2, m=ROOT.kFullFourTrianglesPlus)
-    draw_pythia_pbpb_sccr_ft0m(2, 4, c=colors[14], s=0, m=ROOT.kFullFourTrianglesPlus)
-    draw_epos4hq_pp_ft0m(2, 4, c=colors[12], s=0, m=ROOT.kFullFourTrianglesPlus)
-    draw_epos4hq_pbpb_ft0m(2, 4, c=colors[16], s=0, m=ROOT.kFullFourTrianglesPlus)
-    graph_stat_alice_2_4, graph_syst_alice_2_4 = draw_alice_pbpb(2, 4, c=colors[6], s=2.5, m=ROOT.kOpenCircle)
-    g_alice_pp_2_4 = draw_alice_pp(2, 4, c=colors[6], s=2.5, m=ROOT.kFullCircle)
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    for key, i in ORDER.items():
+        functions[i](2, 4, c=colors_used[i], s=sizes_used[i], m=markers_used[i])
     #alice_text.Draw()
     #y_text.Draw()
-    x, y = to_pad_coordinates(0.05, 0.85)
+    x, y = to_pad_coordinates(0.05, 0.9)
     pt_text.DrawLatexNDC(x, y, '2#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{4} GeV/#it{c}')
 
-    pythia_mod_header = ROOT.TLatex()
-    pythia_mod_header.SetNDC()
-    pythia_mod_header.SetTextFont(43)
-    pythia_mod_header.SetTextSize(35)
-    x, y = to_pad_coordinates(0.06, 0.23)
-    pythia_mod_header.DrawLatex(x, y, 'PYTHIA 8, pp,#kern[0.07]{#sqrt{#it{s}} = 13.6 TeV}')
-    x, y = to_pad_coordinates(0.06, 0.18)
-    pythia_mod_header.DrawLatex(x, y, 'StringFlav:mesonCvector = 1.75')
-    x, y = to_pad_coordinates(0.06, 0.13)
-    pythia_mod_header.DrawLatex(x, y, 'FT0M multiplicity estimator')
-
-    x_min, y_min = to_pad_coordinates(0.05, 0.02)
-    x_max, y_max = to_pad_coordinates(0.95, 0.12)
-    legend_pythia_mod = ROOT.TLegend(x_min, y_min, x_max, y_max)
-    legend_pythia_mod.SetBorderSize(0)
-    legend_pythia_mod.SetFillStyle(0)
-    legend_pythia_mod.SetTextFont(43)
-    legend_pythia_mod.SetNColumns(3)
-    legend_pythia_mod.SetTextSize(35)
-    legend_pythia_mod.AddEntry(pythia_ft0m_mod, 'Monash', 'fl')
-    legend_pythia_mod.AddEntry(pythia_ft0m_mod_mode2, 'CL-BLC Mode 2', 'fl')
-    legend_pythia_mod.Draw("same")
-
-    ROOT.gPad.RedrawAxis()
-
-    c.cd(3)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#sigma_{D_{s}^{+}}/#sigma_{D^{+}}")
-    draw_pythia_pp_ft0m(4, 6, c=colors[2], s=3, m=ROOT.kFullDoubleDiamond)
-    draw_pythia_pp_mod_ft0m(4, 6, c=colors[0], s=3, m=ROOT.kFullDiamond)
-    draw_pythia_pp_mode2_ft0m(4, 6, c=colors[4], s=2, m=ROOT.kFullSquare)
-    draw_pythia_pp_mod_mode2_ft0m(4, 6, c=colors[8], s=2.5, m=ROOT.kFullCross)
-    draw_pythia_pp_sccr_ft0m(4, 6, c=colors[10], s=2, m=ROOT.kFullFourTrianglesPlus)
-    draw_pythia_pbpb_sccr_ft0m(4, 6, c=colors[14], s=0, m=ROOT.kFullFourTrianglesPlus)
-    draw_epos4hq_pp_ft0m(4, 6, c=colors[12], s=0, m=ROOT.kFullFourTrianglesPlus)
-    draw_epos4hq_pbpb_ft0m(4, 6, c=colors[16], s=0, m=ROOT.kFullFourTrianglesPlus)
-    draw_alice_pbpb(4, 6, c=colors[6], s=2.5, m=ROOT.kOpenCircle)
-    draw_alice_pp(4, 6, c=colors[6], s=2.5, m=ROOT.kFullCircle)
-    #alice_text.Draw()
-    #y_text.Draw()
-    x, y = to_pad_coordinates(0.05, 0.85)
-    pt_text.DrawLatexNDC(x, y, '4#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{6} GeV/#it{c}')
 
     pythia_pbpb_header = ROOT.TLatex()
     pythia_pbpb_header.SetNDC()
     pythia_pbpb_header.SetTextFont(43)
-    pythia_pbpb_header.SetTextSize(35)
-    x, y = to_pad_coordinates(0.06, 0.23)
+    pythia_pbpb_header.SetTextSize(40)
+    x, y = to_pad_coordinates(0.04, 0.235)
     pythia_pbpb_header.DrawLatex(x, y, 'PYTHIA 8 Angantyr')
-    x, y = to_pad_coordinates(0.06, 0.18)
+    x, y = to_pad_coordinates(0.04, 0.18)
     pythia_pbpb_header.DrawLatex(x, y, 'Pb#minusPb,#kern[0.07]{#sqrt{#it{s}_{NN}} = 5.36 TeV}')
-    x, y = to_pad_coordinates(0.06, 0.13)
+    x, y = to_pad_coordinates(0.04, 0.12)
     pythia_pbpb_header.DrawLatex(x, y, 'FT0M multiplicity estimator')
 
-    x_min, y_min = to_pad_coordinates(0.05, 0.02)
-    x_max, y_max = to_pad_coordinates(0.95, 0.12)
+    x_min, y_min = to_pad_coordinates(0.03, 0.02)
+    x_max, y_max = to_pad_coordinates(0.97, 0.12)
     legend_pythia_pbpb = ROOT.TLegend(x_min, y_min, x_max, y_max)
     legend_pythia_pbpb.SetBorderSize(0)
     legend_pythia_pbpb.SetFillStyle(0)
     legend_pythia_pbpb.SetTextFont(43)
     legend_pythia_pbpb.SetNColumns(3)
     legend_pythia_pbpb.SetTextSize(35)
-    legend_pythia_pbpb.SetMargin(0.35)
-    legend_pythia_pbpb.AddEntry(pythia_pbpb_ft0m_sccr, 'SC#minusCR', 'fl')
+    # legend_pythia_pbpb.SetMargin(0.40)
+    if 'PYTHIA_PBPB_SCCR_FT0M' in ORDER:
+        legend_pythia_pbpb.AddEntry(results[ORDER['PYTHIA_PBPB_SCCR_FT0M']], 'SC#minusCR', 'fl')
+    if 'PYTHIA_PBPB_FT0M' in ORDER:
+        legend_pythia_pbpb.AddEntry(results[ORDER['PYTHIA_PBPB_FT0M']], 'Angantyr', 'fl')
+    if 'PYTHIA_PBPB_MOD_FT0M' in ORDER:
+        legend_pythia_pbpb.AddEntry(results[ORDER['PYTHIA_PBPB_MOD_FT0M']], 'StringFlav:mesonCvector=1.75', 'fl')
     legend_pythia_pbpb.Draw()
 
     ROOT.gPad.RedrawAxis()
 
-    c.cd(4)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#sigma_{D_{s}^{+}}/#sigma_{D^{+}}")
-    h_frame.GetYaxis().ChangeLabel(11, 1, 0)
-    draw_pythia_pp_ft0m(6, 8, c=colors[2], s=3, m=ROOT.kFullDoubleDiamond)
-    draw_pythia_pp_mod_ft0m(6, 8, c=colors[0], s=3, m=ROOT.kFullDiamond)
-    draw_pythia_pp_mode2_ft0m(6, 8, c=colors[4], s=2, m=ROOT.kFullSquare)
-    draw_pythia_pp_mod_mode2_ft0m(6, 8, c=colors[8], s=2.5, m=ROOT.kFullCross)
-    draw_pythia_pp_sccr_ft0m(6, 8, c=colors[10], s=2, m=ROOT.kFullFourTrianglesPlus)
-    draw_pythia_pbpb_sccr_ft0m(6, 8, c=colors[14], s=0, m=ROOT.kFullFourTrianglesPlus)
-    draw_epos4hq_pp_ft0m(6, 8, c=colors[12], s=0, m=ROOT.kFullFourTrianglesPlus)
-    draw_epos4hq_pbpb_ft0m(6, 8, c=colors[16], s=0, m=ROOT.kFullFourTrianglesPlus)
-    draw_alice_pbpb(6, 8, c=colors[6], s=2.5, m=ROOT.kOpenCircle)
-    draw_alice_pp(6, 8, c=colors[6], s=2.5, m=ROOT.kFullCircle)
-    #alice_text.Draw()
-    #y_text.Draw()
-    x, y = to_pad_coordinates(0.05, 0.85)
-    pt_text.DrawLatexNDC(x, y, '6#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{8} GeV/#it{c}')
+    c.cd(3)
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    for key, i in ORDER.items():
+        functions[i](4, 6, c=colors_used[i], s=sizes_used[i], m=markers_used[i])
+
+    x, y = to_pad_coordinates(0.05, 0.9)
+    pt_text.DrawLatexNDC(x, y, '4#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{6} GeV/#it{c}')
 
     epos4hq_header = ROOT.TLatex()
     epos4hq_header.SetNDC()
     epos4hq_header.SetTextFont(43)
-    epos4hq_header.SetTextSize(35)
-    x, y = to_pad_coordinates(0.06, 0.23)
+    epos4hq_header.SetTextSize(40)
+    x, y = to_pad_coordinates(0.04, 0.23)
     epos4hq_header.DrawLatex(x, y, 'EPOS4HQ')
-    x, y = to_pad_coordinates(0.06, 0.18)
+    x, y = to_pad_coordinates(0.04, 0.17)
     epos4hq_header.DrawLatex(x, y, 'FT0M multiplicity estimator')
 
-    x_min, y_min = to_pad_coordinates(0.05, 0.02)
-    x_max, y_max = to_pad_coordinates(0.95, 0.15)
+    x_min, y_min = to_pad_coordinates(0.03, 0.02)
+    x_max, y_max = to_pad_coordinates(0.97, 0.15)
     legend_epos4hq = ROOT.TLegend(x_min, y_min, x_max, y_max)
     legend_epos4hq.SetBorderSize(0)
     legend_epos4hq.SetFillStyle(0)
     legend_epos4hq.SetTextFont(43)
     legend_epos4hq.SetNColumns(1)
-    legend_epos4hq.SetTextSize(35)
+    legend_epos4hq.SetTextSize(40)
     legend_epos4hq.SetMargin(0.1)
-    legend_epos4hq.AddEntry(epos_pp, 'pp,#kern[0.07]{#sqrt{#it{s}} = 13.6 TeV}', 'fl')
-    legend_epos4hq.AddEntry(epos_pbpb, 'Pb#minusPb#kern[0.07]{#sqrt{#it{s}_{NN}} = 5.02 TeV}', 'fl')
+    if 'EPOS4HQ_PP_FT0M' in ORDER:
+        legend_epos4hq.AddEntry(results[ORDER["EPOS4HQ_PP_FT0M"]], 'pp,#kern[0.07]{#sqrt{#it{s}} = 13.6 TeV}', 'fl')
+    if 'EPOS4HQ_PBPB_FT0M' in ORDER:
+        legend_epos4hq.AddEntry(results[ORDER["EPOS4HQ_PBPB_FT0M"]], 'Pb#minusPb#kern[0.07]{#sqrt{#it{s}_{NN}} = 5.02 TeV}', 'fl')
     legend_epos4hq.Draw()
 
     ROOT.gPad.RedrawAxis()
 
-    c.cd(5)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#sigma_{D_{s}^{+}}/#sigma_{D^{+}}")
-    h_frame.GetXaxis().ChangeLabel(1, 1, 0)
-    draw_pythia_pp_ft0m(8, 12, c=colors[2], s=3, m=ROOT.kFullDoubleDiamond)
-    draw_pythia_pp_mod_ft0m(8, 12, c=colors[0], s=3, m=ROOT.kFullDiamond)
-    draw_pythia_pp_mode2_ft0m(8, 12, c=colors[4], s=2, m=ROOT.kFullSquare)
-    draw_pythia_pp_mod_mode2_ft0m(8, 12, c=colors[8], s=2.5, m=ROOT.kFullCross)
-    draw_pythia_pp_sccr_ft0m(8, 12, c=colors[10], s=2, m=ROOT.kFullFourTrianglesPlus)
-    draw_pythia_pbpb_sccr_ft0m(8, 12, c=colors[14], s=0, m=ROOT.kFullFourTrianglesPlus)
-    draw_epos4hq_pp_ft0m(8, 12, c=colors[12], s=0, m=ROOT.kFullFourTrianglesPlus)
-    draw_epos4hq_pbpb_ft0m(8, 12, c=colors[16], s=0, m=ROOT.kFullFourTrianglesPlus)
-    draw_alice_pbpb(8, 12, c=colors[6], s=2.5, m=ROOT.kOpenCircle)
-    draw_alice_pp(8, 12, c=colors[6], s=2.5, m=ROOT.kFullCircle)
-    #alice_text.Draw()
-    #y_text.Draw()
-    x, y = to_pad_coordinates(0.05, 0.85)
-    pt_text.DrawLatexNDC(x, y, '8#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[.5]{12} GeV/#it{c}')
+    c.cd(4)
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    h_frame.GetYaxis().ChangeLabel(10, 1, 0)
+    for key, i in ORDER.items():
+        functions[i](6, 8, c=colors_used[i], s=sizes_used[i], m=markers_used[i])
+    x, y = to_pad_coordinates(0.05, 0.9)
+    pt_text.DrawLatexNDC(x, y, '6#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{8} GeV/#it{c}')
 
-    x_min, y_min = to_pad_coordinates(0.05, 0.07)
+    x_min, y_min = to_pad_coordinates(0.03, 0.07)
     x_max, y_max = to_pad_coordinates(0.5, 0.17)
     legend_alice_pp = ROOT.TLegend(x_min, y_min, x_max, y_max)
     legend_alice_pp.SetBorderSize(0)
     legend_alice_pp.SetFillStyle(0)
     legend_alice_pp.SetTextFont(43)
-    legend_alice_pp.SetTextSize(35)
-    legend_alice_pp.AddEntry(g_alice_pp_1_2, '#splitline{pp,#kern[0.2]{#sqrt{#it{s}}} = 13.6 TeV, |#it{y}| < 0.5}{FT0M multiplicity estimator}', 'pl')
-    # legend_alice_pp.AddEntry('', '#splitline{pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < 0.5}{Mult. estim.: |#it{#eta}| < 0.8}', 'pl')
+    legend_alice_pp.SetTextSize(40)
+    legend_alice_pp.AddEntry(results[ORDER['ALICE_PP']], '#splitline{pp,#kern[0.2]{#sqrt{#it{s}}} = 13.6 TeV, |#it{y}| < 0.5}{FT0M multiplicity estimator}', 'pl')
     legend_alice_pp.Draw()
 
     ROOT.gPad.RedrawAxis()
 
-    c.cd(6)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 1., ";d#it{N}_{ch}/d#it{#eta};#sigma_{D_{s}^{+}}/#sigma_{D^{+}}")
+    c.cd(5)
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
     h_frame.GetXaxis().ChangeLabel(1, 1, 0)
-    draw_pythia_pp_ft0m(12, 24, c=colors[2], s=3, m=ROOT.kFullDoubleDiamond)
-    draw_pythia_pp_mod_ft0m(12, 24, c=colors[0], s=3, m=ROOT.kFullDiamond)
-    draw_pythia_pp_mode2_ft0m(12, 24, c=colors[4], s=2, m=ROOT.kFullSquare)
-    draw_pythia_pp_mod_mode2_ft0m(12, 24, c=colors[8], s=2.5, m=ROOT.kFullCross)
-    draw_pythia_pp_sccr_ft0m(12, 24, c=colors[10], s=2, m=ROOT.kFullFourTrianglesPlus)
-    draw_pythia_pbpb_sccr_ft0m(12, 24, c=colors[14], s=0, m=ROOT.kFullFourTrianglesPlus)
-    draw_epos4hq_pp_ft0m(12, 24, c=colors[12], s=0, m=ROOT.kFullFourTrianglesPlus)
-    draw_epos4hq_pbpb_ft0m(12, 24, c=colors[16], s=0, m=ROOT.kFullFourTrianglesPlus)
-    draw_alice_pbpb(12, 24, c=colors[6], s=2.5, m=ROOT.kOpenCircle)
-    draw_alice_pp(12, 24, c=colors[6], s=2.5, m=ROOT.kFullCircle)
+    for key, i in ORDER.items():
+        functions[i](8, 12, c=colors_used[i], s=sizes_used[i], m=markers_used[i])
     #alice_text.Draw()
     #y_text.Draw()
-    x, y = to_pad_coordinates(0.05, 0.85)
-    pt_text.DrawLatexNDC(x, y, '12#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[.5]{24} GeV/#it{c}')
+    x, y = to_pad_coordinates(0.05, 0.9)
+    pt_text.DrawLatexNDC(x, y, '8#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[.5]{12} GeV/#it{c}')
 
-    x_min, y_min = to_pad_coordinates(0.05, 0.07)
+    x_min, y_min = to_pad_coordinates(0.03, 0.07)
     x_max, y_max = to_pad_coordinates(0.5, 0.17)
     legend_alice_pbpb = ROOT.TLegend(x_min, y_min, x_max, y_max)
     legend_alice_pbpb.SetBorderSize(0)
     legend_alice_pbpb.SetFillStyle(0)
     legend_alice_pbpb.SetTextFont(43)
-    legend_alice_pbpb.SetTextSize(35)
-    legend_alice_pbpb.AddEntry(graph_stat_alice_2_4, '#splitline{Pb#font[122]{-}Pb, #sqrt{#it{s}_{NN}} = 5.02 TeV, |#it{y}| < 0.5}{V0M multiplicity estimator}', 'pl')
+    legend_alice_pbpb.SetTextSize(40)
+    legend_alice_pbpb.AddEntry(results[ORDER['ALICE_PBPB']], '#splitline{Pb#font[122]{-}Pb, #sqrt{#it{s}_{NN}} = 5.36 TeV, |#it{y}| < 0.5}{FT0C multiplicity estimator}', 'pl')
     legend_alice_pbpb.Draw()
 
     ROOT.gPad.RedrawAxis()
 
-    c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/Ratio/VsMult/ratio_vs_pred_2023.pdf")
-    c.SaveAs("/home/fchinu/Run3/Ds_pp_13TeV/Figures/Ratio/VsMult/ratio_vs_pred_2023.root")
+    c.cd(6)
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    h_frame.GetXaxis().ChangeLabel(1, 1, 0)
+    for key, i in ORDER.items():
+        functions[i](12, 24, c=colors_used[i], s=sizes_used[i], m=markers_used[i])
+    #alice_text.Draw()
+    #y_text.Draw()
+    x, y = to_pad_coordinates(0.05, 0.9)
+    pt_text.DrawLatexNDC(x, y, '12#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[.5]{24} GeV/#it{c}')
+
+    ROOT.gPad.RedrawAxis()
+
+    if do_pythia and do_epos:
+        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_2023_combined.pdf")
+        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_2023_combined.root")
+    elif do_pythia:
+        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_2023_pythia.pdf")
+        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_2023_pythia.root")
+    elif do_epos:
+        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_2023_epos.pdf")
+        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_2023_epos.root")
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Draw Ds/D+ ratio vs multiplicity with model predictions')
+    parser.add_argument('--pythia', '-p', action='store_true', default=False, help='Input ROOT file')
+    parser.add_argument('--epos', '-e', action='store_true', default=False, help='Output PDF file')
+    args = parser.parse_args()
+
+    if not args.pythia and not args.epos:
+        print("Please specify at least one of --pythia or --epos")
+        exit(1)
+
+    main(args.pythia, args.epos)
