@@ -8,6 +8,7 @@ import os
 from dataclasses import dataclass
 from typing import Optional, Tuple, List, Dict
 import numpy as np
+from tqdm import tqdm
 import yaml
 import ROOT
 # pylint: disable=no-member
@@ -38,6 +39,10 @@ class PtInfo:
 
 class EfficiencyCalculator:
     def __init__(self, cfg):
+        self.particles = ["Ds", "Dplus"]
+        self.origins = ["Prompt", "NonPrompt"]
+        self.particle_origin = list(itertools.product(self.particles, self.origins))
+
         self.cfg = self._load_config(cfg)
         self.cuts_cfg = self._load_cuts_config()
         self.cent_info = self._extract_centrality_info()
@@ -49,9 +54,6 @@ class EfficiencyCalculator:
         self.npv_weights = None
         self.apply_cent_sel = self.cfg['inputs']['apply_cent_sel']
 
-        self.particles = ["Ds", "Dplus"]
-        self.origins = ["Prompt", "NonPrompt"]
-        self.particle_origin = list(itertools.product(self.particles, self.origins))
 
         self.histos, self.histos_fine_bins = [], []
         self.histos_bdt, self.histos_cent = [], []
@@ -131,6 +133,9 @@ class EfficiencyCalculator:
                         f"Weight{particle}{origin}Cands_{cent_min}_{cent_max}")
                     histos_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetTitle(
                         f"Weight{particle}{origin}Cands_{cent_min}_{cent_max}")
+                    for ibin in range(1, histos_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].GetNbinsX()+1):
+                        histos_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetBinContent(ibin, 1.0)
+                        print(histos_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].GetBinContent(ibin))
         return histos_weights
 
     def _create_histos(self):
@@ -237,7 +242,7 @@ class EfficiencyCalculator:
         h_pt_npv_projected_reco_ds = h_sparse_reco_ds.Projection(
             self.cfg['inputs']['sparse']['axis_npv_reco'], self.cfg['inputs']['sparse']['axis_pt_reco'], "EO")
 
-        return h_pt_npv_projected_reco_ds, self._get_integral_of_projection(
+        return self._get_integral_of_projection(
             h_pt_npv_projected_reco_ds, "x", pt_min, pt_max)
 
     def _get_gen_particles(self, h_sparse_gen, i_pt, pt_min, pt_max, apply_bdt):
@@ -246,7 +251,7 @@ class EfficiencyCalculator:
         h_pt_npv_projected_gen = h_sparse_gen.Projection(
                 self.cfg['inputs']['sparse']['axis_npv_gen'], self.cfg['inputs']['sparse']['axis_pt_gen'], "EO")
 
-        return h_pt_npv_projected_gen, self._get_integral_of_projection(
+        return self._get_integral_of_projection(
             h_pt_npv_projected_gen, "x", pt_min, pt_max)
 
     def _calculate_efficiencies_with_unc(self, sels, gens, ev_weights) -> tuple:
@@ -315,6 +320,40 @@ class EfficiencyCalculator:
             self.histos[idx].SetBinError(i_pt + 1, unc)
             self.histos_bdt[idx].SetBinContent(i_pt + 1, bdt_eff)
 
+    def _apply_weights(self, sparse, particle, origin, cent_min, cent_max, is_gen=True):
+        
+        coord =  [0] * sparse.GetNdimensions()
+        coord = np.array(coord, dtype=np.int32)
+
+        for i in tqdm(range(1, sparse.GetNbins())):
+            content = sparse.GetBinContent(i, coord)
+            error = np.sqrt(sparse.GetBinError2(i))
+            # pt_weight = pt_weight_hist.GetBinContent(int(coord[pt_axis]))
+            # pt_weight_error = pt_weight_hist.GetBinError(int(coord[pt_axis]))
+
+            histo_weight = self.histos_weights[
+                        f"{particle}{origin}_Cent_{cent_min}_{cent_max}"]
+
+            axis = self.cfg["inputs"]["sparse"]["axis_npv_gen"] if is_gen else self.cfg["inputs"]["sparse"]["axis_npv_reco"]
+            multi_weight = histo_weight.GetBinContent(int(coord[axis]))
+
+            sparse.SetBinContent(i, content*multi_weight)
+            sparse.SetBinError(i, error*multi_weight)
+
+        # reweight bin 0 (crashes if at the beginning of the loop)
+        content = sparse.GetBinContent(0, coord)
+        error = np.sqrt(sparse.GetBinError2(0))
+        # pt_weight = pt_weight_hist.GetBinContent(int(coord[pt_axis]))
+        # pt_weight_error = pt_weight_hist.GetBinError(int(coord[pt_axis]))
+
+        histo_weight = self.histos_weights[
+                    f"{particle}{origin}_Cent_{cent_min}_{cent_max}"]
+
+        multi_weight = histo_weight.GetBinContent(int(coord[axis]))
+
+        sparse.SetBinContent(0, content*multi_weight)
+        sparse.SetBinError(0, error*multi_weight)
+
 
     def get_eff(self, particle_class, h_sparses_gen_particles, h_sparses_reco_ds, pt_info, cent_info = (None, None), events_weights=None): # pylint: disable=redefined-outer-name
         """
@@ -348,7 +387,7 @@ class EfficiencyCalculator:
                     f"hSparseGenSel_{particle}{origin}")
                 h_sparses_reco_ds_sel = h_sparse_reco_ds.Clone(
                     f"hSparseRecoDsSel_{particle}{origin}")
-            
+
             # Apply centrality selection
             if self.apply_cent_sel:
                 if cent_info[0] is None or cent_info[1] is None:
@@ -357,23 +396,14 @@ class EfficiencyCalculator:
                 h_sparses_reco_ds_sel.GetAxis(self.axis_cent).SetRangeUser(cent_info[0], cent_info[1])
                 h_sparse_gen_sel.GetAxis(self.axis_cent_gen).SetRangeUser(cent_info[0], cent_info[1])
 
-            _, reco_parts = self._get_reco_particles(h_sparses_reco_ds_sel, i_pt, pt_min, pt_max, apply_bdt=False)
+            reco_parts = self._get_reco_particles(h_sparses_reco_ds_sel, i_pt, pt_min, pt_max, apply_bdt=False)
             reco_particles.append(reco_parts)
 
-            h_pt_npv_projected_sel, _ = self._get_reco_particles(h_sparses_reco_ds_sel, i_pt, pt_min, pt_max, apply_bdt=True)
-            h_pt_npv_projected_gen, _ = self._get_gen_particles(h_sparse_gen_sel, i_pt, pt_min, pt_max, apply_bdt=True)
+            sel_parts = self._get_reco_particles(h_sparses_reco_ds_sel, i_pt, pt_min, pt_max, apply_bdt=True)
+            gen_parts = self._get_gen_particles(h_sparse_gen_sel, i_pt, pt_min, pt_max, apply_bdt=True)
 
-            if self.histos_weights is not None:
-                histo_weight = self.histos_weights[
-                            f"{particle}{origin}_Cent_{cent_min}_{cent_max}"]
-                self._reweight_on_npv(h_pt_npv_projected_gen, histo_weight, particle, origin, cent_min, cent_max)
-                self._reweight_on_npv(h_pt_npv_projected_sel, histo_weight, particle, origin, cent_min, cent_max)
-
-
-            gen_particles.append(self._get_integral_of_projection(
-                h_pt_npv_projected_gen, "x", pt_min, pt_max))
-            selected_particles.append(self._get_integral_of_projection(
-                h_pt_npv_projected_sel, "x", pt_min, pt_max))
+            gen_particles.append(gen_parts)
+            selected_particles.append(sel_parts)
 
         return *self._calculate_efficiencies_with_unc(selected_particles, gen_particles, events_weights), selected_particles[-1] / reco_particles[-1]
 
@@ -502,6 +532,13 @@ class EfficiencyCalculator:
         for idx, (particle, origin) in enumerate(self.particle_origin):
             h_sparses_gen_particles, h_sparses_reco, n_events_mc = self._load_sparses(particle, origin)
             event_weights = self._get_event_weights(n_events_mc)
+
+            if self.histos_weights is not None:
+                print(f"Applying weights for {particle} {origin}")
+                for s in h_sparses_gen_particles:
+                    self._apply_weights(s, particle, origin, cent_min, cent_max, is_gen=True)
+                for s in h_sparses_reco:
+                    self._apply_weights(s, particle, origin, cent_min, cent_max, is_gen=False)
 
             for i_pt, (pt_min, pt_max) in enumerate(zip(self.pt_info.mins, self.pt_info.maxs)):
                 if self.cfg["verbose"]:

@@ -12,10 +12,6 @@ import yaml
 import ROOT
 # pylint: disable=no-member
 
-CENT_MINS = [0,     0,  1,  10, 30, 50, 70]
-CENT_MAXS = [100,   1,  10, 30, 50, 70, 100]
-
-
 def __find_matching_mc(info_data, proj_mc, particle, origin):
     """
     Find a matching Monte Carlo (MC) histogram based on provided data information.
@@ -297,6 +293,12 @@ def main(cfg_file_name):
     with open(cfg_file_name, 'r', encoding="utf-8") as cfg_file:
         cfg = yaml.safe_load(cfg_file)
 
+    with open(cfg['inputs']['cutset'], 'r', encoding="utf-8") as cutset_file:
+        cutset = yaml.safe_load(cutset_file)
+    
+    cent_mins = cutset['cent']['min']
+    cent_maxs = cutset['cent']['max']
+
     ROOT.gStyle.SetOptLogy()
 
     histos_data = get_histos(cfg, is_mc=False)
@@ -309,7 +311,7 @@ def main(cfg_file_name):
         out_file = ROOT.TFile(out_file_name, "RECREATE")
         out_file.Close()
 
-    for cent_min, cent_max in zip(CENT_MINS, CENT_MAXS):
+    for cent_min, cent_max in zip(cent_mins, cent_maxs):
         histos_projection_data = get_projections(histos_data, cent_min, cent_max)
         h_weights = get_weights(histos_projections_mc, histos_projection_data, cfg)
 
