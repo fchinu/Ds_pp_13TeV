@@ -13,10 +13,6 @@ import yaml
 import ROOT
 # pylint: disable=no-member
 import sys # pylint: disable=wrong-import-order
-sys.path.append("../utils/")
-sys.path.append("../../utils/")
-sys.path.append("../../../utils/")
-from plot_utils import get_discrete_matplotlib_palette # pylint: disable=wrong-import-position
 
 PARTICLE_CLASSES = [("Ds", "Prompt"), ("Ds", "NonPrompt"),
                     ("Dplus", "Prompt"), ("Dplus", "NonPrompt")] # Ds must be the first one
@@ -38,6 +34,9 @@ class PtInfo:
     edges: List[float]
 
 class EfficiencyCalculator:
+    """
+    Class to calculate efficiencies from THnSparse histograms.
+    """
     def __init__(self, cfg):
         self.particles = ["Ds", "Dplus"]
         self.origins = ["Prompt", "NonPrompt"]
@@ -57,7 +56,7 @@ class EfficiencyCalculator:
 
         self.histos, self.histos_fine_bins = [], []
         self.histos_bdt, self.histos_cent = [], []
-        self.histos_cent_fine_bins, self.histos_cent_bdt, self.canvas_cent = [], [], []
+        self.histos_cent_fine_bins, self.histos_cent_bdt, self.canvas_cent, self.legs = [], [], [], []
         self._create_histos()
 
 
@@ -65,12 +64,12 @@ class EfficiencyCalculator:
         """Load main configuration file."""
         with open(config_file, 'r', encoding="utf-8") as f:
             return yaml.safe_load(f)
-    
+
     def _load_cuts_config(self) -> dict:
         """Load cuts configuration file."""
         with open(self.cfg['inputs']['cutset'], 'r', encoding="utf-8") as f:
             return yaml.safe_load(f)
-    
+
     def _extract_centrality_info(self) -> Optional[CentralityInfo]:
         """Extract centrality information from cuts config."""
         if "cent" not in self.cuts_cfg:
@@ -80,7 +79,7 @@ class EfficiencyCalculator:
             mins=cent_selections['min'],
             maxs=cent_selections['max']
         )
-    
+
     def _extract_pt_info(self) -> PtInfo:
         """Extract pT information from cuts config."""
         pt_mins = self.cuts_cfg['pt']['min']
@@ -114,15 +113,13 @@ class EfficiencyCalculator:
         if not isinstance(var, list):
             var = [var]
         return var
-    
+
     def _load_weights(self) -> Dict[str, ROOT.TH1F]:
         """
         Get the weights from the input file.
         """
 
         histos_weights = {}
-
-        centrality_selections = self.cuts_cfg.get('cent')
 
         with ROOT.TFile.Open(self.cfg["weights"]["file_name"]) as infile_weights:
             for particle, origin in self.particle_origin:
@@ -133,9 +130,6 @@ class EfficiencyCalculator:
                         f"Weight{particle}{origin}Cands_{cent_min}_{cent_max}")
                     histos_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetTitle(
                         f"Weight{particle}{origin}Cands_{cent_min}_{cent_max}")
-                    for ibin in range(1, histos_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].GetNbinsX()+1):
-                        histos_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetBinContent(ibin, 1.0)
-                        print(histos_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].GetBinContent(ibin))
         return histos_weights
 
     def _create_histos(self):
@@ -185,7 +179,7 @@ class EfficiencyCalculator:
 
                 self.canvas_cent.append(ROOT.TCanvas(
                     f"canvas_cent_{particle}{origin}", f"canvas_cent_{particle}{origin}", 800, 600))
-    
+
     def _load_sparses(self, particle: str, origin: str) -> Tuple[List[ROOT.THnSparse], List[ROOT.THnSparse], List[int]]:
         """
         Load THnSpares from input files.
@@ -211,7 +205,7 @@ class EfficiencyCalculator:
             in_file.Close()
 
         return h_sparses_gen_particles, h_sparses_reco, n_events_mc
-    
+
     def _get_event_weights(self, n_events_mc: List[int]) -> Optional[List[float]]:
         event_weights = None
         if self.cfg["weights"]["reweight_on_data_events"]:
@@ -234,7 +228,6 @@ class EfficiencyCalculator:
 
             min_val = self.cuts[i][i_pt][0]
             max_val = self.cuts[i][i_pt][1]
-            print(min_val, max_val)
             h_sparse_reco_ds.GetAxis(axis).SetRangeUser(min_val, max_val)
 
         # WARNING: just like TH3::Project3D("yx") and TTree::Draw("y:x"), Projection(y,x)
@@ -245,7 +238,7 @@ class EfficiencyCalculator:
         return self._get_integral_of_projection(
             h_pt_npv_projected_reco_ds, "x", pt_min, pt_max)
 
-    def _get_gen_particles(self, h_sparse_gen, i_pt, pt_min, pt_max, apply_bdt):
+    def _get_gen_particles(self, h_sparse_gen, pt_min, pt_max):
         # WARNING: just like TH3::Project3D("yx") and TTree::Draw("y:x"), Projection(y,x)
         # uses the first argument to define the y-axis and the second for the x-axis!
         h_pt_npv_projected_gen = h_sparse_gen.Projection(
@@ -254,7 +247,7 @@ class EfficiencyCalculator:
         return self._get_integral_of_projection(
             h_pt_npv_projected_gen, "x", pt_min, pt_max)
 
-    def _calculate_efficiencies_with_unc(self, sels, gens, ev_weights) -> tuple:
+    def _calculate_efficiencies_with_unc(self, sels, recos, gens, ev_weights) -> tuple:
         """
         Calculate efficiencies with uncertainty.
 
@@ -268,15 +261,18 @@ class EfficiencyCalculator:
         - unc (float): The uncertainty of the efficiency.
         """
         sels = self._enforce_list(sels)
+        recos = self._enforce_list(recos)
         gens = self._enforce_list(gens)
-        tot_sel, tot_gen = 0, 0
+        tot_sel, tot_reco, tot_gen = 0, 0, 0
         if ev_weights is None:
             ev_weights = [1] * len(sels)
-        for sel, gen, weight in zip(sels, gens, ev_weights):
+        for sel, reco, gen, weight in zip(sels, recos, gens, ev_weights):
             tot_sel += sel * weight
+            tot_reco += reco * weight
             tot_gen += gen * weight
         eff = tot_sel / tot_gen # pylint: disable=redefined-outer-name
-        return eff, sqrt(eff * (1 - eff) / tot_gen)
+        bdt_eff = tot_sel / tot_reco
+        return eff, sqrt(eff * (1 - eff) / tot_gen), bdt_eff, sqrt(bdt_eff * (1 - bdt_eff) / tot_reco)
 
     def _get_integral_of_projection(self, hist_2d, axis, minimum, maximum):
         """
@@ -301,13 +297,6 @@ class EfficiencyCalculator:
         # Right edge of the bin is not included
         return hist_1d.Integral(hist_1d.FindBin(minimum), hist_1d.FindBin(maximum-0.001))
 
-    def _reweight_on_npv(self, hist_2d, histo_weight, particle, origin, cent_min, cent_max):
-        for i in range(hist_2d.GetNbinsX()): # Loop on pT
-            for j in range(hist_2d.GetNbinsY()): # Loop on NPV
-                content = hist_2d.GetBinContent(i+1, j+1)
-                content *= histo_weight.GetBinContent(j+1)
-                hist_2d.SetBinContent(i+1, j+1, content)
-
     def _fill_eff_histos(self, idx, i_pt, i_cent, eff, unc, bdt_eff, use_centrality):
         """Set histogram bin contents and errors for efficiency results."""
         if use_centrality:
@@ -321,7 +310,7 @@ class EfficiencyCalculator:
             self.histos_bdt[idx].SetBinContent(i_pt + 1, bdt_eff)
 
     def _apply_weights(self, sparse, particle, origin, cent_min, cent_max, is_gen=True):
-        
+
         coord =  [0] * sparse.GetNdimensions()
         coord = np.array(coord, dtype=np.int32)
 
@@ -380,12 +369,12 @@ class EfficiencyCalculator:
             if self.histos_weights is not None or self.apply_cent_sel:
                 h_sparse_gen_sel = h_sparse_gen_particles.Clone(
                     f"hSparseGenParticlesSel_{particle}{origin}_Cent_{cent_min}_{cent_max}_{i_pt}")
-                h_sparses_reco_ds_sel = h_sparse_reco_ds.Clone(
+                h_sparse_reco_ds_sel = h_sparse_reco_ds.Clone(
                     f"hSparseRecoDsSel_{particle}{origin}_Cent_{cent_min}_{cent_max}_{i_pt}")
             else:
                 h_sparse_gen_sel = h_sparse_gen_particles.Clone(
                     f"hSparseGenSel_{particle}{origin}")
-                h_sparses_reco_ds_sel = h_sparse_reco_ds.Clone(
+                h_sparse_reco_ds_sel = h_sparse_reco_ds.Clone(
                     f"hSparseRecoDsSel_{particle}{origin}")
 
             # Apply centrality selection
@@ -393,28 +382,26 @@ class EfficiencyCalculator:
                 if cent_info[0] is None or cent_info[1] is None:
                     print("ERROR: centrality dependent requested, but no centrality bins available. Exit")
                     sys.exit(0)
-                h_sparses_reco_ds_sel.GetAxis(self.axis_cent).SetRangeUser(cent_info[0], cent_info[1])
+                h_sparse_reco_ds_sel.GetAxis(self.axis_cent).SetRangeUser(cent_info[0], cent_info[1])
                 h_sparse_gen_sel.GetAxis(self.axis_cent_gen).SetRangeUser(cent_info[0], cent_info[1])
 
-            reco_parts = self._get_reco_particles(h_sparses_reco_ds_sel, i_pt, pt_min, pt_max, apply_bdt=False)
-            reco_particles.append(reco_parts)
-
-            sel_parts = self._get_reco_particles(h_sparses_reco_ds_sel, i_pt, pt_min, pt_max, apply_bdt=True)
-            gen_parts = self._get_gen_particles(h_sparse_gen_sel, i_pt, pt_min, pt_max, apply_bdt=True)
+            reco_parts = self._get_reco_particles(h_sparse_reco_ds_sel, i_pt, pt_min, pt_max, apply_bdt=False)
+            sel_parts = self._get_reco_particles(h_sparse_reco_ds_sel, i_pt, pt_min, pt_max, apply_bdt=True)
+            gen_parts = self._get_gen_particles(h_sparse_gen_sel, pt_min, pt_max)
 
             gen_particles.append(gen_parts)
+            reco_particles.append(reco_parts)
             selected_particles.append(sel_parts)
 
-        return *self._calculate_efficiencies_with_unc(selected_particles, gen_particles, events_weights), selected_particles[-1] / reco_particles[-1]
+        return self._calculate_efficiencies_with_unc(selected_particles, reco_particles, gen_particles, events_weights)
 
     def _draw_histos_with_centrality(self, colors):
-        legs = []
         for idx, (particle, origin) in enumerate(self.particle_origin):
             leg = ROOT.TLegend(0.6, 0.2, 0.9, 0.8)
             leg.SetBorderSize(0)
             leg.SetFillStyle(0)
             leg.SetTextSize(0.035)
-            legs.append(leg)
+            self.legs.append(leg)
 
             canvas = self.canvas_cent[idx]
             canvas.cd().SetLogy()
@@ -437,7 +424,7 @@ class EfficiencyCalculator:
 
             leg.Draw()
 
-    
+
     def _write_histos(self, output_file, histos, fine_bins, bdt=None):
         for i, h in enumerate(histos):
             h.Write()
@@ -509,8 +496,9 @@ class EfficiencyCalculator:
         output_file.Close()
 
     def run(self):
+        """Main method to run the efficiency calculation."""
         apply_cent_sel = self.cfg['inputs']['apply_cent_sel']
-        
+
         # Create output file
         out_file_name = os.path.join(
             self.cfg['output_dir'],
@@ -533,30 +521,31 @@ class EfficiencyCalculator:
             h_sparses_gen_particles, h_sparses_reco, n_events_mc = self._load_sparses(particle, origin)
             event_weights = self._get_event_weights(n_events_mc)
 
-            if self.histos_weights is not None:
-                print(f"Applying weights for {particle} {origin}")
-                for s in h_sparses_gen_particles:
-                    self._apply_weights(s, particle, origin, cent_min, cent_max, is_gen=True)
-                for s in h_sparses_reco:
-                    self._apply_weights(s, particle, origin, cent_min, cent_max, is_gen=False)
+            # Decide whether to iterate over centrality bins
+            cent_bins = (
+                list(zip(self.cent_info.mins, self.cent_info.maxs))
+                if apply_cent_sel or self.cfg["weights"]["apply"]
+                else [None]
+            )
 
-            for i_pt, (pt_min, pt_max) in enumerate(zip(self.pt_info.mins, self.pt_info.maxs)):
-                if self.cfg["verbose"]:
-                    print(f"Processing pT bin {pt_min} - {pt_max} for {particle} {origin}")
+            for i_cent, cent_range in enumerate(cent_bins):
+                h_sparses_gen_particles_for_eff = [s.Clone() for s in h_sparses_gen_particles] # After rewighting (if any)
+                h_sparses_reco_for_eff = [s.Clone() for s in h_sparses_reco] # After rewighting (if any)
 
+                # Apply weights if requested
+                if self.histos_weights is not None:
+                    for h_sparse_gen, h_sparse_reco in zip(h_sparses_gen_particles_for_eff, h_sparses_reco_for_eff):
+                        self._apply_weights(h_sparse_gen, particle, origin, cent_range[0], cent_range[1], is_gen=True)
+                        self._apply_weights(h_sparse_reco, particle, origin, cent_range[0], cent_range[1], is_gen=False)
 
-                # Decide whether to iterate over centrality bins
-                cent_bins = (
-                    list(zip(self.cent_info.mins, self.cent_info.maxs))
-                    if apply_cent_sel or self.cfg["weights"]["apply"]
-                    else [None]
-                )
+                for i_pt, (pt_min, pt_max) in enumerate(zip(self.pt_info.mins, self.pt_info.maxs)):
+                    if self.cfg["verbose"]:
+                        print(f"Processing pT bin {pt_min} - {pt_max} for {particle} {origin}")
 
-                for i_cent, cent_range in enumerate(cent_bins):
-                    eff, unc, bdt_eff = self.get_eff(
+                    eff, unc, bdt_eff, _ = self.get_eff(
                         (particle, origin),
-                        h_sparses_gen_particles,
-                        h_sparses_reco,
+                        h_sparses_gen_particles_for_eff,
+                        h_sparses_reco_for_eff,
                         (i_pt, pt_min, pt_max),
                         cent_info=cent_range,
                         events_weights=event_weights,
