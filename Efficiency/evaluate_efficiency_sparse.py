@@ -49,10 +49,9 @@ class EfficiencyCalculator:
         self.cuts, self.axes = self._extract_cuts_axes()
         self.axis_cent = self.cuts_cfg['cent']['axisnum']
         self.axis_cent_gen = self.cfg['inputs']['sparse']['axis_cent_gen']
-        self.histos_weights = self._load_weights() if self.cfg['weights']['apply'] else None
-        self.npv_weights = None
+        self.histos_pv_weights = self._load_pv_weights() if self.cfg['weights']['npv']['apply'] else None
+        self.histos_pt_weights = self._load_pt_weights() if self.cfg['weights']['pt']['apply'] else None
         self.apply_cent_sel = self.cfg['inputs']['apply_cent_sel']
-
 
         self.histos, self.histos_fine_bins = [], []
         self.histos_bdt, self.histos_cent = [], []
@@ -114,23 +113,42 @@ class EfficiencyCalculator:
             var = [var]
         return var
 
-    def _load_weights(self) -> Dict[str, ROOT.TH1F]:
+    def _load_pv_weights(self) -> Dict[str, ROOT.TH1F]:
         """
         Get the weights from the input file.
         """
 
-        histos_weights = {}
+        histos_pv_weights = {}
 
-        with ROOT.TFile.Open(self.cfg["weights"]["file_name"]) as infile_weights:
+        with ROOT.TFile.Open(self.cfg["weights"]["npv"]["file_name"]) as infile_weights:
             for particle, origin in self.particle_origin:
                 for cent_min, cent_max in zip(self.cent_info.mins, self.cent_info.maxs):
-                    histos_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"] = infile_weights.Get(
+                    histos_pv_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"] = infile_weights.Get(
                         f"centrality_{cent_min}_{cent_max}/{particle}_{origin}/hNPvContribCands_weights_{particle}_{origin}")
-                    histos_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetName(
-                        f"Weight{particle}{origin}Cands_{cent_min}_{cent_max}")
-                    histos_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetTitle(
-                        f"Weight{particle}{origin}Cands_{cent_min}_{cent_max}")
-        return histos_weights
+                    histos_pv_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetName(
+                        f"NPvWeight{particle}{origin}Cands_{cent_min}_{cent_max}")
+                    histos_pv_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetTitle(
+                        f"NPvWeight{particle}{origin}Cands_{cent_min}_{cent_max}")
+        return histos_pv_weights
+
+    def _load_pt_weights(self) -> Dict[str, ROOT.TH1F]:
+        """
+        Get the weights from the input file.
+        """
+
+        histos_pt_weights = {}
+
+        with ROOT.TFile.Open(self.cfg["weights"]["pt"]["file_name"]) as infile_weights:
+            for particle, origin in self.particle_origin:
+                for cent_min, cent_max in zip(self.cent_info.mins, self.cent_info.maxs):
+                    histos_pt_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"] = infile_weights.Get(
+                        self.cfg["weights"]["pt"]["base_hist_name"][particle][origin].replace("*", f"{cent_min}_{cent_max}")
+                    )
+                    histos_pt_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetName(
+                        f"PtWeight{particle}{origin}Cands_{cent_min}_{cent_max}")
+                    histos_pt_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetTitle(
+                        f"PtWeight{particle}{origin}Cands_{cent_min}_{cent_max}")
+        return histos_pt_weights
 
     def _create_histos(self):
         """
@@ -163,7 +181,7 @@ class EfficiencyCalculator:
             self.histos_bdt.append(ROOT.TH1F(f"bdt_eff_{particle}{origin}",
                 "BDT efficiency; #it{p}_{T} (GeV/c); Efficiency", len(self.pt_info.edges)-1, np.asarray(self.pt_info.edges, "d")))
 
-            if self.cfg["weights"]["apply"] or self.cfg["inputs"]["apply_cent_sel"]:
+            if self.cfg["weights"]["npv"]["apply"] or self.cfg["inputs"]["apply_cent_sel"]:
                 for cent_min, cent_max in zip(self.cent_info.mins, self.cent_info.maxs):
                     self.histos_cent.append(ROOT.TH1F(f"eff_{particle}{origin}_cent_{cent_min}_{cent_max}",
                         f"Efficiency_Cent_{cent_min}_{cent_max}; #it{{p}}_{{T}} (GeV/c); Efficiency",
@@ -200,7 +218,7 @@ class EfficiencyCalculator:
                 h_sparses_gen_particles[-1].GetEntries()
 
             h_sparses_reco.append(in_file.Get(f"hf-task-ds/MC/{particle}/{origin}/hSparseMass"))
-            if self.cfg["weights"]["reweight_on_data_events"]:
+            if self.cfg["weights"]["npv"]["reweight_on_data_events"]:
                 n_events_mc.append(in_file.Get("lumi-task/hCounterTVXafterBCcuts").GetEntries())
             in_file.Close()
 
@@ -208,9 +226,9 @@ class EfficiencyCalculator:
 
     def _get_event_weights(self, n_events_mc: List[int]) -> Optional[List[float]]:
         event_weights = None
-        if self.cfg["weights"]["reweight_on_data_events"]:
+        if self.cfg["weights"]["npv"]["reweight_on_data_events"]:
             n_events_data = []
-            for an_results in self.cfg["weights"]["data_analysis_results"]:
+            for an_results in self.cfg["weights"]["npv"]["data_analysis_results"]:
                 an_results = self._enforce_list(an_results)
                 n_events_data.append(0)
                 for an_result in an_results:
@@ -314,34 +332,54 @@ class EfficiencyCalculator:
         coord =  [0] * sparse.GetNdimensions()
         coord = np.array(coord, dtype=np.int32)
 
+        pt_weight, multi_weight = 1., 1.
+        pt_axis, mult_axis = -1, -1
+        histo_pt_weight, histo_pv_weight = None, None
+        if self.histos_pt_weights is not None:
+            histo_pt_weight = self.histos_pt_weights[
+                f"{particle}{origin}_Cent_{cent_min}_{cent_max}"]
+            if origin == "Prompt":
+                if is_gen:
+                    pt_axis = self.cfg["inputs"]["sparse"]["axis_pt_gen"]
+                else:
+                    pt_axis = self.cfg["inputs"]["sparse"]["axis_pt_reco"]
+            else:
+                if is_gen:
+                    pt_axis = self.cfg["inputs"]["sparse"]["axis_ptb_gen"]
+                else:
+                    pt_axis = self.cfg["inputs"]["sparse"]["axis_ptb_reco"]
+        if self.histos_pv_weights is not None:
+            histo_pv_weight = self.histos_pv_weights[
+                f"{particle}{origin}_Cent_{cent_min}_{cent_max}"]
+            mult_axis = self.cfg["inputs"]["sparse"]["axis_npv_gen"] if is_gen else self.cfg["inputs"]["sparse"]["axis_npv_reco"]
+
         for i in tqdm(range(1, sparse.GetNbins())):
             content = sparse.GetBinContent(i, coord)
             error = np.sqrt(sparse.GetBinError2(i))
-            # pt_weight = pt_weight_hist.GetBinContent(int(coord[pt_axis]))
-            # pt_weight_error = pt_weight_hist.GetBinError(int(coord[pt_axis]))
 
-            histo_weight = self.histos_weights[
-                        f"{particle}{origin}_Cent_{cent_min}_{cent_max}"]
+            if self.histos_pt_weights is not None:
+                pt_weight = histo_pt_weight.GetBinContent(int(coord[pt_axis]))
 
-            axis = self.cfg["inputs"]["sparse"]["axis_npv_gen"] if is_gen else self.cfg["inputs"]["sparse"]["axis_npv_reco"]
-            multi_weight = histo_weight.GetBinContent(int(coord[axis]))
+            if self.histos_pv_weights is not None:
+                multi_weight = histo_pv_weight.GetBinContent(int(coord[mult_axis]))
 
-            sparse.SetBinContent(i, content*multi_weight)
-            sparse.SetBinError(i, error*multi_weight)
+            weight = multi_weight * pt_weight
+            sparse.SetBinContent(i, content*weight)
+            sparse.SetBinError(i, error*weight)
 
         # reweight bin 0 (crashes if at the beginning of the loop)
         content = sparse.GetBinContent(0, coord)
         error = np.sqrt(sparse.GetBinError2(0))
-        # pt_weight = pt_weight_hist.GetBinContent(int(coord[pt_axis]))
-        # pt_weight_error = pt_weight_hist.GetBinError(int(coord[pt_axis]))
 
-        histo_weight = self.histos_weights[
-                    f"{particle}{origin}_Cent_{cent_min}_{cent_max}"]
+        pt_weight, multi_weight = 1., 1.
+        if histo_pt_weight is not None:
+            pt_weight = histo_pt_weight.GetBinContent(int(coord[pt_axis]))
+        if histo_pv_weight is not None:
+            multi_weight = histo_pv_weight.GetBinContent(int(coord[mult_axis]))
 
-        multi_weight = histo_weight.GetBinContent(int(coord[axis]))
-
-        sparse.SetBinContent(0, content*multi_weight)
-        sparse.SetBinError(0, error*multi_weight)
+        weight = multi_weight * pt_weight
+        sparse.SetBinContent(0, content*weight)
+        sparse.SetBinError(0, error*weight)
 
 
     def get_eff(self, particle_class, h_sparses_gen_particles, h_sparses_reco_ds, pt_info, cent_info = (None, None), events_weights=None): # pylint: disable=redefined-outer-name
@@ -366,7 +404,7 @@ class EfficiencyCalculator:
 
         # Loop on the different input files
         for h_sparse_gen_particles, h_sparse_reco_ds in zip(h_sparses_gen_particles, h_sparses_reco_ds):
-            if self.histos_weights is not None or self.apply_cent_sel:
+            if self.histos_pv_weights is not None or self.histos_pt_weights is not None or self.apply_cent_sel:
                 h_sparse_gen_sel = h_sparse_gen_particles.Clone(
                     f"hSparseGenParticlesSel_{particle}{origin}_Cent_{cent_min}_{cent_max}_{i_pt}")
                 h_sparse_reco_ds_sel = h_sparse_reco_ds.Clone(
@@ -426,6 +464,7 @@ class EfficiencyCalculator:
 
 
     def _write_histos(self, output_file, histos, fine_bins, bdt=None):
+        output_file.cd()
         for i, h in enumerate(histos):
             h.Write()
             fine_bins[i].Write()
@@ -437,8 +476,8 @@ class EfficiencyCalculator:
         offset = 2
 
         for idx, (particle, origin) in enumerate(PARTICLE_CLASSES):
-            if apply_cent_sel or self.cfg["weights"]["apply"]:
-                for i_cent, (cent_min, cent_max) in enumerate(zip(self.cent_info.mins, self.cent_info.maxs)):
+            if apply_cent_sel or self.cfg["weights"]["npv"]["apply"]:
+                for i_cent, _ in enumerate(zip(self.cent_info.mins, self.cent_info.maxs)):
                     idx_cent = idx * len(self.cent_info.mins) + i_cent
                     if "Ds" in particle:
                         h_ratio = self.histos_cent[idx_cent].Clone(self.histos_cent[idx_cent].GetName().replace("eff", "effratio"))
@@ -474,7 +513,7 @@ class EfficiencyCalculator:
     def dump_outputs(self, out_file_name, apply_cent_sel=False):
         colors = [ROOT.kBlack, ROOT.kRed+1, ROOT.kOrange+7, ROOT.kGreen+2, ROOT.kAzure+4, ROOT.kBlack]
 
-        use_centrality = self.cfg["weights"]["apply"] or apply_cent_sel
+        use_centrality = self.cfg["weights"]["npv"]["apply"] or apply_cent_sel
         if use_centrality:
             self._draw_histos_with_centrality(colors)
 
@@ -507,7 +546,7 @@ class EfficiencyCalculator:
         output_file = ROOT.TFile(out_file_name, "RECREATE")
         output_file.Close()
 
-        if self.cfg['weights']['apply']:
+        if self.cfg['weights']['npv']['apply']:
             # Save the weights in the output file
             with ROOT.TFile.Open(out_file_name, "UPDATE") as output_file:
                 if not output_file.GetListOfKeys().Contains("Weights"):
@@ -515,7 +554,16 @@ class EfficiencyCalculator:
                 output_file.cd("Weights")
                 for particle, origin in self.particle_origin:
                     for i_cent, (cent_min, cent_max) in enumerate(zip(self.cent_info.mins, self.cent_info.maxs)):
-                        self.histos_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].Write()
+                        self.histos_pv_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].Write()
+        if self.cfg['weights']['pt']['apply']:
+            # Save the weights in the output file
+            with ROOT.TFile.Open(out_file_name, "UPDATE") as output_file:
+                if not output_file.GetListOfKeys().Contains("Weights"):
+                    output_file.mkdir("Weights")
+                output_file.cd("Weights")
+                for particle, origin in self.particle_origin:
+                    for i_cent, (cent_min, cent_max) in enumerate(zip(self.cent_info.mins, self.cent_info.maxs)):
+                        self.histos_pt_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].Write()
 
         for idx, (particle, origin) in enumerate(self.particle_origin):
             h_sparses_gen_particles, h_sparses_reco, n_events_mc = self._load_sparses(particle, origin)
@@ -524,7 +572,7 @@ class EfficiencyCalculator:
             # Decide whether to iterate over centrality bins
             cent_bins = (
                 list(zip(self.cent_info.mins, self.cent_info.maxs))
-                if apply_cent_sel or self.cfg["weights"]["apply"]
+                if apply_cent_sel or self.cfg["weights"]["npv"]["apply"]
                 else [None]
             )
 
@@ -533,7 +581,7 @@ class EfficiencyCalculator:
                 h_sparses_reco_for_eff = [s.Clone() for s in h_sparses_reco] # After rewighting (if any)
 
                 # Apply weights if requested
-                if self.histos_weights is not None:
+                if self.histos_pv_weights is not None or self.histos_pt_weights is not None:
                     for h_sparse_gen, h_sparse_reco in zip(h_sparses_gen_particles_for_eff, h_sparses_reco_for_eff):
                         self._apply_weights(h_sparse_gen, particle, origin, cent_range[0], cent_range[1], is_gen=True)
                         self._apply_weights(h_sparse_reco, particle, origin, cent_range[0], cent_range[1], is_gen=False)
@@ -551,7 +599,7 @@ class EfficiencyCalculator:
                         events_weights=event_weights,
                     )
 
-                    self._fill_eff_histos(idx, i_pt, i_cent, eff, unc, bdt_eff, apply_cent_sel or self.cfg["weights"]["apply"])
+                    self._fill_eff_histos(idx, i_pt, i_cent, eff, unc, bdt_eff, apply_cent_sel or self.cfg["weights"]["npv"]["apply"])
 
             del h_sparses_gen_particles, h_sparses_reco
 
