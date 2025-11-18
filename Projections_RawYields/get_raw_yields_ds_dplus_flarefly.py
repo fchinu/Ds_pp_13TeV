@@ -25,6 +25,10 @@ from flarefly.fitter import F2MassFitter  # noqa: E402
 from flarefly.utils import Logger  # noqa: E402
 # pylint: disable=no-member
 
+# Constants for PDG particle IDs
+PDG_DS = 431   # D_s+ meson
+PDG_DPLUS = 411  # D+ meson
+
 @dataclasses.dataclass
 class BinsHelper:
     """
@@ -572,7 +576,7 @@ def _fit_mc_for_sigma(cfg, fit_config, particle_name, idx_signal, signal_func):
         chi2_loss=True, verbosity=1, tol=1.e-1
     )
     
-    pdg_id = 431 if particle_name == "ds" else 411
+    pdg_id = PDG_DS if particle_name == "ds" else PDG_DPLUS
     fitter_mc.set_particle_mass(0, pdg_id=pdg_id)
     
     _configure_signal_parameters(fitter_mc, signal_func)
@@ -826,12 +830,12 @@ def _create_fitter_without_templates(fit_config, data_hdl, pt_cent_suffix):
 def _initialize_signal_functions(fitter, fit_config):
     """Initialize signal functions for Ds and D+ particles."""
     # Initialize Ds signal
-    fitter.set_particle_mass(0, pdg_id=431)
+    fitter.set_particle_mass(0, pdg_id=PDG_DS)
     initialise_signal(fitter, fit_config, 0)
     
     # Initialize D+ signal if present
     if len(fit_config["signal_func"]) > 1:
-        fitter.set_particle_mass(1, pdg_id=411)
+        fitter.set_particle_mass(1, pdg_id=PDG_DPLUS)
         initialise_signal(fitter, fit_config, 1)
 
 
