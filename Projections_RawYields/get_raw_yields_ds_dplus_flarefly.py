@@ -1133,21 +1133,21 @@ def _save_fit_outputs(cfg, fitter, fit_config, bkg_funcs, pt_min, pt_max, cent_m
 
 def _apply_signal_constraints(fit_config, mb_result):
     """Apply signal parameter constraints from MB fit results."""
+    # Define parameter mapping for each function type
+    param_mapping = {
+        "gaussian": ["sigma"],
+        "doublegaus": ["sigma1", "sigma2", "frac1"],
+        "doublecbsymm": ["sigma", "alpha", "n"]
+    }
+    
     for signal_idx in [0, 1]:
         func_type = fit_config["signal_func"][signal_idx]
         
-        if func_type == 'gaussian':
-            _fix_parameter(fit_config, "sigma", mb_result["sigma"][signal_idx][0], signal_idx)
-            
-        elif func_type == 'doublegaus':
-            _fix_parameter(fit_config, "sigma1", mb_result["sigma1"][signal_idx][0], signal_idx)
-            _fix_parameter(fit_config, "sigma2", mb_result["sigma2"][signal_idx][0], signal_idx)
-            _fix_parameter(fit_config, "frac1", mb_result["frac1"][signal_idx][0], signal_idx)
-            
-        elif func_type == 'doublecbsymm':
-            _fix_parameter(fit_config, "sigma", mb_result["sigma"][signal_idx][0], signal_idx)
-            _fix_parameter(fit_config, "alpha", mb_result["alpha"][signal_idx][0], signal_idx)
-            _fix_parameter(fit_config, "n", mb_result["n"][signal_idx][0], signal_idx)
+        if func_type in param_mapping:
+            for param_name in param_mapping[func_type]:
+                if param_name in mb_result:
+                    _fix_parameter(fit_config, param_name, 
+                                 mb_result[param_name][signal_idx][0], signal_idx)
 
 
 def _fix_parameter(fit_config, param_name, value, signal_idx, tolerance=0.001):
@@ -1158,41 +1158,39 @@ def _fix_parameter(fit_config, param_name, value, signal_idx, tolerance=0.001):
     fit_config[f"{param_name}_min{suffix}"] = value - tolerance
     fit_config[f"{param_name}_max{suffix}"] = value + tolerance
 
+def _merge_pdf_files(output_dir, prefix, output_name):
+    """Helper function to merge PDF files with a given prefix."""
+    pdf_files = [f for f in os.listdir(output_dir) if f.endswith('.pdf') and f.startswith(prefix)]
+    pdf_files = sorted(pdf_files, key=lambda x: (
+        int(x.split('_')[3]), 
+        int(x.split('_')[4]) if 'cent' in x else -1
+    ))
+    
+    merger = PdfWriter()
+    for pdf in pdf_files:
+        merger.append(os.path.join(output_dir, pdf))
+    merger.write(os.path.join(output_dir, output_name))
+    merger.close()
+
+
 def merge_pdfs(cfg):
     """Merge individual PDF files into a single PDF."""
     if "pdf" not in cfg["output"]["formats"]:
         return
 
-    # if output already exists, delete it
-    if os.path.exists(os.path.join(os.path.expanduser(cfg["output"]["directory"]), "fits", "ds_mass_merged.pdf")):
-        os.remove(os.path.join(os.path.expanduser(cfg["output"]["directory"]), "fits", "ds_mass_merged.pdf"))
-    if os.path.exists(os.path.join(os.path.expanduser(cfg["output"]["directory"]), "fits", "ds_massres_merged.pdf")):
-        os.remove(os.path.join(os.path.expanduser(cfg["output"]["directory"]), "fits", "ds_massres_merged.pdf"))
-
     output_dir = os.path.join(os.path.expanduser(cfg["output"]["directory"]), "fits")
-    pdf_files = [f for f in os.listdir(output_dir) if f.endswith('.pdf') and f.startswith('ds_mass_')]
-    pdf_files = sorted(pdf_files, key=lambda x: (
-        int(x.split('_')[3]), 
-        int(x.split('_')[4]) if 'cent' in x else -1
-    ))
-
-    pdf_files_residuals = [f for f in os.listdir(output_dir) if f.endswith('.pdf') and f.startswith('ds_massres_')]
-    pdf_files_residuals = sorted(pdf_files_residuals, key=lambda x: (
-        int(x.split('_')[3]),
-        int(x.split('_')[4]) if 'cent' in x else -1
-    ))
-
-    merger = PdfWriter()
-    for pdf in pdf_files:
-        merger.append(os.path.join(output_dir, pdf))
-    merger.write(os.path.join(output_dir, "ds_mass_merged.pdf"))
-    merger.close()
-
-    merger = PdfWriter()
-    for pdf in pdf_files_residuals:
-        merger.append(os.path.join(output_dir, pdf))
-    merger.write(os.path.join(output_dir, "ds_massres_merged.pdf"))
-    merger.close()
+    
+    # Remove existing merged files if they exist
+    for merged_file in ["ds_mass_merged.pdf", "ds_massres_merged.pdf"]:
+        file_path = os.path.join(output_dir, merged_file)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    
+    # Merge mass fit PDFs
+    _merge_pdf_files(output_dir, "ds_mass_", "ds_mass_merged.pdf")
+    
+    # Merge residual fit PDFs
+    _merge_pdf_files(output_dir, "ds_massres_", "ds_massres_merged.pdf")
 
 def fit(config_file_name):
     """
