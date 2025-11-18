@@ -18,17 +18,12 @@ import pandas as pd  # noqa: E402
 import uproot  # noqa: E402
 import yaml  # noqa: E402
 import ROOT  # noqa: E402
-import tensorflow as tf
-import zfit
+import tensorflow as tf  # noqa: E402
+import zfit  # noqa: E402
 from flarefly.data_handler import DataHandler  # noqa: E402
 from flarefly.fitter import F2MassFitter  # noqa: E402
 from flarefly.utils import Logger  # noqa: E402
 # pylint: disable=no-member
-
-
-import dataclasses
-import numpy as np
-import ROOT
 
 @dataclasses.dataclass
 class BinsHelper:
@@ -401,6 +396,82 @@ def load_inputs(cfg, cut_set):
     return h_mass, h_ev, h_collisions
 
 
+def _extract_signal_parameters(cfg):
+    """
+    Extract signal parameter names and values from configuration.
+    
+    Returns:
+        tuple: (init_values, min_values, max_values, fix_values, param_keys)
+    """
+    par_init_limit = cfg["fit_configs"]["signal"]["par_init_limit"]
+    
+    init_values = [sgn_func[par]["init"] for sgn_func in par_init_limit for par in sgn_func]
+    min_values = [sgn_func[par]["min"] for sgn_func in par_init_limit for par in sgn_func]
+    max_values = [sgn_func[par]["max"] for sgn_func in par_init_limit for par in sgn_func]
+    fix_values = [sgn_func[par]["fix"] for sgn_func in par_init_limit for par in sgn_func]
+    
+    param_keys = {
+        "init": [f"{par}_init_{i_func}" for i_func, sgn_func in enumerate(par_init_limit) for par in sgn_func],
+        "min": [f"{par}_min_{i_func}" for i_func, sgn_func in enumerate(par_init_limit) for par in sgn_func],
+        "max": [f"{par}_max_{i_func}" for i_func, sgn_func in enumerate(par_init_limit) for par in sgn_func],
+        "fix": [f"{par}_fix_{i_func}" for i_func, sgn_func in enumerate(par_init_limit) for par in sgn_func]
+    }
+    
+    return init_values, min_values, max_values, fix_values, param_keys
+
+
+def _create_base_fit_configs(cfg, cut_set):
+    """Create base fit configurations for pt bins."""
+    init_vals, min_vals, max_vals, fix_vals, _ = _extract_signal_parameters(cfg)
+    
+    # Zip all configuration parameters together
+    fit_configs = [(idx, *cfgs) for idx, cfgs in enumerate(zip(
+        cut_set["pt"]["min"],
+        cut_set["pt"]["max"],
+        cfg["fit_configs"]["mass"]["mins"],
+        cfg["fit_configs"]["mass"]["maxs"],
+        cfg["fit_configs"]["rebin"],
+        cfg["fit_configs"]["signal"]["signal_funcs"],
+        cfg["fit_configs"]["signal"]["fix_ds_sigma"],
+        cfg["fit_configs"]["signal"]["fix_dplus_sigma"],
+        cfg["fit_configs"]["signal"]["fix_sigma_dplus_to_ds"],
+        cfg["fit_configs"]["bkg"]["bkg_funcs"],
+        cfg["fit_configs"]["bkg"]["use_bkg_templ"],
+        *init_vals,
+        *min_vals,
+        *max_vals,
+        *fix_vals
+    ))]
+    
+    return fit_configs
+
+
+def _add_centrality_to_configs(fit_configs, cut_set):
+    """Add centrality bins to fit configurations."""
+    cent_bins = list(zip(cut_set["cent"]["min"], cut_set["cent"]["max"]))
+    configs_with_cent = itertools.product(cent_bins, fit_configs)
+    return [(*cent, *config) for cent, config in configs_with_cent]
+
+
+def _create_config_keys(cfg, has_centrality):
+    """Create configuration keys for the fit configuration dictionary."""
+    base_keys = [
+        "i_pt", "pt_min", "pt_max", "mass_min", "mass_max",
+        "rebin", "signal_func", "fix_ds_sigma", "fix_dplus_sigma", "fix_sigma_dplus_to_ds",
+        "bkg_func", "use_bkg_templ"
+    ]
+    
+    if has_centrality:
+        base_keys = ["cent_min", "cent_max"] + base_keys
+    
+    _, _, _, _, param_keys = _extract_signal_parameters(cfg)
+    
+    # Combine all parameter keys
+    all_keys = base_keys + param_keys["init"] + param_keys["min"] + param_keys["max"] + param_keys["fix"]
+    
+    return all_keys
+
+
 def create_fit_configs(cfg, cut_set):
     """
     Generate a list of fit configurations based on the provided configuration and cut sets.
@@ -426,47 +497,18 @@ def create_fit_configs(cfg, cut_set):
             - "bkg_func": Background function.
             - "use_bkg_templ": Use background template.
     """
-    fit_configs = [(idx, *cfgs) for idx, cfgs in enumerate(zip(
-        cut_set["pt"]["min"],
-        cut_set["pt"]["max"],
-        cfg["fit_configs"]["mass"]["mins"],
-        cfg["fit_configs"]["mass"]["maxs"],
-        cfg["fit_configs"]["rebin"],
-        cfg["fit_configs"]["signal"]["signal_funcs"],
-        cfg["fit_configs"]["signal"]["fix_ds_sigma"],
-        cfg["fit_configs"]["signal"]["fix_dplus_sigma"],
-        cfg["fit_configs"]["signal"]["fix_sigma_dplus_to_ds"],
-        cfg["fit_configs"]["bkg"]["bkg_funcs"],
-        cfg["fit_configs"]["bkg"]["use_bkg_templ"],
-        *[sgn_func[par]["init"] for sgn_func in cfg["fit_configs"]["signal"]["par_init_limit"] for par in sgn_func],
-        *[sgn_func[par]["min"] for sgn_func in cfg["fit_configs"]["signal"]["par_init_limit"] for par in sgn_func],
-        *[sgn_func[par]["max"] for sgn_func in cfg["fit_configs"]["signal"]["par_init_limit"] for par in sgn_func],
-        *[sgn_func[par]["fix"] for sgn_func in cfg["fit_configs"]["signal"]["par_init_limit"] for par in sgn_func]
-    ))]
-    if "cent" in cut_set:
-        fit_configs = itertools.product(
-            [*zip(cut_set["cent"]["min"], cut_set["cent"]["max"])],
-            fit_configs
-        )
-        fit_configs = [(*cent, *config) for cent, config in fit_configs]
-        config_keys = [
-            "cent_min", "cent_max", "i_pt", "pt_min", "pt_max", "mass_min", "mass_max",
-            "rebin", "signal_func", "fix_ds_sigma", "fix_dplus_sigma", "fix_sigma_dplus_to_ds",
-            "bkg_func", "use_bkg_templ"
-        ]
-    else:
-        config_keys = [
-            "i_pt", "pt_min", "pt_max", "mass_min", "mass_max",
-            "rebin", "signal_func", "fix_ds_sigma", "fix_dplus_sigma", "fix_sigma_dplus_to_ds",
-            "bkg_func", "use_bkg_templ"
-        ]
-    config_keys += [
-        *[f"{par}_init_{i_func}" for i_func, sgn_func in enumerate(cfg["fit_configs"]["signal"]["par_init_limit"]) for par in sgn_func],
-        *[f"{par}_min_{i_func}" for i_func, sgn_func in enumerate(cfg["fit_configs"]["signal"]["par_init_limit"]) for par in sgn_func],
-        *[f"{par}_max_{i_func}" for i_func, sgn_func in enumerate(cfg["fit_configs"]["signal"]["par_init_limit"]) for par in sgn_func],
-        *[f"{par}_fix_{i_func}" for i_func, sgn_func in enumerate(cfg["fit_configs"]["signal"]["par_init_limit"]) for par in sgn_func]
-    ]
+    # Create base configurations for pt bins
+    fit_configs = _create_base_fit_configs(cfg, cut_set)
+    
+    # Add centrality bins if present
+    has_centrality = "cent" in cut_set
+    if has_centrality:
+        fit_configs = _add_centrality_to_configs(fit_configs, cut_set)
+    
+    # Create configuration keys and convert to dictionaries
+    config_keys = _create_config_keys(cfg, has_centrality)
     fit_configs = [dict(zip(config_keys, config)) for config in fit_configs]
+    
     return fit_configs
 
 def get_sigma_from_cfg(cfg, fit_config, particle_name):
@@ -714,7 +756,12 @@ def initialise_signal(fitter, fit_config, idx):
     fitter.set_signal_initpar(idx, "frac", 0.1, limits=[0.0002, 1.0])
 
 
-def fix_signal_parameters(fitter, fit_config, idx):
+def fix_signal_parameters(fitter, cfg, fit_config, idx):
+    """
+    Fix signal parameters based on configuration.
+    
+    Note: This function is currently unused but kept for backward compatibility.
+    """
     particle = "ds" if idx == 0 else "dplus"
     if fit_config["signal_func"][idx] == "gaussian":
         sigma_ds = get_sigma_from_cfg(cfg, fit_config, particle)
@@ -732,101 +779,147 @@ def fix_signal_parameters(fitter, fit_config, idx):
         fitter.set_signal_initpar(idx, "nl", 50, limits=[30., 100.])
         fitter.set_signal_initpar(idx, "nr", 50, limits=[30., 100.])
 
-def do_fit(fit_config, cfg):  # pylint: disable=too-many-locals, too-many-branches, too-many-statements # noqa: E501
-    """Fit the invariant mass spectrum for a given configuration."""
-    pt_min = fit_config["pt_min"]
-    pt_max = fit_config["pt_max"]
-    pt_cent_suffix = f"{pt_min*10:.0f}_{pt_max*10:.0f}"
-
-    cent_min, cent_max = None, None
+def _get_centrality_suffix(fit_config):
+    """
+    Get centrality suffix for histogram names.
+    
+    Returns:
+        tuple: (cent_min, cent_max, suffix_part) where suffix_part is empty string if no centrality
+    """
     if "cent_min" in fit_config and "cent_max" in fit_config:
         cent_min = fit_config["cent_min"]
         cent_max = fit_config["cent_max"]
-        pt_cent_suffix += f"_cent_{cent_min:.0f}_{cent_max:.0f}"
+        return cent_min, cent_max, f"_cent_{cent_min:.0f}_{cent_max:.0f}"
+    return None, None, ""
 
-    # Create data handler based on centrality
+
+def _create_data_handler(cfg, fit_config, pt_min, pt_max, cent_min, cent_max):
+    """Create data handler for fitting."""
     if cent_min is not None and cent_max is not None:
         histoname = f'h_mass_{pt_min*10:.0f}_{pt_max*10:.0f}_cent_{cent_min:.0f}_{cent_max:.0f}'
     else:
         histoname = f'h_mass_{pt_min*10:.0f}_{pt_max*10:.0f}'
     
-    data_hdl = DataHandler(
+    return DataHandler(
         data=cfg["inputs"]["data"],
         histoname=histoname,
         limits=[fit_config["mass_min"], fit_config["mass_max"]], 
         rebin=fit_config["rebin"]
     )
 
+
+def _create_fitter_without_templates(fit_config, data_hdl, pt_cent_suffix):
+    """Create F2MassFitter without background templates."""
+    label_signal_pdfs = [r"$\mathrm{D_{s}^{+}}$ signal", r"$\mathrm{D^{+}}$ signal"]
+    label_bkg_pdfs = ["Combinatorial background"]
+    
+    return F2MassFitter(
+        data_hdl, name_signal_pdf=fit_config["signal_func"],
+        name_background_pdf=fit_config["bkg_func"],
+        name=f"ds_pt_{pt_cent_suffix}", chi2_loss=True,
+        label_signal_pdf=label_signal_pdfs,
+        label_bkg_pdf=label_bkg_pdfs,
+        verbosity=1, tol=1.e-1
+    )
+
+
+def _initialize_signal_functions(fitter, fit_config):
+    """Initialize signal functions for Ds and D+ particles."""
+    # Initialize Ds signal
+    fitter.set_particle_mass(0, pdg_id=431)
+    initialise_signal(fitter, fit_config, 0)
+    
+    # Initialize D+ signal if present
+    if len(fit_config["signal_func"]) > 1:
+        fitter.set_particle_mass(1, pdg_id=411)
+        initialise_signal(fitter, fit_config, 1)
+
+
+def _extract_fit_results(fitter, n_signal):
+    """Extract fit results from fitter object."""
+    return {
+        "raw_yields": [fitter.get_raw_yield(i) for i in range(n_signal)],
+        "mean": [fitter.get_mass(i) for i in range(n_signal)],
+        "significance": [fitter.get_significance(i, min=1.8, max=2.2) for i in range(n_signal)],
+        "signal": [fitter.get_signal(i, min=1.8, max=2.) for i in range(n_signal)],
+        "background": [fitter.get_background(i, min=1.8, max=2.) for i in range(n_signal)]
+    }
+
+
+def _create_empty_results(n_signal):
+    """Create empty results dictionary when fits are not saved."""
+    return {
+        "raw_yields": [None] * n_signal,
+        "sigma": [None] * n_signal,
+        "mean": [None] * n_signal,
+        "chi2": None,
+        "significance": [None] * n_signal,
+        "signal": [None] * n_signal,
+        "background": [None] * n_signal,
+        "fracs": None,
+        "converged": False
+    }
+
+
+def do_fit(fit_config, cfg):  # pylint: disable=too-many-locals
+    """Fit the invariant mass spectrum for a given configuration."""
+    pt_min = fit_config["pt_min"]
+    pt_max = fit_config["pt_max"]
+    pt_cent_suffix = f"{pt_min*10:.0f}_{pt_max*10:.0f}"
+    
+    # Extract centrality information
+    cent_min, cent_max, cent_suffix = _get_centrality_suffix(fit_config)
+    pt_cent_suffix += cent_suffix
+    
+    # Create data handler
+    data_hdl = _create_data_handler(cfg, fit_config, pt_min, pt_max, cent_min, cent_max)
+    
+    # Setup labels
     bkg_funcs = fit_config["bkg_func"]
     label_signal_pdfs = [r"$\mathrm{D_{s}^{+}}$ signal", r"$\mathrm{D^{+}}$ signal"]
     label_bkg_pdfs = ["Combinatorial background"]
     
-    # Handle background templates if needed
+    # Create fitter with or without background templates
     if fit_config["use_bkg_templ"]:
         fitter = _setup_fitter_with_templates(
             cfg, fit_config, data_hdl, bkg_funcs, label_signal_pdfs, 
             label_bkg_pdfs, pt_cent_suffix, pt_min, pt_max, cent_min, cent_max
         )
     else:
-        fitter = F2MassFitter(
-            data_hdl, name_signal_pdf=fit_config["signal_func"],
-            name_background_pdf=fit_config["bkg_func"],
-            name=f"ds_pt_{pt_cent_suffix}", chi2_loss=True,
-            label_signal_pdf=label_signal_pdfs,
-            label_bkg_pdf=label_bkg_pdfs,
-            verbosity=1, tol=1.e-1
-        )
-
-    # signals initialisation
-    fitter.set_particle_mass(0, pdg_id=431)
-    initialise_signal(fitter, fit_config, 0)
-
-    if len(fit_config["signal_func"]) > 1:
-        fitter.set_particle_mass(1, pdg_id=411)
-        initialise_signal(fitter, fit_config, 1)
-
-    # bkg initialisation
+        fitter = _create_fitter_without_templates(fit_config, data_hdl, pt_cent_suffix)
+    
+    # Initialize signal and background functions
+    _initialize_signal_functions(fitter, fit_config)
     _initialize_background_functions(fitter, bkg_funcs)
-
-    # Handle fixed sigma configurations
+    
+    # Apply fixed sigma configurations
     _apply_fixed_sigma_configs(fitter, cfg, fit_config)
-
+    
+    # Perform fit
     n_signal = len(fit_config["signal_func"])
     fit_result = fitter.mass_zfit()
     
+    # Extract and return results
     if cfg["output"]["save_all_fits"]:
         _save_fit_outputs(cfg, fitter, fit_config, bkg_funcs, pt_min, pt_max, cent_min, cent_max)
         
         fracs = fitter._F2MassFitter__get_all_fracs() # pylint: disable=protected-access
         corr_bkg_frac_dict, corr_bkg_frac_over_dplus_dict = _extract_background_fractions(fracs)
         
-        out_dict = {
-            "raw_yields": [fitter.get_raw_yield(i) for i in range(n_signal)],
-            "mean": [fitter.get_mass(i) for i in range(n_signal)],
+        out_dict = _extract_fit_results(fitter, n_signal)
+        out_dict.update({
             "chi2": float(fitter.get_chi2_ndf()),
-            "significance": [fitter.get_significance(i, min=1.8, max=2.2) for i in range(n_signal)],
-            "signal": [fitter.get_signal(i, min=1.8, max=2.) for i in range(n_signal)],
-            "background": [fitter.get_background(i, min=1.8, max=2.) for i in range(n_signal)],
             **corr_bkg_frac_dict,
             "fracs": fracs,
-            "converged": fit_result.converged, 
+            "converged": fit_result.converged,
             **corr_bkg_frac_over_dplus_dict
-        }
-
+        })
+        
         # Add signal function specific parameters
         _add_signal_parameters(out_dict, fitter, fit_config, n_signal)
     else:
-        out_dict = {
-            "raw_yields": [None] * n_signal,
-            "sigma": [None] * n_signal,
-            "mean": [None] * n_signal,
-            "chi2": None,
-            "significance": [None] * n_signal,
-            "signal": [None] * n_signal,
-            "background": [None] * n_signal,
-            "fracs": None,
-            "converged": False
-        }
+        out_dict = _create_empty_results(n_signal)
+    
     return out_dict
 
 
@@ -966,25 +1059,36 @@ def _add_signal_parameters(out_dict, fitter, fit_config, n_signal):
     """Add signal function specific parameters to output dictionary."""
     func_type = fit_config["signal_func"][0]
     
-    if func_type == "doublegaus":  #TODO: generalise in case different signal functions are used
-        out_dict["sigma1"] = [fitter.get_signal_parameter(i, "sigma1") for i in range(n_signal)]
-        out_dict["sigma2"] = [fitter.get_signal_parameter(i, "sigma2") for i in range(n_signal)]
-        out_dict["frac1"] = [fitter.get_signal_parameter(i, "frac1") for i in range(n_signal)]
-    elif func_type == "gaussian":
-        out_dict["sigma"] = [fitter.get_sigma(i) for i in range(n_signal)]
-    elif func_type == "doublecb":
-        out_dict["sigma"] = [fitter.get_signal_parameter(i, "sigma") for i in range(n_signal)]
-        out_dict["alphar"] = [fitter.get_signal_parameter(i, "alphar") for i in range(n_signal)]
-        out_dict["alphal"] = [fitter.get_signal_parameter(i, "alphal") for i in range(n_signal)]
-        out_dict["nl"] = [fitter.get_signal_parameter(i, "nl") for i in range(n_signal)]
-        out_dict["nr"] = [fitter.get_signal_parameter(i, "nr") for i in range(n_signal)]
-    elif func_type == "doublecbsymm":
-        out_dict["sigma"] = [fitter.get_signal_parameter(i, "sigma") for i in range(n_signal)]
-        out_dict["alpha"] = [fitter.get_signal_parameter(i, "alpha") for i in range(n_signal)]
-        out_dict["n"] = [fitter.get_signal_parameter(i, "n") for i in range(n_signal)]
-    elif func_type == "genergausexptailsymm":
-        out_dict["sigma"] = [fitter.get_signal_parameter(i, "sigma") for i in range(n_signal)]
-        out_dict["alpha"] = [fitter.get_signal_parameter(i, "alpha") for i in range(n_signal)]
+    # Define parameter mapping for each function type
+    param_mapping = {
+        "gaussian": [("sigma", lambda i: fitter.get_sigma(i))],
+        "doublegaus": [
+            ("sigma1", lambda i: fitter.get_signal_parameter(i, "sigma1")),
+            ("sigma2", lambda i: fitter.get_signal_parameter(i, "sigma2")),
+            ("frac1", lambda i: fitter.get_signal_parameter(i, "frac1"))
+        ],
+        "doublecb": [
+            ("sigma", lambda i: fitter.get_signal_parameter(i, "sigma")),
+            ("alphar", lambda i: fitter.get_signal_parameter(i, "alphar")),
+            ("alphal", lambda i: fitter.get_signal_parameter(i, "alphal")),
+            ("nl", lambda i: fitter.get_signal_parameter(i, "nl")),
+            ("nr", lambda i: fitter.get_signal_parameter(i, "nr"))
+        ],
+        "doublecbsymm": [
+            ("sigma", lambda i: fitter.get_signal_parameter(i, "sigma")),
+            ("alpha", lambda i: fitter.get_signal_parameter(i, "alpha")),
+            ("n", lambda i: fitter.get_signal_parameter(i, "n"))
+        ],
+        "genergausexptailsymm": [
+            ("sigma", lambda i: fitter.get_signal_parameter(i, "sigma")),
+            ("alpha", lambda i: fitter.get_signal_parameter(i, "alpha"))
+        ]
+    }
+    
+    # Add parameters based on function type
+    if func_type in param_mapping:
+        for param_name, getter_func in param_mapping[func_type]:
+            out_dict[param_name] = [getter_func(i) for i in range(n_signal)]
 
 
 def _save_fit_outputs(cfg, fitter, fit_config, bkg_funcs, pt_min, pt_max, cent_min, cent_max):
