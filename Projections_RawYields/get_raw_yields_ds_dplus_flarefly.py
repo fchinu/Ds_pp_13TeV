@@ -441,7 +441,8 @@ def create_fit_configs(cfg, cut_set):
         *[sgn_func[par]["init"] for sgn_func in cfg["fit_configs"]["signal"]["par_init_limit"] for par in sgn_func],
         *[sgn_func[par]["min"] for sgn_func in cfg["fit_configs"]["signal"]["par_init_limit"] for par in sgn_func],
         *[sgn_func[par]["max"] for sgn_func in cfg["fit_configs"]["signal"]["par_init_limit"] for par in sgn_func],
-        *[sgn_func[par]["fix"] for sgn_func in cfg["fit_configs"]["signal"]["par_init_limit"] for par in sgn_func]
+        *[sgn_func[par]["fix_to_config_value"] for sgn_func in cfg["fit_configs"]["signal"]["par_init_limit"] for par in sgn_func],
+        *[sgn_func[par]["fix_to_file"] for sgn_func in cfg["fit_configs"]["signal"]["par_init_limit"] for par in sgn_func]
     ))]
     if "cent" in cut_set:
         fit_configs = itertools.product(
@@ -464,7 +465,8 @@ def create_fit_configs(cfg, cut_set):
         *[f"{par}_init_{i_func}" for i_func, sgn_func in enumerate(cfg["fit_configs"]["signal"]["par_init_limit"]) for par in sgn_func],
         *[f"{par}_min_{i_func}" for i_func, sgn_func in enumerate(cfg["fit_configs"]["signal"]["par_init_limit"]) for par in sgn_func],
         *[f"{par}_max_{i_func}" for i_func, sgn_func in enumerate(cfg["fit_configs"]["signal"]["par_init_limit"]) for par in sgn_func],
-        *[f"{par}_fix_{i_func}" for i_func, sgn_func in enumerate(cfg["fit_configs"]["signal"]["par_init_limit"]) for par in sgn_func]
+        *[f"{par}_fix_to_config_value_{i_func}" for i_func, sgn_func in enumerate(cfg["fit_configs"]["signal"]["par_init_limit"]) for par in sgn_func],
+        *[f"{par}_fix_to_file_{i_func}" for i_func, sgn_func in enumerate(cfg["fit_configs"]["signal"]["par_init_limit"]) for par in sgn_func]
     ]
     fit_configs = [dict(zip(config_keys, config)) for config in fit_configs]
     return fit_configs
@@ -604,24 +606,24 @@ def _read_sigma_from_root(file_path, fit_config, particle_name, signal_func):
         cent_suffix = f'_{fit_config["cent_min"]}_{fit_config["cent_max"]}' if has_centrality else ''
         
         histogram_names = {
-            "doublegaus": [f'h_sigma1_{particle_name}{cent_suffix}', 
-                          f'h_sigma2_{particle_name}{cent_suffix}', 
-                          f'h_frac1_{particle_name}{cent_suffix}'],
-            "gaussian": [f'h_sigma_{particle_name}{cent_suffix}'],
-            "doublecb": [f'h_sigma_{particle_name}{cent_suffix}', 
-                        f'h_alphar_{particle_name}{cent_suffix}',
-                        f'h_alphal_{particle_name}{cent_suffix}',
-                        f'h_nl_{particle_name}{cent_suffix}',
-                        f'h_nr_{particle_name}{cent_suffix}'],
-            "doublecbsymm": [f'h_sigma_{particle_name}{cent_suffix}',
-                             f'h_alpha_{particle_name}{cent_suffix}',
-                             f'h_n_{particle_name}{cent_suffix}']
+            "doublegaus": {"sigma1": f'h_sigma1_{particle_name}{cent_suffix}', 
+                          "sigma2": f'h_sigma2_{particle_name}{cent_suffix}', 
+                          "frac1": f'h_frac1_{particle_name}{cent_suffix}'},
+            "gaussian": {"sigma": f'h_sigma_{particle_name}{cent_suffix}'},
+            "doublecb": {"sigma": f'h_sigma_{particle_name}{cent_suffix}', 
+                        "alphar": f'h_alphar_{particle_name}{cent_suffix}',
+                        "alphal": f'h_alphal_{particle_name}{cent_suffix}',
+                        "nl": f'h_nl_{particle_name}{cent_suffix}',
+                        "nr": f'h_nr_{particle_name}{cent_suffix}'},
+            "doublecbsymm": {"sigma": f'h_sigma_{particle_name}{cent_suffix}',
+                             "alpha": f'h_alpha_{particle_name}{cent_suffix}',
+                             "n": f'h_n_{particle_name}{cent_suffix}'}
         }
         
         hist_names = histogram_names[signal_func]
-        values = [f[name].values()[fit_config["i_pt"]] for name in hist_names]
+        values = {par: f[hist_name].values()[fit_config["i_pt"]] for par, hist_name in hist_names.items()}
         
-        return values[0] if len(values) == 1 else tuple(values)
+        return values
 
 
 def get_sigma_dplus_to_ds(cfg, fit_config, fitter):
@@ -656,7 +658,7 @@ def get_sigma_dplus_to_ds(cfg, fit_config, fitter):
     return sigma * cfg_sigma_ratio
 
 
-def initialise_signal(fitter, fit_config, idx):
+def initialise_signal(fitter, cfg, fit_config, idx):
     """
     Initialise the signal parameters for the fitter based on the provided configuration.
 
@@ -667,15 +669,31 @@ def initialise_signal(fitter, fit_config, idx):
     """
 
     def set_param(param):
+        fix_to_config_value = fit_config.get(f"{param}_fix_to_config_value_{idx}", False)
+        fix_to_file = fit_config.get(f"{param}_fix_to_file_{idx}", False)
+        fix = fix_to_config_value or fix_to_file
+        if fix_to_config_value and fix_to_file:
+            Logger(f"Both 'fix_to_config_value' and 'fix_to_file' are set for parameter '{param}' "
+                   f"of signal index {idx}. Please choose only one option.", "FATAL")
+        if fix_to_file:
+            value = _read_sigma_from_root(
+                cfg["fit_configs"]["signal"]["file_for_params_fix"],
+                fit_config,
+                "ds" if idx == 0 else "dplus",
+                fit_config["signal_func"][idx]
+            )[param]
+        else:
+            value = fit_config.get(f"{param}_init_{idx}")
+
         fitter.set_signal_initpar(
             idx,
             param,
-            fit_config.get(f"{param}_init_{idx}", defaults[param]["init"]),
+            value,
             limits=[
                 fit_config.get(f"{param}_min_{idx}", defaults[param]["min"]),
                 fit_config.get(f"{param}_max_{idx}", defaults[param]["max"]),
             ],
-            fix=fit_config.get(f"{param}_fix_{idx}", False)
+            fix=fix
         )
 
     func_type = fit_config["signal_func"][idx]
@@ -779,11 +797,11 @@ def do_fit(fit_config, cfg):  # pylint: disable=too-many-locals, too-many-branch
 
     # signals initialisation
     fitter.set_particle_mass(0, pdg_id=431)
-    initialise_signal(fitter, fit_config, 0)
+    initialise_signal(fitter, cfg, fit_config, 0)
 
     if len(fit_config["signal_func"]) > 1:
         fitter.set_particle_mass(1, pdg_id=411)
-        initialise_signal(fitter, fit_config, 1)
+        initialise_signal(fitter, cfg, fit_config, 1)
 
     # bkg initialisation
     _initialize_background_functions(fitter, bkg_funcs)
@@ -935,13 +953,13 @@ def _fix_signal_sigma(fitter, cfg, fit_config, signal_idx, particle_type):
     if func_type == "gaussian":
         fitter.set_signal_initpar(signal_idx, "sigma", sigma_values, limits=[sigma_values-0.001, sigma_values+0.001], fix=True)
     elif func_type == "doublegaus":
-        fitter.set_signal_initpar(signal_idx, "sigma1", sigma_values[0], limits=[sigma_values[0]-0.001, sigma_values[0]+0.001], fix=True)
-        fitter.set_signal_initpar(signal_idx, "sigma2", sigma_values[1], limits=[sigma_values[1]-0.001, sigma_values[1]+0.001], fix=True)
-        fitter.set_signal_initpar(signal_idx, "frac1", sigma_values[2], limits=[sigma_values[2]-0.001, sigma_values[2]+0.001], fix=True)
+        fitter.set_signal_initpar(signal_idx, "sigma1", sigma_values["sigma1"], limits=[sigma_values["sigma1"]-0.001, sigma_values["sigma1"]+0.001], fix=True)
+        fitter.set_signal_initpar(signal_idx, "sigma2", sigma_values["sigma2"], limits=[sigma_values["sigma2"]-0.001, sigma_values["sigma2"]+0.001], fix=True)
+        fitter.set_signal_initpar(signal_idx, "frac1", sigma_values["frac1"], limits=[sigma_values["frac1"]-0.001, sigma_values["frac1"]+0.001], fix=True)
     elif func_type == "doublecbsymm":
-        fitter.set_signal_initpar(signal_idx, "sigma", sigma_values[0], limits=[sigma_values[0]-0.001, sigma_values[0]+0.001], fix=True)
-        fitter.set_signal_initpar(signal_idx, "alpha", sigma_values[1], limits=[sigma_values[1]-0.001, sigma_values[1]+0.001], fix=True)
-        fitter.set_signal_initpar(signal_idx, "n", sigma_values[2], limits=[sigma_values[2]-0.001, sigma_values[2]+0.001], fix=True)
+        fitter.set_signal_initpar(signal_idx, "sigma", sigma_values["sigma"], limits=[sigma_values["sigma"]-0.001, sigma_values["sigma"]+0.001], fix=True)
+        fitter.set_signal_initpar(signal_idx, "alpha", sigma_values["alpha"], limits=[sigma_values["alpha"]-0.001, sigma_values["alpha"]+0.001], fix=True)
+        fitter.set_signal_initpar(signal_idx, "n", sigma_values["n"], limits=[sigma_values["n"]-0.001, sigma_values["n"]+0.001], fix=True)
 
 
 def _extract_background_fractions(fracs):
