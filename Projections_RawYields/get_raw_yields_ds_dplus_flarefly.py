@@ -672,18 +672,18 @@ def initialise_signal(fitter, cfg, fit_config, idx):
         fix_to_config_value = fit_config.get(f"{param}_fix_to_config_value_{idx}", False)
         fix_to_file = fit_config.get(f"{param}_fix_to_file_{idx}", False)
         fix = fix_to_config_value or fix_to_file
-        if fix_to_config_value and fix_to_file:
+        if fix_to_config_value and fix_to_file and fit_config["cent_min"]==0 and fit_config["cent_max"]==100:
             Logger(f"Both 'fix_to_config_value' and 'fix_to_file' are set for parameter '{param}' "
                    f"of signal index {idx}. Please choose only one option.", "FATAL")
-        if fix_to_file:
+        if fix_to_config_value:
+            value = fit_config.get(f"{param}_init_{idx}")
+        else:
             value = _read_sigma_from_root(
                 cfg["fit_configs"]["signal"]["file_for_params_fix"],
                 fit_config,
                 "ds" if idx == 0 else "dplus",
                 fit_config["signal_func"][idx]
             )[param]
-        else:
-            value = fit_config.get(f"{param}_init_{idx}")
 
         fitter.set_signal_initpar(
             idx,
@@ -1217,6 +1217,10 @@ def fit(config_file_name):
     # Save results
     output_df = []
     for result, fit_config in results:
+        out_dict = result.result()
+        out_dict.update(fit_config)
+        output_df.append(out_dict)
+    for result, fit_config in results_fracs:
         out_dict = result.result()
         out_dict.update(fit_config)
         output_df.append(out_dict)
