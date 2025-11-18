@@ -18,41 +18,48 @@ fit_configs:
     maxs: [2.1, 2.1, 2.1, 2.15, 2.15, 2.15]
   rebin: [2, 2, 2, 2, 4, 4]
   signal:
-    signal_funcs: [["gaussian", "gaussian"], ["gaussian", "gaussian"], ["gaussian", "gaussian"],
-      ["gaussian", "gaussian"], ["gaussian", "gaussian"], ["gaussian", "gaussian"]]
+    signal_funcs: [["doublecbsymm", "doublecbsymm"], ["doublecbsymm", "doublecbsymm"], ["doublecbsymm", "doublecbsymm"],
+      ["doublecbsymm", "doublecbsymm"], ["doublecbsymm", "doublecbsymm"], ["doublecbsymm", "doublecbsymm"]]
     par_init_limit:
       - sigma:
           init: [0.001, 0.01, 0.01, 0.02, 0.02, 0.02]
           min: [0.001, 0.001, 0.001, 0.001, 0.001, 0.001]
           max: [0.013, 0.013, 0.02, 0.03, 0.04, 0.04]
-          fix: [false, false, false, false, false, false]
+          fix_to_config_value: [false, false, false, false, false, false]
+          fix_to_file: [false, false, false, false, false, false]
         alpha:
-          init: [1.95, 1.74, 1.64, 1.66, 1.63, 1.84]
+          init: [1.40, 1.22, 1.39, 1.62, 1.59, 1.43]
           min: [0., 0., 0., 0., 0.5, 0.75]
           max: [5., 5., 5., 5., 5., 5.]
-          fix: [true, true, true, true, true, true]
+          fix_to_config_value: [false, false, false, false, false, false]
+          fix_to_file: [false, false, false, false, false, false]
         n:
-          init: [3.64, 3.72, 4.28, 3.94, 4.44, 3.25]
+          init: [23.75, 39.00, 5.67, 3.00, 3.07, 3.08]
           min: [3, 3, 3, 3, 3, 3]
           max: [100., 100., 100., 100., 100., 100.]
-          fix: [true, true, true, true, true, true]
+          fix_to_config_value: [false, false, false, false, false, false]
+          fix_to_file: [false, false, false, false, false, false]
       - sigma:
           init: [0.001, 0.01, 0.015, 0.02, 0.02, 0.02]
           min: [0.001, 0.001, 0.001, 0.001, 0.001, 0.001]
           max: [0.013, 0.013, 0.025, 0.03, 0.04, 0.04]
-          fix: [false, false, false, false, false, false]
+          fix_to_config_value: [false, false, false, false, false, false]
+          fix_to_file: [false, false, false, false, false, false]
         alpha:
-          init: [1.80, 1.73, 1.66, 1.63, 1.63, 1.73]
+          init: [1.48, 1.39, 1.38, 1.34, 1.37, 1.27]
           min: [0., 0., 0., 0., 0.5, 0.75]
           max: [5., 5., 5., 5., 5., 5.]
-          fix: [true, true, true, true, true, true]
+          fix_to_config_value: [false, false, false, false, false, false]
+          fix_to_file: [false, false, false, false, false, false]
         n:
-          init: [4.10, 3.77, 4.14, 4.26, 3.98, 3.95]
+          init: [87.14, 7.17, 6.41, 9.38, 17.03, 19.76]
           min: [3, 3, 3, 3, 3, 3]
           max: [100., 100., 100., 100., 100., 100.]
-          fix: [true, true, true, true, true, true]
+          fix_to_config_value: [false, false, false, false, false, false]
+          fix_to_file: [false, false, false, false, false, false]
 
-    fix_sigma_to_mb: [false, false, false, false, false, false]
+    file_for_params_fix: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/MC/LHC25a5_norm_vars_doublecb/RawYields/mass_fits.root # path to root file. If null, no file is used
+    fix_sigma_to_mb: [true, true, true, true, true, true]
     fix_ds_sigma: [false, false, false, false, false, false]
     ds_sigma: # value, list or path to root_file. If null or empty, fit MC and then use that sigma
     fix_dplus_sigma: [false, false, false, false, false, false]
