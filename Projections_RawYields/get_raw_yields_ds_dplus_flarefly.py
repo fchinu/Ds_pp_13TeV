@@ -1067,7 +1067,7 @@ def _apply_signal_constraints(fit_config, mb_result):
 def _fix_parameter(fit_config, param_name, value, signal_idx, tolerance=0.001):
     """Fix a parameter to a specific value with small tolerance."""
     suffix = f"_{signal_idx}"
-    fit_config[f"{param_name}_fix{suffix}"] = True
+    fit_config[f"{param_name}_fix_to_config_value{suffix}"] = True
     fit_config[f"{param_name}_init{suffix}"] = value
     fit_config[f"{param_name}_min{suffix}"] = value - tolerance
     fit_config[f"{param_name}_max{suffix}"] = value + tolerance
@@ -1158,7 +1158,7 @@ def fit(config_file_name):
     bkg_cfg = cfg["fit_configs"]["bkg"]
     if (any(bkg_cfg["use_bkg_templ"]) and any(bkg_cfg["templ_norm"]["fix_to_mb"])) or\
             any(cfg["fit_configs"]["signal"]["fix_sigma_to_mb"]):
-        
+
         # Execute MB fits first
         results_fracs = []
         with ProcessPoolExecutor(max_workers=cfg["max_workers"]) as executor:
@@ -1198,7 +1198,8 @@ def fit(config_file_name):
     results = []
     with ProcessPoolExecutor(max_workers=cfg["max_workers"]) as executor:
         for fit_config in fit_configs:
-            results.append((executor.submit(do_fit, fit_config, cfg), fit_config))
+            if not (("cent" in cut_set) and fit_config["cent_min"] == 0 and fit_config["cent_max"] == 100):
+                results.append((executor.submit(do_fit, fit_config, cfg), fit_config))
 
     if "root" in cfg["output"]["formats"]:
         # get all the partial root files in the output directory
