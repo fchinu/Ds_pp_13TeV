@@ -52,8 +52,8 @@ class CorrelatedBackgroundConfig:  # pylint: disable=too-many-instance-attribute
     signal_br: BRInfo
 
     # To be set only by FitHandler, for fixing to MB fit value
-    _fix_to_value: Optional[float] = None
-    _value_for_fix: Optional[float] = None
+    fix_to_value: Optional[float] = None
+    value_for_fix: Optional[float] = None
 
 @dataclasses.dataclass(frozen=True)
 class FitConfig:  # pylint: disable=too-many-instance-attributes
@@ -258,31 +258,6 @@ class FitHandler():  # pylint: disable=too-few-public-methods
                     fix=is_fixed
                 )
 
-    def _fix_params_to_mb_fit(self):
-        """Fix parameters to those obtained from the MB fit, if requested."""
-        for idx in range(len(self._cfg.signal_pdfs)):
-            for param_name, settings in self._cfg.param_setup[idx].items():
-                if settings["fix_to_mb"]:
-                    # Get value from MB fitter
-                    val = self._result[(0, 100)][param_name][idx][0]
-                    self._cfg.param_setup[idx][param_name]["init"] = val
-                    self._cfg.param_setup[idx][param_name]["fix_to_mb"] = False
-                    self._cfg.param_setup[idx][param_name]["fix_to_config_value"] = True
-
-    def _read_param_from_file(self, fit_config: Dict, idx: int, param: str) -> float:
-        """Read parameter value from ROOT file."""
-        file_path = self._cfg["fit_configs"]["signal"]["file_for_params_fix"]
-        particle = "ds" if idx == 0 else "dplus"
-
-        cent_suffix = ""
-        if "cent_min" in fit_config and "cent_max" in fit_config:
-            cent_suffix = f'_{fit_config["cent_min"]}_{fit_config["cent_max"]}'
-
-        hist_name = f'h_{param}_{particle}{cent_suffix}'
-
-        with uproot.open(file_path) as f:
-            return f[hist_name].values()[fit_config["i_pt"]]
-
     def _setup_correlated_backgrounds(
         self,
         executor: FitExecutor
@@ -308,7 +283,7 @@ class FitHandler():  # pylint: disable=too-few-public-methods
                 name = bkg.name
             )
 
-    def _load_backgrounds(self) -> List[Dict]:
+    def _load_backgrounds(self) -> List[CorrelatedBackgroundData]:
         """Load correlated background configurations."""
         bkg_cfg = self._cfg.correlated_bkg
         backgrounds = []
@@ -335,8 +310,8 @@ class FitHandler():  # pylint: disable=too-few-public-methods
 
     def _get_corr_bkg_norm(self, bkg: CorrelatedBackground) -> Optional[float]:
         """Get correlated background normalization from file if specified."""
-        if self._cfg.correlated_bkg._fix_to_value:  # pylint: disable=protected-access
-            return self._cfg.correlated_bkg._value_for_fix  # pylint: disable=protected-access
+        if self._cfg.correlated_bkg.fix_to_value:
+            return self._cfg.correlated_bkg.value_for_fix
 
         if self._cfg.correlated_bkg.fix_to_file:
             # Read from file

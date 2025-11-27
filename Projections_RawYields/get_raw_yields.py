@@ -677,8 +677,6 @@ def fit(config_file_name):  # pylint: disable=too-many-locals, too-many-statemen
     with ProcessPoolExecutor(max_workers=cfg["max_workers"]) as executor:
         futures = []
         for fit_config in fit_configs:
-            pt_min = fit_config.pt_min
-            pt_max = fit_config.pt_max
             futures.append(executor.submit(
                 run_fit, fit_config
             ))
@@ -710,13 +708,13 @@ def fit(config_file_name):  # pylint: disable=too-many-locals, too-many-statemen
                 )
                 futures.append(executor.submit(run_fit, fit_config))
 
-            for future in tqdm(as_completed(futures), total=len(futures)):
-                fit_cfg, res = future.result()
-                pt_min = fit_cfg.pt_min
-                pt_max = fit_cfg.pt_max
-                cent_min = fit_cfg.cent_min
-                cent_max = fit_cfg.cent_max
-                results[(pt_min, pt_max), (cent_min, cent_max)] = (fit_cfg, res)
+        for future in tqdm(as_completed(futures), total=len(futures)):
+            fit_cfg, res = future.result()
+            pt_min = fit_cfg.pt_min
+            pt_max = fit_cfg.pt_max
+            cent_min = fit_cfg.cent_min
+            cent_max = fit_cfg.cent_max
+            results[(pt_min, pt_max), (cent_min, cent_max)] = (fit_cfg, res)
 
     merge_pdfs(cfg)
 

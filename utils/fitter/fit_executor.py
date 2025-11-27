@@ -229,27 +229,29 @@ class FitExecutor:  # pylint: disable=too-many-instance-attributes
     def _extract_results(self, converged: bool) -> Dict:
         """Extract fit results into dictionary."""
         n_signal = len(self._signal_functions)
+        if converged:
+            results = {
+                "raw_yields": [list(self._fitter.get_raw_yield(i)) for i in range(n_signal)],
+                "mean": [list(self._fitter.get_mass(i)) for i in range(n_signal)],
+                "chi2": float(self._fitter.get_chi2_ndf()),
+                "significance": [list(self._fitter.get_significance(i)) for i in range(n_signal)],
+                "signal": [list(self._fitter.get_signal(i)) for i in range(n_signal)],
+                "background": [list(self._fitter.get_background(i)) for i in range(n_signal)],
+                "converged": converged
+            }
 
-        results = {
-            "raw_yields": [list(self._fitter.get_raw_yield(i)) for i in range(n_signal)],
-            "mean": [list(self._fitter.get_mass(i)) for i in range(n_signal)],
-            "chi2": float(self._fitter.get_chi2_ndf()),
-            "significance": [list(self._fitter.get_significance(i)) for i in range(n_signal)],
-            "signal": [list(self._fitter.get_signal(i)) for i in range(n_signal)],
-            "background": [list(self._fitter.get_background(i)) for i in range(n_signal)],
-            "converged": converged
-        }
+            # Add signal-specific parameters
+            self._add_signal_params_to_results(results, n_signal)
 
-        # Add signal-specific parameters
-        self._add_signal_params_to_results(results, n_signal)
-
-        # Add background fractions
-        try:
-            fracs = self._fitter._F2MassFitter__get_all_fracs()  # pylint: disable=protected-access
-            results["fracs"] = list(fracs)
-            results.update(self._extract_bkg_fractions(fracs))
-        except:  # pylint: disable=bare-except
-            results["fracs"] = None
+            # Add background fractions
+            try:
+                fracs = self._fitter._F2MassFitter__get_all_fracs()  # pylint: disable=protected-access
+                results["fracs"] = list(fracs)
+                results.update(self._extract_bkg_fractions(fracs))
+            except Exception:
+                results["fracs"] = None
+        else:
+            results = self._create_empty_result(n_signal)
 
         return results
 
