@@ -5,6 +5,8 @@ import dataclasses
 from typing import Dict, List, Tuple
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""  # pylint: disable=wrong-import-position
+import sys
+sys.path.append(os.path.abspath(os.path.join(__file__, '../../utils/fitter')))
 from tqdm import tqdm
 import uproot
 import yaml
