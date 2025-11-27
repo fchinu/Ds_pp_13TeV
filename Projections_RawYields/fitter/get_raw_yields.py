@@ -1,3 +1,4 @@
+"""Script to perform fitting of invariant mass distributions for Ds and D+ mesons"""
 import argparse
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import dataclasses
@@ -14,7 +15,15 @@ from pypdf import PdfWriter
 import tensorflow as tf
 tf.config.threading.set_intra_op_parallelism_threads(20)
 tf.config.threading.set_inter_op_parallelism_threads(20)
-from fit_handler import FitHandler, BRInfo, CorrelatedBackground, CorrelatedBackgroundConfig, FitConfig
+from fit_handler import (
+    FitHandler,
+    BRInfo,
+    CorrelatedBackground,
+    CorrelatedBackgroundConfig,
+    FitConfig
+)
+
+# pylint: disable=no-member  # (ROOT dynamic members)
 
 @dataclasses.dataclass
 class BinsHelper:
@@ -225,7 +234,7 @@ class HistHandler:  # pylint: disable=too-many-instance-attributes
         # Signal over background
         for suffix in ["_ds", "_dplus"]:
             idx = 0 if suffix == "_ds" else 1
-            if (len(row["signal"]) > idx and len(row["background"]) > idx and 
+            if (len(row["signal"]) > idx and len(row["background"]) > idx and
                 row["background"][idx][0] != 0):
                 value = row["signal"][idx][0] / row["background"][idx][0]
                 error = row["signal"][idx][1] / row["background"][idx][0]
@@ -235,7 +244,7 @@ class HistHandler:  # pylint: disable=too-many-instance-attributes
                 )
 
         # Sigma ratio (second peak / first peak)
-        if ("sigma" in row and len(row["sigma"]) > 1 and 
+        if ("sigma" in row and len(row["sigma"]) > 1 and
             row["sigma"][0][0] != 0):
             value = row["sigma"][1][0] / row["sigma"][0][0]
             self._set_histogram_values(
@@ -264,10 +273,10 @@ class HistHandler:  # pylint: disable=too-many-instance-attributes
         for _, row in df.iterrows():
             i_pt = self._pt_info.mins.index(row["pt_min_cfg"])
             i_cent = self._get_centrality_index(row)
-            
+
             # Get available observables for this row
             available_observables = self._get_available_observables(row)
-            
+
             # Process different types of observables
             self._process_common_observables(row, i_pt, i_cent, available_observables)
             self._process_derived_observables(row, i_pt, i_cent)
@@ -288,17 +297,17 @@ class HistHandler:  # pylint: disable=too-many-instance-attributes
     def obs_common(self):
         """Get list of common observable names for backward compatibility."""
         return list(self._observable_config["common"].keys())
-    
+
     @property
     def axes_titles_common(self):
         """Get list of common observable axis titles for backward compatibility."""
         return list(self._observable_config["common"].values())
-    
+
     @property
     def obs_not_common(self):
         """Get list of non-common observable names for backward compatibility."""
         return list(self._observable_config["not_common"].keys())
-    
+
     @property
     def axes_titles_not_common(self):
         """Get list of non-common observable axis titles for backward compatibility."""
@@ -306,6 +315,7 @@ class HistHandler:  # pylint: disable=too-many-instance-attributes
 
 
 def fitconfig_to_dict(cfg: FitConfig) -> dict:
+    """Convert FitConfig dataclass to dictionary with modified keys."""
     base = dataclasses.asdict(cfg)
     return {f"{k}_cfg": v for k, v in base.items()}
 
@@ -322,7 +332,7 @@ def merge_pdfs(cfg):
     )
     if os.path.exists(fits_out_path):
         os.remove(fits_out_path)
-    
+
     residuals_out_path = os.path.join(
         os.path.expanduser(cfg["output"]["directory"]),
         "fits",
@@ -332,13 +342,14 @@ def merge_pdfs(cfg):
         os.remove(residuals_out_path)
 
     output_dir = os.path.join(os.path.expanduser(cfg["output"]["directory"]), "fits")
-    pdf_files = [f for f in os.listdir(output_dir) if f.endswith('.pdf') and f.startswith('ds_mass_')]
+    files = os.listdir(output_dir)
+    pdf_files = [f for f in files if f.endswith('.pdf') and f.startswith('ds_mass_')]
     pdf_files = sorted(pdf_files, key=lambda x: (
         int(x.split('_')[3]),
         int(x.split('_')[4]) if 'cent' in x else -1
     ))
 
-    pdf_files_residuals = [f for f in os.listdir(output_dir) if f.endswith('.pdf') and f.startswith('ds_massres_')]
+    pdf_files_residuals = [f for f in files if f.endswith('.pdf') and f.startswith('ds_massres_')]
     pdf_files_residuals = sorted(pdf_files_residuals, key=lambda x: (
         int(x.split('_')[3]),
         int(x.split('_')[4]) if 'cent' in x else -1
@@ -410,10 +421,18 @@ def get_corr_bkg_config(cfg: Dict, i_pt: int) -> CorrelatedBackgroundConfig:
         ],
         signal_norm_file=bkg_norm["signal"]["file_norm"],
         signal_hist_name=bkg_norm["signal"]["hist_name"],
-        signal_br=BRInfo(pdg=bkg_norm["signal"]["br"]["pdg"], simulations=bkg_norm["signal"]["br"]["simulations"])
+        signal_br=BRInfo(
+            pdg=bkg_norm["signal"]["br"]["pdg"],
+            simulations=bkg_norm["signal"]["br"]["simulations"]
+        )
     )
 
-def get_parameter_setup(cfg: List[Dict], i_pt: int, mb_result: Dict = None, result_sigma_fix: Dict = None) -> List[Dict]:
+def get_parameter_setup(
+        cfg: List[Dict],
+        i_pt: int,
+        mb_result: Dict = None,
+        result_sigma_fix: Dict = None
+    ) -> List[Dict]:
     """
     Get parameter setup based on the provided configuration.
 
@@ -424,7 +443,8 @@ def get_parameter_setup(cfg: List[Dict], i_pt: int, mb_result: Dict = None, resu
     Returns:
     List[Dict]: Parameter setup dictionary.
     """
-    param_cfg = cfg["fit_configs"]["signal"]["par_init_limit"]
+    sgn_cfg = cfg["fit_configs"]["signal"]
+    param_cfg = sgn_cfg["par_init_limit"]
     functions_setup = []
     for i_func, func_setup in enumerate(param_cfg):  # For each signal function
         param_setup = {}
@@ -439,13 +459,13 @@ def get_parameter_setup(cfg: List[Dict], i_pt: int, mb_result: Dict = None, resu
                 }
             elif par_name == "sigma" \
                 and i_func == 1 \
-                    and cfg["fit_configs"]["signal"]["fix_sigma_dplus_to_ds"][i_pt] \
+                    and sgn_cfg["fix_sigma_dplus_to_ds"][i_pt] \
                         and result_sigma_fix is not None:
                 ratio_sigma_dplus_to_ds = -1.
-                if isinstance(cfg["fit_configs"]["signal"]["ratio_sigma_dplus_to_ds"], list):
-                    ratio_sigma_dplus_to_ds = cfg["fit_configs"]["signal"]["ratio_sigma_dplus_to_ds"][i_pt]
-                elif isinstance(cfg["fit_configs"]["signal"]["ratio_sigma_dplus_to_ds"], (int, float)):
-                    ratio_sigma_dplus_to_ds = cfg["fit_configs"]["signal"]["ratio_sigma_dplus_to_ds"]
+                if isinstance(sgn_cfg["ratio_sigma_dplus_to_ds"], list):
+                    ratio_sigma_dplus_to_ds = sgn_cfg["ratio_sigma_dplus_to_ds"][i_pt]
+                elif isinstance(sgn_cfg["ratio_sigma_dplus_to_ds"], (int, float)):
+                    ratio_sigma_dplus_to_ds = sgn_cfg["ratio_sigma_dplus_to_ds"]
 
                 param_setup[par_name] = {
                     "init": result_sigma_fix[par_name][0][0] * ratio_sigma_dplus_to_ds,
@@ -550,7 +570,7 @@ def _mb_fit_is_needed(cfg, cut_set) -> bool:
             return True
     return False
 
-def fit(config_file_name):
+def fit(config_file_name):  # pylint: disable=too-many-locals, too-many-statements, too-many-branches
     """
     Perform fitting procedure based on the provided configuration file.
 
@@ -623,7 +643,13 @@ def fit(config_file_name):
         futures = []
         for i_pt, (pt_min, pt_max) in enumerate(zip(pt_mins, pt_maxs)):
             if cfg["fit_configs"]["signal"]["fix_sigma_dplus_to_ds"][i_pt]:
-                fit_config = get_config(cfg, (i_pt, pt_min, pt_max), (0, 100), None, mb_results[(pt_min, pt_max), (0, 100)][1])
+                fit_config = get_config(
+                    cfg,
+                    (i_pt, pt_min, pt_max),
+                    (0, 100),
+                    None,
+                    mb_results[(pt_min, pt_max), (0, 100)][1]
+                )
                 futures.append(executor.submit(run_fit, fit_config))
 
         for future in tqdm(as_completed(futures), total=len(futures)):

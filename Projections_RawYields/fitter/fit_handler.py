@@ -1,31 +1,33 @@
-# needs fit of mc?
-# needs first a fit to get the Ds width? (and then fix the width of the D+ to that of the Ds?)
-# holds the mb fitter to get the parameters from there
+"""
+FitHandler class to manage fitting configurations and parameter setups
+for Ds and D+ mass fits with correlated backgrounds.
+"""
 import dataclasses
-import numpy as np
 from typing import List, Dict, Optional, Tuple
-from concurrent.futures import ProcessPoolExecutor, as_completed
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
-import yaml
 import uproot
 
+from flarefly import DataHandler
 from fit_executor import FitExecutor
-from flarefly import DataHandler, F2MassFitter
 
 @dataclasses.dataclass(frozen=True)
 class CorrelatedBackgroundData:
+    """Data class to hold correlated background information."""
     name: str
     template: DataHandler
     norm_to_dplus: Optional[float] = None
 
 @dataclasses.dataclass(frozen=True)
 class BRInfo:
+    """Data class to hold branching ratio information."""
     pdg: float
     simulations: float
 
 @dataclasses.dataclass(frozen=True)
 class CorrelatedBackground:
+    """Data class to hold correlated background configuration."""
     name: str
     file_norm: str
     norm_hist_name: str
@@ -34,8 +36,8 @@ class CorrelatedBackground:
     br: BRInfo
 
 @dataclasses.dataclass(frozen=True)
-class CorrelatedBackgroundConfig:
-
+class CorrelatedBackgroundConfig:  # pylint: disable=too-many-instance-attributes
+    """Configuration for correlated backgrounds in the fit."""
     fix_to_file: bool
     fix_to_mb: bool
     fix_with_br: bool
@@ -49,11 +51,12 @@ class CorrelatedBackgroundConfig:
     signal_hist_name: str
     signal_br: BRInfo
 
-    _fix_to_value: Optional[float] = None  # To be set only by FitHandler, for fixing to MB fit value
-    _value_for_fix: Optional[float] = None  # To be set only by FitHandler, for fixing to MB fit value
+    # To be set only by FitHandler, for fixing to MB fit value
+    _fix_to_value: Optional[float] = None
+    _value_for_fix: Optional[float] = None
 
 @dataclasses.dataclass(frozen=True)
-class FitConfig:
+class FitConfig:  # pylint: disable=too-many-instance-attributes
     """A standardized config object that FitHandler understands."""
     pt_min: float
     pt_max: float
@@ -65,7 +68,7 @@ class FitConfig:
     rebin: int
     # Each dict corresponds to a function, containing dicts of parameter settings
     # The keys of the outer dict are the parameter names, while the inner dicts contain:
-    # "init": float, "min": float, "max": float, 
+    # "init": float, "min": float, "max": float,
     # "fix_to_config_value" : bool, "fix_to_file": bool
     param_setup: List[Dict[str, Dict]]
     data_path: str
@@ -78,11 +81,11 @@ class FitConfig:
     draw_formats: List[str] = dataclasses.field(default_factory=lambda: ["png", "pdf"])
     output_dir: str = ""
 
-class FitHandler():
+class FitHandler():  # pylint: disable=too-few-public-methods
     """Class to handle fitting configurations and parameter setups for a single pT bin."""
 
-    def __init__(self, config: FitConfig):
-        self._cfg = config
+    def __init__(self, cfg: FitConfig):
+        self._cfg = cfg
         self._result = None
         self._fitter = None
         self._execute()
@@ -109,7 +112,7 @@ class FitHandler():
             limits=self._cfg.mass_range,
             rebin=self._cfg.rebin
         )
-    
+
     def _execute(self):
         """Main execution method to prepare fit executors for all centrality bins."""
         self._check_parameters()
@@ -140,9 +143,11 @@ class FitHandler():
         text += fr"$\chi^2 / \mathrm{{ndf}} =${chi2:.2f} / {ndf} $\simeq$ {chi2/ndf:.2f}""\n"
 
         text += "\n\n"
-        text += xspace + fr"{self._cfg.pt_min:.0f} < $p_{{\mathrm{{T}}}}$ < {self._cfg.pt_max:.0f} GeV/$c$, $|y|$ < 0.5""\n"
+        text += xspace
+        text += fr"{self._cfg.pt_min:.0f} < $p_{{\mathrm{{T}}}}$ < {self._cfg.pt_max:.0f}"
+        text += r"GeV/$c$, $|y|$ < 0.5""\n"
         if self._cfg.cent_min is not None and self._cfg.cent_max is not None:
-            text += xspace + fr"{self._cfg.cent_min:.0f}% < Cent. < {self._cfg.cent_max:.0f}%" + "\n"
+            text += xspace + fr"{self._cfg.cent_min:.0f}% < Cent. < {self._cfg.cent_max:.0f}%""\n"
 
         anchored_text = AnchoredText(text, loc=loc, frameon=False)
         axs.add_artist(anchored_text)
@@ -162,13 +167,12 @@ class FitHandler():
             figsize=(8, 8), style="ATLAS",
             extra_info_loc=loc, axis_title=ax_title
         )
-        
+
         for frmt in self._cfg.draw_formats:
+            suffix = f"_{self._cfg.pt_min * 10:.0f}_{self._cfg.pt_max * 10:.0f}_"
             if self._cfg.cent_min is not None and self._cfg.cent_max is not None:
-                suffix = f"_{self._cfg.pt_min * 10:.0f}_{self._cfg.pt_max * 10:.0f}_cent_{self._cfg.cent_min:.0f}_{self._cfg.cent_max:.0f}_"
-            else:
-                suffix = f"_{self._cfg.pt_min * 10:.0f}_{self._cfg.pt_max * 10:.0f}_"
-            
+                suffix += f"cent_{self._cfg.cent_min:.0f}_{self._cfg.cent_max:.0f}_"
+
             if frmt == "root":
                 self._fitter.dump_to_root(
                     f"{self._cfg.output_dir}/fits_{suffix}_partial.root",
@@ -191,7 +195,7 @@ class FitHandler():
                         f"Invalid parameter limits for {param_name} in signal PDF {func} "
                         f"at index {idx}: min {settings['min']} >= max {settings['max']}"
                     )
-                if not (settings["min"] <= settings["init"] <= settings["max"]):
+                if not settings["min"] <= settings["init"] <= settings["max"]:
                     raise ValueError(
                         f"Initial value for {param_name} in signal PDF {func} "
                         f"at index {idx} is out of bounds: init {settings['init']} "
@@ -199,26 +203,13 @@ class FitHandler():
                     )
                 if settings["fix_to_config_value"] and settings["fix_to_file"]:
                     raise ValueError(
-                        f"Multiple fixing options are not allowed for {param_name} in signal PDF {func} "
-                        f"at index {idx}."
+                        "Multiple fixing options are not allowed "
+                        f"for {param_name} in signal PDF {func} at index {idx}."
                     )
-        # if self._cfg.fix_dplus_sigma_to_ds:
-        #     if self._cfg.param_setup[0]["sigma"]["fix_to_config_value"] is True and \
-        #         self._cfg.param_setup[1]["sigma"]["fix_to_config_value"] is True:
-        #         if not np.isclose(
-        #             self._cfg.param_setup[1]["sigma"]["init"],
-        #             self._cfg.param_setup[0]["sigma"]["init"] * self._cfg.ratio_sigma_dplus_to_ds
-        #         ):
-        #             print(self._cfg.param_setup[1]["sigma"]["init"], self._cfg.param_setup[0]["sigma"]["init"] * self._cfg.ratio_sigma_dplus_to_ds)
-        #             raise ValueError(
-        #                 "When fixing D+ sigma to Ds sigma, their initial values must be consistent "
-        #                 "with the specified ratio."
-        #             )
-
 
     def _prepare_executor(self) -> FitExecutor:
         """
-        Main factory method. 
+        Main factory method.
         Builds a fully configured FitExecutor for the requested centrality bin.
         """
 
@@ -240,7 +231,7 @@ class FitHandler():
     def _set_parameters(self, executor: FitExecutor):
         """Set up parameters for signal and background based on configuration."""
 
-        for idx, func in enumerate(self._cfg.signal_pdfs):
+        for idx in range(len(self._cfg.signal_pdfs)):
             particle = "ds" if idx == 0 else "dplus"
 
             p_cfg = self._cfg.param_setup[idx]
@@ -256,7 +247,9 @@ class FitHandler():
                             cent_max=self._cfg.cent_max
                         )
                         hist_name = f'h_{param_name}_{particle}{hist_suffix}'
-                        i_pt = np.where(np.isclose(f[hist_name].axis().edges(), self._cfg.pt_min))[0]
+                        i_pt = np.where(
+                            np.isclose(f[hist_name].axis().edges(), self._cfg.pt_min)
+                        )[0]
                         val = f[hist_name].values()[i_pt]
 
                 executor.set_parameter(
@@ -267,7 +260,7 @@ class FitHandler():
 
     def _fix_params_to_mb_fit(self):
         """Fix parameters to those obtained from the MB fit, if requested."""
-        for idx, func in enumerate(self._cfg.signal_pdfs):
+        for idx in range(len(self._cfg.signal_pdfs)):
             for param_name, settings in self._cfg.param_setup[idx].items():
                 if settings["fix_to_mb"]:
                     # Get value from MB fitter
@@ -278,28 +271,27 @@ class FitHandler():
 
     def _read_param_from_file(self, fit_config: Dict, idx: int, param: str) -> float:
         """Read parameter value from ROOT file."""
-        file_path = self.cfg["fit_configs"]["signal"]["file_for_params_fix"]
+        file_path = self._cfg["fit_configs"]["signal"]["file_for_params_fix"]
         particle = "ds" if idx == 0 else "dplus"
-        signal_func = self._get_signal_funcs(fit_config)[idx]
-        
+
         cent_suffix = ""
         if "cent_min" in fit_config and "cent_max" in fit_config:
             cent_suffix = f'_{fit_config["cent_min"]}_{fit_config["cent_max"]}'
-        
+
         hist_name = f'h_{param}_{particle}{cent_suffix}'
-        
+
         with uproot.open(file_path) as f:
             return f[hist_name].values()[fit_config["i_pt"]]
 
     def _setup_correlated_backgrounds(
-        self, 
+        self,
         executor: FitExecutor
     ):
         """Setup correlated background templates and normalizations."""
         bkg_cfg = self._cfg.correlated_bkg
         if bkg_cfg is None:
             return
-        
+
         if sum([bkg_cfg.fix_to_file, bkg_cfg.fix_to_mb, bkg_cfg.fix_with_br]) > 1:
             raise ValueError(
                 "Multiple fixing options are not allowed for correlated backgrounds."
@@ -307,7 +299,7 @@ class FitHandler():
 
         corr_backgrounds = self._load_backgrounds()
 
-        for i_bkg, bkg in enumerate(corr_backgrounds):
+        for bkg in corr_backgrounds:
             # Load template
             executor.set_correlated_background(
                 bkg.template,
@@ -343,9 +335,9 @@ class FitHandler():
 
     def _get_corr_bkg_norm(self, bkg: CorrelatedBackground) -> Optional[float]:
         """Get correlated background normalization from file if specified."""
-        if self._cfg.correlated_bkg._fix_to_value:
-            return self._cfg.correlated_bkg._value_for_fix
-        
+        if self._cfg.correlated_bkg._fix_to_value:  # pylint: disable=protected-access
+            return self._cfg.correlated_bkg._value_for_fix  # pylint: disable=protected-access
+
         if self._cfg.correlated_bkg.fix_to_file:
             # Read from file
             with uproot.open(self._cfg.correlated_bkg.file_name_for_fix) as f:
@@ -357,7 +349,7 @@ class FitHandler():
                 )
                 i_pt = np.where(np.isclose(f[hist_name].axis().edges(), self._cfg.pt_min))[0]
                 return f[hist_name].values()[i_pt]
-        
+
         if self._cfg.correlated_bkg.fix_with_br:
             data_signal_reference = DataHandler(
                 data=self._cfg.correlated_bkg.signal_norm_file,
@@ -367,7 +359,7 @@ class FitHandler():
                     cent_min=self._cfg.cent_min,
                     cent_max=self._cfg.cent_max
                 ),
-                limits=self._cfg.mass_range, 
+                limits=self._cfg.mass_range,
                 rebin=self._cfg.rebin
             )
 
@@ -386,7 +378,8 @@ class FitHandler():
             return data_bkg_reference.get_norm() * \
                    bkg.br.pdg / bkg.br.simulations / \
                    (data_signal_reference.get_norm() * \
-                   self._cfg.correlated_bkg.signal_br.pdg / self._cfg.correlated_bkg.signal_br.simulations)
+                   self._cfg.correlated_bkg.signal_br.pdg / \
+                   self._cfg.correlated_bkg.signal_br.simulations)
 
         return None
 
@@ -402,14 +395,14 @@ if __name__ == "__main__":
         backgrounds=[
             CorrelatedBackground(
                 name=r"$\mathrm{D^{+}}\rightarrow K^{-}\pi^{+}\pi^{+}$",
-                file_norm="/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/MC/LHC25a5_norm_vars_doublecb/Projections/w_bdt/dplus_bkg.root",
+                file_norm="MC/xx/Projections/w_bdt/dplus_bkg.root",
                 norm_hist_name='h_mass_{pt_min}_{pt_max}_cent_0_100',
-                template_file="/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/MC/LHC25a5_norm_vars_doublecb/Projections/wo_bdt/dplus_corr_bkg_template.root",
+                template_file="MC/xx/Projections/wo_bdt/dplus_corr_bkg_template.root",
                 template_hist_name='h_mass_{pt_min}_{pt_max}',
                 br=BRInfo(pdg=0.0938, simulations=0.4853)
             )
         ],
-        signal_norm_file="/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/MC/LHC25a5_norm_vars_doublecb/Projections/w_bdt/dplus.root",
+        signal_norm_file="MC/xx/Projections/w_bdt/dplus.root",
         signal_hist_name='h_mass_{pt_min}_{pt_max}_cent_0_100',
         signal_br=BRInfo(pdg=0.00269, simulations=0.4263)
     )
@@ -425,15 +418,27 @@ if __name__ == "__main__":
         bkg_pdfs=["chebpol2"],
         rebin=4,
         param_setup=[
-            {"sigma": {"init": 0.005, "min": 0.0, "max": 0.05, "fix_to_config_value": False, "fix_to_file": False}},
-            {"sigma": {"init": 0.005, "min": 0.0, "max": 0.05, "fix_to_config_value": False, "fix_to_file": False}},
+            {"sigma": {
+                "init": 0.005,
+                "min": 0.0,
+                "max": 0.05,
+                "fix_to_config_value": False,
+                "fix_to_file": False
+            }},
+            {"sigma": {
+                "init": 0.005,
+                "min": 0.0,
+                "max": 0.05,
+                "fix_to_config_value": False,
+                "fix_to_file": False
+            }},
         ],
-        data_path="/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/data/doublecb/Projections/projections.root",
+        data_path="data/doublecb/Projections/projections.root",
         fix_dplus_sigma_to_ds=True,
         correlated_bkg=corr_bkg_config,
         draw_figures=True,
         draw_formats=["png", "pdf", "root"],
-        output_dir="/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/fitter/fit_results/"
+        output_dir="fitter/fit_results/"
 
     )
 

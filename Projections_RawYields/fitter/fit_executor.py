@@ -54,7 +54,7 @@ BACKGROUND_DEFAULTS = {
     }
 }
 
-class FitExecutor:
+class FitExecutor:  # pylint: disable=too-many-instance-attributes
     """
     Low-level fit execution: create fitter, handle parameters, correlated bkg, execute fit.
     """
@@ -90,7 +90,7 @@ class FitExecutor:
         norm: float = 0.0,
         name: str = "",
         fix_to_signal: int = 1
-    ):
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         """Set correlated background data handler and options."""
         self._correlated_bkg_data_hdl.append(correlated_bkg)
         self._has_correlated_bkg = True
@@ -99,7 +99,9 @@ class FitExecutor:
         if name != "":
             self._correlated_bkg_labels.append(name)
         else:
-            self._correlated_bkg_labels.append(f"correlated background {len(self._correlated_bkg_data_hdl)}")
+            self._correlated_bkg_labels.append(
+                f"correlated background {len(self._correlated_bkg_data_hdl)}"
+            )
         self._fix_correlated_bkg_to_sng.append(fix_to_signal)
 
     def set_parameter(
@@ -111,7 +113,7 @@ class FitExecutor:
         minv: float,
         maxv: float,
         fix: bool
-    ):
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         """Set parameter for signal or background function."""
         param_dict = self._sgn_params if is_signal else self._bkg_params
         param_dict[index][name] = {
@@ -218,7 +220,11 @@ class FitExecutor:
             for i, bkg_hdl in enumerate(self._correlated_bkg_data_hdl):
                 self._fitter.set_background_template(i, bkg_hdl)
                 if self._fix_correlated_bkg[i]:
-                    self._fitter.fix_bkg_frac_to_signal_pdf(i,  self._fix_correlated_bkg_to_sng[i], self._correlated_bkg_norm[i])
+                    self._fitter.fix_bkg_frac_to_signal_pdf(
+                        i,
+                        self._fix_correlated_bkg_to_sng[i],
+                        self._correlated_bkg_norm[i]
+                    )
 
     def _extract_results(self, converged: bool) -> Dict:
         """Extract fit results into dictionary."""
@@ -242,7 +248,7 @@ class FitExecutor:
             fracs = self._fitter._F2MassFitter__get_all_fracs()  # pylint: disable=protected-access
             results["fracs"] = list(fracs)
             results.update(self._extract_bkg_fractions(fracs))
-        except:
+        except:  # pylint: disable=bare-except
             results["fracs"] = None
 
         return results
