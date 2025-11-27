@@ -50,7 +50,7 @@ DEST_CONFIG_CUTSET_TEMPLATE = $(OUTPUT_PROJ_TEMPLATE)/$(CONFIG_CUTSET_TEMPLATE)
 
 # Scripts (adjust paths as needed)
 PROJ_SCRIPT = project_data_from_sparse.py
-FIT_SCRIPT = get_raw_yields_ds_dplus_flarefly.py
+FIT_SCRIPT = get_raw_yields.py
 TEMPLATE_SCRIPT = get_templates.py
 
 # Output files (adjust based on what your scripts actually produce)
