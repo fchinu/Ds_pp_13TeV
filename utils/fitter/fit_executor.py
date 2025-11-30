@@ -254,6 +254,16 @@ class FitExecutor:  # pylint: disable=too-many-instance-attributes
             results = self._create_empty_result(n_signal)
 
         return results
+    
+    def extend_results_bincounting(self, results: Dict, nsigmas: List[float]):
+        """
+        Extend the results dictionary with bin counting information for given nsigma values.
+        """
+        n_signal = len(self._signal_functions)
+        for nsigma in nsigmas:
+            results[f"raw_yields_bincounting_{nsigma}"] = [self._fitter.get_raw_yield_bincounting(i, nsigma=nsigma) for i in range(n_signal)]
+        return results
+
 
     def _add_signal_params_to_results(
         self,

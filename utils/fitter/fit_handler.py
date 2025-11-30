@@ -80,6 +80,8 @@ class FitConfig:  # pylint: disable=too-many-instance-attributes
     draw_figures: bool = False
     draw_formats: List[str] = dataclasses.field(default_factory=lambda: ["png", "pdf"])
     output_dir: str = ""
+    fig_suffix: str = ""
+    nsigma_bincounting: List[float] = dataclasses.field(default_factory=list)
 
 class FitHandler():  # pylint: disable=too-few-public-methods
     """Class to handle fitting configurations and parameter setups for a single pT bin."""
@@ -120,6 +122,9 @@ class FitHandler():  # pylint: disable=too-few-public-methods
         executor = self._prepare_executor()
         self._result, self._fitter = executor.execute()
 
+        if self._cfg.nsigma_bincounting:
+            self._result = executor.extend_results_bincounting(self._result, self._cfg.nsigma_bincounting)
+
         if self._cfg.draw_figures:
             self._draw_figures()
 
@@ -144,7 +149,7 @@ class FitHandler():  # pylint: disable=too-few-public-methods
 
         text += "\n\n"
         text += xspace
-        text += fr"{self._cfg.pt_min:.0f} < $p_{{\mathrm{{T}}}}$ < {self._cfg.pt_max:.0f}"
+        text += fr"{self._cfg.pt_min:.0f} < $p_{{\mathrm{{T}}}}$ < {self._cfg.pt_max:.0f} "
         text += r"GeV/$c$, $|y|$ < 0.5""\n"
         if self._cfg.cent_min is not None and self._cfg.cent_max is not None:
             text += xspace + fr"{self._cfg.cent_min:.0f}% < Cent. < {self._cfg.cent_max:.0f}%""\n"
@@ -172,6 +177,7 @@ class FitHandler():  # pylint: disable=too-few-public-methods
             suffix = f"_{self._cfg.pt_min * 10:.0f}_{self._cfg.pt_max * 10:.0f}_"
             if self._cfg.cent_min is not None and self._cfg.cent_max is not None:
                 suffix += f"cent_{self._cfg.cent_min:.0f}_{self._cfg.cent_max:.0f}_"
+            suffix += self._cfg.fig_suffix
 
             if frmt == "root":
                 self._fitter.dump_to_root(
@@ -249,7 +255,7 @@ class FitHandler():  # pylint: disable=too-few-public-methods
                         hist_name = f'h_{param_name}_{particle}{hist_suffix}'
                         i_pt = np.where(
                             np.isclose(f[hist_name].axis().edges(), self._cfg.pt_min)
-                        )[0]
+                        )[0][0]
                         val = f[hist_name].values()[i_pt]
 
                 executor.set_parameter(
@@ -322,7 +328,7 @@ class FitHandler():  # pylint: disable=too-few-public-methods
                     cent_min=self._cfg.cent_min,
                     cent_max=self._cfg.cent_max
                 )
-                i_pt = np.where(np.isclose(f[hist_name].axis().edges(), self._cfg.pt_min))[0]
+                i_pt = np.where(np.isclose(f[hist_name].axis().edges(), self._cfg.pt_min))[0][0]
                 return f[hist_name].values()[i_pt]
 
         if self._cfg.correlated_bkg.fix_with_br:

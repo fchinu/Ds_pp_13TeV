@@ -14,8 +14,6 @@ import uproot
 import yaml
 import pandas as pd
 import numpy as np
-import ROOT
-from itertools import product
 from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.offsetbox import AnchoredText
@@ -23,7 +21,7 @@ import seaborn as sns
 import tensorflow as tf
 tf.config.threading.set_intra_op_parallelism_threads(80)
 tf.config.threading.set_inter_op_parallelism_threads(80)
-from fit_handler import (
+from fit_handler import (  # pylint: disable=import-error
     FitHandler,
     BRInfo,
     CorrelatedBackground,
@@ -31,7 +29,7 @@ from fit_handler import (
     FitConfig
 )
 
-def draw_multitrial(df_multitrial, cfg, is_mb):  # pylint: disable=too-many-locals, too-many-statements # noqa: 501
+def draw_multitrial(df_multitrial, cfg, is_mb):  # pylint: disable=too-many-locals, too-many-statements, too-many-branches  # noqa: 501
     """
     Produce a plot with the results of the multitrial procedure.
 
@@ -48,9 +46,13 @@ def draw_multitrial(df_multitrial, cfg, is_mb):  # pylint: disable=too-many-loca
     multitrial_cfg = cfg["multitrial"]
 
     df_multitrial = df_multitrial.query(f"chi2 < {multitrial_cfg['quality_selections']['chi2']}")
-    
+
     # Apply significance selection
-    mask = df_multitrial['significance'].apply(lambda x: x[0][0] > multitrial_cfg['quality_selections']['significance'] and x[1][0] > multitrial_cfg['quality_selections']['significance'])
+    mask = df_multitrial['significance'].apply(
+        lambda x:
+            x[0][0] > multitrial_cfg['quality_selections']['significance'] and \
+                x[1][0] > multitrial_cfg['quality_selections']['significance']
+        )
     df_multitrial = df_multitrial[mask]
 
     if not is_mb:
@@ -104,9 +106,9 @@ def draw_multitrial(df_multitrial, cfg, is_mb):  # pylint: disable=too-many-loca
         fig, axs = plt.subplots(2, 2, figsize=(20, 15))
         with uproot.open(cfg["reference_fits"]) as f:
             h_rawy_ds = f[f"h_raw_yields_ds_{cent_min}_{cent_max}"]
-            h_sigma_ds = f[f"h_sigma_ds_0_100"]
+            h_sigma_ds = f["h_sigma_ds_0_100"]
             h_rawy_dplus = f[f"h_raw_yields_dplus_{cent_min}_{cent_max}"]
-            h_sigma_dplus = f[f"h_sigma_dplus_0_100"]
+            h_sigma_dplus = f["h_sigma_dplus_0_100"]
 
         i_pt = np.digitize((pt_min + pt_max) / 2, h_rawy_ds.axis().edges()) - 1
         central_rawy_ds = h_rawy_ds.values()[i_pt]
@@ -356,7 +358,10 @@ def dump_results_to_root(df_multitrial, cfg):  # pylint: disable=too-many-locals
     df_multitrial = df_multitrial.query(f"chi2 < {multitrial_cfg['quality_selections']['chi2']}")
 
     # Apply significance selection
-    mask = df_multitrial['significance'].apply(lambda x: x[0][0] > multitrial_cfg['quality_selections']['significance'] and x[1][0] > multitrial_cfg['quality_selections']['significance'])
+    mask = df_multitrial['significance'].apply(
+        lambda x: x[0][0] > multitrial_cfg['quality_selections']['significance'] and \
+                 x[1][0] > multitrial_cfg['quality_selections']['significance']
+        )
     df_multitrial = df_multitrial[mask]
 
     cent_mins = list(df_multitrial["cent_min_cfg"].unique())
@@ -380,6 +385,7 @@ def dump_results_to_root(df_multitrial, cfg):  # pylint: disable=too-many-locals
     for _, row in df_cent_cfg.iterrows():
         cent_min = row["cent_min_cfg"]
         cent_max = row["cent_max_cfg"]
+        cent_str = f"{cent_min}_{cent_max}"
 
         df_cent = df_multitrial.query(
             f"cent_min_cfg == {cent_min} and cent_max_cfg == {cent_max}"
@@ -389,11 +395,12 @@ def dump_results_to_root(df_multitrial, cfg):  # pylint: disable=too-many-locals
             ["pt_min_cfg", "pt_max_cfg"]
         ].drop_duplicates()
 
-        histos_rms_shifts[f"{cent_min}_{cent_max}"] = [0.]*len(df_pt_cent_cfg)
-        histos_assigned_syst[f"{cent_min}_{cent_max}"] = [0.]*len(df_pt_cent_cfg)
+        histos_rms_shifts[cent_str] = [0.]*len(df_pt_cent_cfg)
+        histos_assigned_syst[cent_str] = [0.]*len(df_pt_cent_cfg)
         for _, row in df_pt_cent_cfg.iterrows():
             pt_min = row["pt_min_cfg"]
             pt_max = row["pt_max_cfg"]
+            pt_idx = pt_mins.index(pt_min)
 
             df_pt_cent = df_cent.query(
                 f"pt_min_cfg == {pt_min} and pt_max_cfg == {pt_max}"
@@ -416,8 +423,13 @@ def dump_results_to_root(df_multitrial, cfg):  # pylint: disable=too-many-locals
             central_ratio = central_rawy_ds / central_rawy_dplus
 
 
-            histos_rms_shifts[f"{cent_min}_{cent_max}"][pt_mins.index(pt_min)] = get_rms_shift_sum_quadrature(ratio, central_ratio, True)
-            histos_assigned_syst[f"{cent_min}_{cent_max}"][pt_mins.index(pt_min)] = cfg["assigned_syst"][pt_mins.index(pt_min)][cent_mins.index(cent_min)]
+            histos_rms_shifts[cent_str][pt_idx] = get_rms_shift_sum_quadrature(
+                ratio,
+                central_ratio,
+                True
+            )
+            assigned_syst = cfg["assigned_syst"][pt_idx][cent_mins.index(cent_min)]
+            histos_assigned_syst[cent_str][pt_idx] = assigned_syst
 
 
     if not os.path.exists(cfg["output"]["dir"]):
@@ -426,8 +438,14 @@ def dump_results_to_root(df_multitrial, cfg):  # pylint: disable=too-many-locals
     with uproot.recreate(output_file_name) as f:
         for cent_min, cent_max in zip(cent_mins, cent_maxs):
             suffix = f"_{cent_min}_{cent_max}"
-            f[f"rms_shifts_sum_quadrature{suffix}"] = (np.array(histos_rms_shifts[f"{cent_min}_{cent_max}"]), np.array(pt_edges))
-            f[f"assigned_syst{suffix}"] = (np.array(histos_assigned_syst[f"{cent_min}_{cent_max}"]), np.array(pt_edges))
+            f[f"rms_shifts_sum_quadrature{suffix}"] = (
+                np.array(histos_rms_shifts[f"{cent_min}_{cent_max}"]),
+                np.array(pt_edges)
+            )
+            f[f"assigned_syst{suffix}"] = (
+                np.array(histos_assigned_syst[f"{cent_min}_{cent_max}"]),
+                np.array(pt_edges)
+            )
 
 
 def get_rms_shift_sum_quadrature(ratio, central_ratio, rel=False):
@@ -461,7 +479,6 @@ def fitconfig_to_dict(cfg: FitConfig) -> dict:
 def get_parameter_setup(
         param_cfg: List[Dict],
         trial: Dict,
-        ref_result: Dict = None
     ) -> List[Dict]:
     """
     Get parameter setup based on the provided configuration.
@@ -475,22 +492,9 @@ def get_parameter_setup(
     """
     i_pt = trial["pt_bins"]
     functions_setup = []
-    for i_func, func_setup in enumerate(param_cfg):  # For each signal function
+    for func_setup in param_cfg:  # For each signal function
         param_setup = {}
         for par_name, par_values in func_setup.items():  # For each parameter in the function
-            # # For sigma of D+ when fixed to Ds
-            # if par_name == "sigma" \
-            #     and i_func == 1 \
-            #         and ref_result is not None:
-            #     ratio_sigma_dplus_to_ds = par_values["fix_ratio_ds_dplus_width"]
-            #     param_setup[par_name] = {
-            #         "init": ref_result[par_name][0][0] * ratio_sigma_dplus_to_ds,
-            #         "min": ref_result[par_name][0][0] * ratio_sigma_dplus_to_ds - 0.01,
-            #         "max": ref_result[par_name][0][0] * ratio_sigma_dplus_to_ds + 0.01,
-            #         "fix_to_config_value": True,
-            #         "fix_to_file": False
-            #     }
-            # else:
             param_setup[par_name] = {
                 "init": par_values["init"][i_pt],
                 "min": par_values["min"][i_pt],
@@ -541,7 +545,7 @@ def get_corr_bkg_config(cfg: Dict) -> CorrelatedBackgroundConfig:
         )
     )
 
-def get_sigma_ds(result_sigma_fix: Dict, cfg_trial: Dict) -> float:
+def get_sigma_ds(result_sigma_fix: Dict, cfg_trial: Dict) -> float:  # pylint: disable=too-many-return-statements
     """
     Get the sigma value for Ds from the reference result depending on the configuration.
 
@@ -566,6 +570,7 @@ def get_sigma_ds(result_sigma_fix: Dict, cfg_trial: Dict) -> float:
     if "fixed_minus_" in cfg_trial["sigma_option"] and "_perc" in cfg_trial["sigma_option"]:
         perc = float(cfg_trial["sigma_option"].split("_")[2]) / 100.0
         return result_sigma_fix["sigma"][0][0] * (1 - perc)
+    return None
 
 def get_config(
         cfg: Dict,
@@ -633,7 +638,7 @@ def get_config(
                 "fix_to_config_value": True,
                 "fix_to_file": False
             }
-        
+
     return FitConfig(
         pt_min=pt_mins[i_pt],
         pt_max=pt_maxs[i_pt],
@@ -655,13 +660,20 @@ def get_config(
         correlated_bkg=get_corr_bkg_config(cfg),
         draw_figures=cfg["output"]["save_all_fits"],
         draw_formats=cfg["output"]["formats"],
-        output_dir=os.path.join(os.path.expanduser(cfg["output"]["dir"]), cfg["output"]["dir_fits"]),
+        output_dir=os.path.join(
+            os.path.expanduser(cfg["output"]["dir"]), cfg["output"]["dir_fits"]
+        ),
         fig_suffix=str(cfg_trial["idx"]),
         nsigma_bincounting=cfg["multitrial"]["bincounting_nsigma"]
     )
 
 
-def get_trials(cfg: Dict, is_mb: bool, cent_mins: List[float] = None, cent_maxs: List[float] = None) -> List[Dict]:
+def get_trials(  # pylint: disable=too-many-locals
+        cfg: Dict,
+        is_mb: bool,
+        cent_mins: List[float] = None,
+        cent_maxs: List[float] = None
+    ) -> List[Dict]:
     """Generate all trial configurations for MB analysis."""
     base_cfg_keys = ["pt_bins", "mins", "maxs", "rebins", "bkg_funcs", "fix_ratio_ds_dplus_width"]
     if not is_mb:
@@ -670,7 +682,7 @@ def get_trials(cfg: Dict, is_mb: bool, cent_mins: List[float] = None, cent_maxs:
 
     # First we create the base trials without the signal setup
     keys, values = zip(*trial_params.items())
-    base_trials = [dict(zip(keys, v)) for v in product(*values)]
+    base_trials = [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     # We add the signal setup
     trials = []
@@ -696,7 +708,7 @@ def get_trials(cfg: Dict, is_mb: bool, cent_mins: List[float] = None, cent_maxs:
                 trial["cent_max_cfg"] = 100
                 trial["sigma_option"] = None
                 trials.append(trial)
-        
+
 
     # Add index to each trial for pT bin
     counters = [0] * len(cfg["pt_bins"])
@@ -744,7 +756,7 @@ def run_fit(fit_config: FitConfig) -> Dict:
         results
     )
 
-def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-locals, too-many-statements
+def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-locals, too-many-statements, too-many-branches
     """
     Perform multiple trials based on the given configuration file.
 
@@ -784,7 +796,12 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
         cent_results = []
         # define all MB trials
         mb_trials = get_trials(multitrial_cfg, is_mb=True)
-        cent_trials = get_trials(multitrial_cfg, is_mb=False, cent_mins=cent_mins, cent_maxs=cent_maxs)
+        cent_trials = get_trials(
+            multitrial_cfg,
+            is_mb=False,
+            cent_mins=cent_mins,
+            cent_maxs=cent_maxs
+        )
         for ipt in cfg["multitrial"]["pt_bins"]:
             with ProcessPoolExecutor(max_workers=cfg["max_workers"]) as executor:
                 future_to_trial = {}  # Map futures to trials
@@ -798,7 +815,12 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
                 for future in tqdm(as_completed(future_to_trial), total=len(future_to_trial)):
                     trial = future_to_trial[future]
                     fit_cfg, results = future.result()
-                    fit_config = get_config(cfg, trial, (trial["pt_bins"], pt_mins, pt_maxs), results)
+                    fit_config = get_config(
+                        cfg,
+                        trial,
+                        (trial["pt_bins"], pt_mins, pt_maxs),
+                        results
+                    )
                     mb_results.append({
                         "trial": trial,
                         "results": run_fit(fit_config)
@@ -814,7 +836,12 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
                 for trial in cent_trials:
                     if trial["pt_bins"] != ipt:
                         continue
-                    fit_config = get_config(cfg, trial, (trial["pt_bins"], pt_mins, pt_maxs), ref_result=get_matching_mb_result(mb_results, trial))
+                    fit_config = get_config(
+                        cfg,
+                        trial,
+                        (trial["pt_bins"], pt_mins, pt_maxs),
+                        ref_result=get_matching_mb_result(mb_results, trial)
+                    )
                     future = executor.submit(run_fit, fit_config)
                     future_to_trial[future] = trial
 
@@ -822,7 +849,12 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
                     trial = future_to_trial[future]
                     fit_cfg, results = future.result()
                     if trial["sigma_option"] == "free":
-                        fit_config = get_config(cfg, trial, (trial["pt_bins"], pt_mins, pt_maxs), ref_result=results)
+                        fit_config = get_config(
+                            cfg,
+                            trial,
+                            (trial["pt_bins"], pt_mins, pt_maxs),
+                            ref_result=results
+                        )
                         fit_cfg, results = run_fit(fit_config)
                     cent_results.append({
                         "trial": trial,
@@ -843,8 +875,14 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
             **trial["results"][1]
         } for trial in cent_results])
 
-        mb_df.to_parquet(os.path.join(cfg["output"]["dir"], f"mb_results{cfg['output']['suffix']}.parquet"))
-        cent_df.to_parquet(os.path.join(cfg["output"]["dir"], f"cent_results{cfg['output']['suffix']}.parquet"))
+        mb_df.to_parquet(os.path.join(
+            cfg["output"]["dir"],
+            f"mb_results{cfg['output']['suffix']}.parquet"
+        ))
+        cent_df.to_parquet(os.path.join(
+            cfg["output"]["dir"],
+            f"cent_results{cfg['output']['suffix']}.parquet"
+        ))
 
 
     else:
@@ -857,8 +895,14 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
                 cent_df.append(pd.read_parquet(file))
             cent_df = pd.concat(cent_df)
         else:
-            mb_df = pd.read_parquet(os.path.join(cfg["output"]["dir"], f"mb_results{cfg["output"]['suffix']}.parquet"))
-            cent_df = pd.read_parquet(os.path.join(cfg["output"]["dir"], f"cent_results{cfg["output"]['suffix']}.parquet"))
+            mb_df = pd.read_parquet(os.path.join(
+                cfg["output"]["dir"],
+                f"mb_results{cfg['output']['suffix']}.parquet"
+            ))
+            cent_df = pd.read_parquet(os.path.join(
+                cfg["output"]["dir"],
+                f"cent_results{cfg['output']['suffix']}.parquet"
+            ))
 
     draw_multitrial(cent_df, cfg, is_mb=False)
     draw_multitrial(mb_df, cfg, is_mb=True)
@@ -872,5 +916,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     multi_trial(args.configFile, args.draw)
-
-
