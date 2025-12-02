@@ -7,11 +7,14 @@ import multiprocessing
 from typing import Dict, List, Tuple
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""  # pylint: disable=wrong-import-position
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # FATAL only
+os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir=/nonexistent"
 import sys
 sys.path.append(os.path.abspath(os.path.join(__file__, '../../../../utils/fitter')))
 from tqdm import tqdm
 import uproot
 import yaml
+import contextlib
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
@@ -308,7 +311,7 @@ def draw_multitrial(df_multitrial, cfg, is_mb):  # pylint: disable=too-many-loca
         variations = ["mins", "maxs", "rebins", "bkg_pdfs_cfg", "ratio_sigma_dplus_to_ds_cfg"]
         if not is_mb:
             for _, row in df_pt_cent.iterrows():
-                sigmas.append(row["sigma_option"][0])
+                sigmas.append(row["sigma_option"])
             df_pt_cent["sigma_option"] = sigmas
             variations.append("sigma_option")
 
@@ -322,7 +325,7 @@ def draw_multitrial(df_multitrial, cfg, is_mb):  # pylint: disable=too-many-loca
         for i_comb, combination in enumerate(combinations):
             sns.stripplot(
                 data=df_pt_cent, x=combination[0], y=ratio, hue=combination[1],
-                dodge=0.5, alpha=.5, legend=False, ax=axs[i_comb//4, i_comb%4], palette="tab10",
+                dodge=0.5, alpha=.5, legend=True, ax=axs[i_comb//4, i_comb%4], palette="tab10",
             )
             # sns.pointplot(
             #     data=df_pt_cent, x=combination[0], y=ratio, hue=combination[1],
@@ -739,7 +742,7 @@ def get_matching_mb_result(mb_results: List[Dict], cent_trial: Dict) -> Dict:
 
     return None
 
-def run_fit(fit_config: FitConfig) -> Dict:
+def run_fit(cfg, fit_config: FitConfig) -> Dict:
     """
     Run the fitting procedure based on the provided FitConfig.
 
@@ -749,12 +752,13 @@ def run_fit(fit_config: FitConfig) -> Dict:
     Returns:
     Dict: Results of the fitting procedure.
     """
-    fit_handler = FitHandler(fit_config)
-    results = fit_handler.get_results()
-    return (
-        fit_config,
-        results
-    )
+    with open(os.path.join(cfg["output"]["dir"], "fit_log.txt"), "a") as f, contextlib.redirect_stdout(f), contextlib.redirect_stderr(f):
+        fit_handler = FitHandler(fit_config)
+        results = fit_handler.get_results()
+        return (
+            fit_config,
+            results
+        )
 
 def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-locals, too-many-statements, too-many-branches
     """
@@ -790,6 +794,10 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
         if not os.path.exists(fit_dir):
             os.makedirs(fit_dir)
 
+    log_file = os.path.join(cfg["output"]["dir"], "fit_log.txt")
+    if os.path.exists(log_file):
+        os.remove(log_file)
+
     multitrial_cfg = cfg["multitrial"]
     if not draw:
         mb_results = []
@@ -803,33 +811,56 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
             cent_maxs=cent_maxs
         )
         for ipt in cfg["multitrial"]["pt_bins"]:
+            print(f"Starting MB fits for pT bin {ipt}...")
             with ProcessPoolExecutor(max_workers=cfg["max_workers"]) as executor:
-                future_to_trial = {}  # Map futures to trials
+                future_to_trial_first_stage = {}  # Map futures to trials
+                future_to_trial_second_stage = {}  # Map futures to trials
                 for trial in mb_trials:
                     if trial["pt_bins"] != ipt:
                         continue
                     fit_config = get_config(cfg, trial, (trial["pt_bins"], pt_mins, pt_maxs))
-                    future = executor.submit(run_fit, fit_config)
-                    future_to_trial[future] = trial
+                    future = executor.submit(run_fit, cfg, fit_config)
+                    future_to_trial_first_stage[future] = trial
 
-                for future in tqdm(as_completed(future_to_trial), total=len(future_to_trial)):
-                    trial = future_to_trial[future]
-                    fit_cfg, results = future.result()
+                for future in tqdm(as_completed(future_to_trial_first_stage), total=len(future_to_trial_first_stage),
+                        desc="1st stage MB fits"):
+                    trial = future_to_trial_first_stage[future]
+                    try:
+                        fit_cfg, results = future.result()
+                    except Exception as e:
+                        print(f"Error in trial {trial}: {e}")
+                        continue
                     fit_config = get_config(
                         cfg,
                         trial,
                         (trial["pt_bins"], pt_mins, pt_maxs),
                         results
                     )
+
+                    feature2 = executor.submit(run_fit, cfg, fit_config)
+                    future_to_trial_second_stage[feature2] = trial
+
+                print("Finalising MB fits...")
+                # Collect second-stage MB fits
+                for future in tqdm(as_completed(future_to_trial_second_stage), total=len(future_to_trial_second_stage),
+                        desc="2nd stage MB fits"):
+                    trial = future_to_trial_second_stage[future]
+                    try:
+                        fit_cfg, results = future.result()
+                    except Exception as e:
+                        print(f"Error in trial {trial}: {e}")
+                        continue
                     mb_results.append({
                         "trial": trial,
-                        "results": run_fit(fit_config)
+                        "results": (fit_cfg, results)
                     })
 
+                print("MB fits completed.")
 
             # Now we fit the centrality bins
             # Spawn a new process for each centrality bin
             # This avoids issues with multiprocessing getting stuck
+            print(f"Starting centrality fits for pT bin {ipt}...")
             mp_ctx = multiprocessing.get_context('spawn')
             with ProcessPoolExecutor(max_workers=cfg["max_workers"], mp_context=mp_ctx) as executor:
                 future_to_trial = {}
@@ -842,12 +873,17 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
                         (trial["pt_bins"], pt_mins, pt_maxs),
                         ref_result=get_matching_mb_result(mb_results, trial)
                     )
-                    future = executor.submit(run_fit, fit_config)
+                    future = executor.submit(run_fit, cfg, fit_config)
                     future_to_trial[future] = trial
 
-                for future in tqdm(as_completed(future_to_trial), total=len(future_to_trial)):
+                for future in tqdm(as_completed(future_to_trial), total=len(future_to_trial),
+                        desc="1st stage centrality fits"):
                     trial = future_to_trial[future]
-                    fit_cfg, results = future.result()
+                    try:
+                        fit_cfg, results = future.result()
+                    except Exception as e:
+                        print(f"Error in trial {trial}: {e}")
+                        continue
                     if trial["sigma_option"] == "free":
                         fit_config = get_config(
                             cfg,
@@ -855,12 +891,30 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
                             (trial["pt_bins"], pt_mins, pt_maxs),
                             ref_result=results
                         )
-                        fit_cfg, results = run_fit(fit_config)
+                        feature2 = executor.submit(run_fit, cfg, fit_config)
+                        future_to_trial_second_stage[feature2] = trial
+
+                    else:
+                        cent_results.append({
+                            "trial": trial,
+                            "results": (fit_cfg, results)
+                        })
+                
+                print("Finalising centrality fits...")
+                # Collect second-stage centrality fits
+                for future in tqdm(as_completed(future_to_trial_second_stage), total=len(future_to_trial_second_stage),
+                        desc="2nd stage centrality fits"):
+                    trial = future_to_trial_second_stage[future]
+                    try:
+                        fit_cfg, results = future.result()
+                    except Exception as e:
+                        print(f"Error in trial {trial}: {e}")
+                        continue
                     cent_results.append({
                         "trial": trial,
                         "results": (fit_cfg, results)
                     })
-
+                print("Centrality fits completed.")
 
         # Save results to parquet
         mb_df = pd.DataFrame([{

@@ -39,7 +39,7 @@ SIGNAL_DEFAULTS = {
 
 BACKGROUND_DEFAULTS = {
     "expo": {
-        "lam": {"init": -2.0, "min": -10.0, "max": 0.0, "fix": False}
+        "lam": {"init": -2.0, "min": -10.0, "max": 10.0, "fix": False}
     },
     "chebpol2": {
         "c0": {"init": 0.6, "min": -1.0, "max": 1.0, "fix": False},
@@ -48,9 +48,9 @@ BACKGROUND_DEFAULTS = {
     },
     "chebpol3": {
         "c0": {"init": 0.4, "min": 0.0, "max": 1.0, "fix": False},
-        "c1": {"init": -0.2, "min": -1.0, "max": 0.0, "fix": False},
-        "c2": {"init": -0.01, "min": -0.1, "max": 0.0, "fix": False},
-        "c3": {"init": 0.01, "min": 0.0, "max": 0.1, "fix": False}
+        "c1": {"init": -0.2, "min": -2.0, "max": 2.0, "fix": False},
+        "c2": {"init": -0.01, "min": -2.0, "max": 2.0, "fix": False},
+        "c3": {"init": 0.01, "min": -1.0, "max": 1.0, "fix": False}
     }
 }
 
