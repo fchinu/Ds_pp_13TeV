@@ -675,7 +675,7 @@ def initialise_signal(fitter, cfg, fit_config, idx):
         if fix_to_config_value and fix_to_file and fit_config["cent_min"]==0 and fit_config["cent_max"]==100:
             Logger(f"Both 'fix_to_config_value' and 'fix_to_file' are set for parameter '{param}' "
                    f"of signal index {idx}. Please choose only one option.", "FATAL")
-        if fix_to_config_value:
+        if not fix_to_file:
             value = fit_config.get(f"{param}_init_{idx}")
         else:
             value = _read_sigma_from_root(
