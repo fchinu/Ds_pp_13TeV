@@ -310,8 +310,8 @@ def draw_multitrial(df_multitrial, cfg, is_mb):  # pylint: disable=too-many-loca
         df_pt_cent["bkg_pdfs_cfg"] = bkg_funcs
         variations = ["mins", "maxs", "rebins", "bkg_pdfs_cfg", "ratio_sigma_dplus_to_ds_cfg"]
         if not is_mb:
-            for _, row in df_pt_cent.iterrows():
-                sigmas.append(row["sigma_option"])
+            for _, row_sigma in df_pt_cent.iterrows():
+                sigmas.append(row_sigma["sigma_option"])
             df_pt_cent["sigma_option"] = sigmas
             variations.append("sigma_option")
 
@@ -837,8 +837,8 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
                         results
                     )
 
-                    feature2 = executor.submit(run_fit, cfg, fit_config)
-                    future_to_trial_second_stage[feature2] = trial
+                    future2 = executor.submit(run_fit, cfg, fit_config)
+                    future_to_trial_second_stage[future2] = trial
 
                 print("Finalising MB fits...")
                 # Collect second-stage MB fits
@@ -864,6 +864,7 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
             mp_ctx = multiprocessing.get_context('spawn')
             with ProcessPoolExecutor(max_workers=cfg["max_workers"], mp_context=mp_ctx) as executor:
                 future_to_trial = {}
+                future_to_trial_second_stage = {}
                 for trial in cent_trials:
                     if trial["pt_bins"] != ipt:
                         continue
@@ -891,8 +892,8 @@ def multi_trial(config_file_name: str, draw=False):  # pylint: disable=too-many-
                             (trial["pt_bins"], pt_mins, pt_maxs),
                             ref_result=results
                         )
-                        feature2 = executor.submit(run_fit, cfg, fit_config)
-                        future_to_trial_second_stage[feature2] = trial
+                        future2 = executor.submit(run_fit, cfg, fit_config)
+                        future_to_trial_second_stage[future2] = trial
 
                     else:
                         cent_results.append({

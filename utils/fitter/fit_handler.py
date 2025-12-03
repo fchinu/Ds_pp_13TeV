@@ -187,8 +187,8 @@ class FitHandler():  # pylint: disable=too-few-public-methods
             else:
                 fig.savefig(f"{self._cfg.output_dir}/ds_mass_pt{suffix}.{frmt}")
                 figres.savefig(f"{self._cfg.output_dir}/ds_massres_pt{suffix}.{frmt}")
-                plt.close(fig)
-                plt.close(figres)
+            plt.close(fig)
+            plt.close(figres)
 
 
     def _check_parameters(self):
