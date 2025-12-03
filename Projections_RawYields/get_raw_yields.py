@@ -535,7 +535,8 @@ def get_config(
         correlated_bkg=get_corr_bkg_config(cfg, i_pt),
         draw_figures=cfg["output"]["save_all_fits"],
         draw_formats=cfg["output"]["formats"],
-        output_dir=os.path.join(os.path.expanduser(cfg["output"]["directory"]), "fits")
+        output_dir=os.path.join(os.path.expanduser(cfg["output"]["directory"]), "fits"),
+        fig_suffix=str(cfg["output"]["suffix"])
     )
 
 
