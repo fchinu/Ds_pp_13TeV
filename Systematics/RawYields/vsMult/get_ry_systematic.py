@@ -74,6 +74,29 @@ def draw_multitrial(df_multitrial, cfg, is_mb):  # pylint: disable=too-many-loca
             f"pt_min_cfg == {pt_min} and pt_max_cfg == {pt_max} and\
                 cent_min_cfg == {cent_min} and cent_max_cfg == {cent_max}"
         )
+
+        with uproot.open(cfg["reference_fits"]) as f:
+            h_rawy_ds = f[f"h_raw_yields_ds_{cent_min}_{cent_max}"]
+            h_sigma_ds = f["h_sigma_ds_0_100"]
+            h_rawy_dplus = f[f"h_raw_yields_dplus_{cent_min}_{cent_max}"]
+            h_sigma_dplus = f["h_sigma_dplus_0_100"]
+
+        i_pt = np.digitize((pt_min + pt_max) / 2, h_rawy_ds.axis().edges()) - 1
+        central_rawy_ds = h_rawy_ds.values()[i_pt]
+        central_rawy_ds_unc = h_rawy_ds.errors()[i_pt]
+        central_sigma_ds = h_sigma_ds.values()[i_pt]
+        central_sigma_ds_unc = h_sigma_ds.errors()[i_pt]
+        central_rawy_dplus = h_rawy_dplus.values()[i_pt]
+        central_rawy_dplus_unc = h_rawy_dplus.errors()[i_pt]
+        central_sigma_dplus = h_sigma_dplus.values()[i_pt]
+        central_sigma_dplus_unc = h_sigma_dplus.errors()[i_pt]
+
+        # Apply Ds sigma selection
+        mask_ds_sigma = df_pt_cent['sigma'].apply(
+            lambda x: abs(x[0][0] - central_sigma_ds) / central_sigma_ds_unc < multitrial_cfg['quality_selections']['ds_nsigma']
+        )
+        df_pt_cent = df_pt_cent[mask_ds_sigma]
+
         raw_yields_ds, raw_yields_ds_unc, raw_yields_dplus, raw_yields_dplus_unc = [], [], [], []
         raw_yields_ds_nsigma = [[] for _ in multitrial_cfg["bincounting_nsigma"]]
         raw_yields_ds_nsigma_unc = [[] for _ in multitrial_cfg["bincounting_nsigma"]]
@@ -107,21 +130,6 @@ def draw_multitrial(df_multitrial, cfg, is_mb):  # pylint: disable=too-many-loca
         x_axis_range = n_trials * (n_bincounts + 1) + 1
 
         fig, axs = plt.subplots(2, 2, figsize=(20, 15))
-        with uproot.open(cfg["reference_fits"]) as f:
-            h_rawy_ds = f[f"h_raw_yields_ds_{cent_min}_{cent_max}"]
-            h_sigma_ds = f["h_sigma_ds_0_100"]
-            h_rawy_dplus = f[f"h_raw_yields_dplus_{cent_min}_{cent_max}"]
-            h_sigma_dplus = f["h_sigma_dplus_0_100"]
-
-        i_pt = np.digitize((pt_min + pt_max) / 2, h_rawy_ds.axis().edges()) - 1
-        central_rawy_ds = h_rawy_ds.values()[i_pt]
-        central_rawy_ds_unc = h_rawy_ds.errors()[i_pt]
-        central_sigma_ds = h_sigma_ds.values()[i_pt]
-        central_sigma_ds_unc = h_sigma_ds.errors()[i_pt]
-        central_rawy_dplus = h_rawy_dplus.values()[i_pt]
-        central_rawy_dplus_unc = h_rawy_dplus.errors()[i_pt]
-        central_sigma_dplus = h_sigma_dplus.values()[i_pt]
-        central_sigma_dplus_unc = h_sigma_dplus.errors()[i_pt]
 
         # Plot the results
         axs[0, 0].errorbar(

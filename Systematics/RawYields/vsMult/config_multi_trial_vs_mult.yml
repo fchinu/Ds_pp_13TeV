@@ -102,6 +102,7 @@ multitrial:
     quality_selections:
       chi2: 10
       significance: 4
+      ds_nsigma: 1.                                     # maximum distance in sigma uncertainty units from the central sigma for Ds candidates          
 
 files_to_draw: 
   mb: null                                              # overrides the output_dir + suffix for getting the files to draw
