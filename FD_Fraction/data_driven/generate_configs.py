@@ -76,8 +76,10 @@ def generate_configs(trial_dir):
         return False
     
     # Modify configurations for prompt enhanced
+    proj_config_prompt_enhanced["inputs"]["cutset"] = os.path.join(trial_dir, "cutset_prompt_enhanced.yml")
     proj_config_prompt_enhanced["output"]["directory"] = proj_prompt_enhanced_out_dir
     fit_config_prompt_enhanced["inputs"]["data"] = os.path.join(fit_in_dir, "projection_prompt_enhanced.root")
+    fit_config_prompt_enhanced["inputs"]["cutset"] = os.path.join(trial_dir, "cutset_prompt_enhanced.yml")
     fit_config_prompt_enhanced["output"]["directory"] = fit_out_dir
     fit_config_prompt_enhanced["output"]["save_all_fits"] = True
     fit_config_prompt_enhanced["output"]["suffix"] = "_prompt_enhanced"
@@ -93,53 +95,51 @@ def generate_configs(trial_dir):
     if not cutset_files:
         print(f"Warning: No cutset files found in {cutset_dir}")
         return True
-    
+
     for cutset_file in sorted(cutset_files):
-        try:
-            # Extract suffix from filename
-            suffix = cutset_file.split(".yml")[0].split("cutset_ML_FD")[1]
-            cutset_file_path = os.path.join(cutset_dir, cutset_file)
-            
-            # Generate projection config
-            proj_config_mod = copy.deepcopy(proj_config)
-            proj_config_mod["inputs"]["cutset"] = cutset_file_path
-            proj_config_mod["output"]["directory"] = os.path.join(proj_out_dir, suffix[1:])
-            
-            out_file_name = f"config_projection_data{suffix}.yml"
-            out_file_path = os.path.join(output_dir, "Projections", out_file_name)
-            with open(out_file_path, "w", encoding="utf-8") as file:
-                yaml.dump(proj_config_mod, file, default_flow_style=False)
-            
-            # Generate fit config
-            fit_config_mod = copy.deepcopy(fit_config)
-            data_proj_file = os.path.join(fit_in_dir, f"projection_data{suffix}.root")
-            fit_config_mod["inputs"]["data"] = data_proj_file
-            fit_config_mod["inputs"]["cutset"] = cutset_file_path
-            fit_config_mod["output"]["directory"] = fit_out_dir
-            fit_config_mod["output"]["save_all_fits"] = True
-            fit_config_mod["output"]["suffix"] = suffix
-            
-            out_file_name = f"config_fit{suffix}.yml"
-            out_file_path = os.path.join(output_dir, "RawYields", out_file_name)
-            with open(out_file_path, "w", encoding="utf-8") as file:
-                yaml.dump(fit_config_mod, file, default_flow_style=False)
-            
-            # Generate efficiency config
-            eff_config_mod = copy.deepcopy(eff_config)
-            eff_config_mod["inputs"]["cutset"] = cutset_file_path
-            eff_config_mod["output_dir"] = eff_out_dir
-            eff_config_mod["suffix"] = suffix
-            
-            out_file_name = f"config_eff{suffix}.yml"
-            out_file_path = os.path.join(output_dir, "Efficiencies", out_file_name)
-            with open(out_file_path, "w", encoding="utf-8") as file:
-                yaml.dump(eff_config_mod, file, default_flow_style=False)
-            
-            print(f"Generated configs for cutset: {cutset_file}")
-            
-        except Exception as e:
-            print(f"Error processing cutset {cutset_file}: {e}")
-            return False
+        # Extract suffix from filename
+        suffix = cutset_file.split(".yml")[0].split("cutset_ML_")[1]
+        variation = suffix.split("_")[0]
+        suffix = suffix.split(variation, 1)[1]
+        cutset_file_path = os.path.join(cutset_dir, cutset_file)
+
+        # Generate projection config
+        proj_config_mod = copy.deepcopy(proj_config)
+        proj_config_mod["inputs"]["cutset"] = cutset_file_path
+        proj_config_mod["output"]["directory"] = os.path.join(proj_out_dir, suffix[1:])
+
+        out_file_name = f"config_projection_data{suffix}.yml"
+        out_file_path = os.path.join(output_dir, "Projections", out_file_name)
+        with open(out_file_path, "w", encoding="utf-8") as file:
+            yaml.dump(proj_config_mod, file, default_flow_style=False)
+
+        # Generate fit config
+        fit_config_mod = copy.deepcopy(fit_config)
+        data_proj_file = os.path.join(fit_in_dir, f"projection_data{suffix}.root")
+        fit_config_mod["inputs"]["data"] = data_proj_file
+        fit_config_mod["inputs"]["cutset"] = cutset_file_path
+        fit_config_mod["fit_configs"]["signal"]["file_for_params_fix"] = os.path.join(fit_out_dir, "mass_fits_prompt_enhanced.root")
+        fit_config_mod["output"]["directory"] = fit_out_dir
+        fit_config_mod["output"]["save_all_fits"] = True
+        fit_config_mod["output"]["suffix"] = suffix
+
+        out_file_name = f"config_fit{suffix}.yml"
+        out_file_path = os.path.join(output_dir, "RawYields", out_file_name)
+        with open(out_file_path, "w", encoding="utf-8") as file:
+            yaml.dump(fit_config_mod, file, default_flow_style=False)
+
+        # Generate efficiency config
+        eff_config_mod = copy.deepcopy(eff_config)
+        eff_config_mod["inputs"]["cutset"] = cutset_file_path
+        eff_config_mod["output_dir"] = eff_out_dir
+        eff_config_mod["suffix"] = suffix
+
+        out_file_name = f"config_eff{suffix}.yml"
+        out_file_path = os.path.join(output_dir, "Efficiencies", out_file_name)
+        with open(out_file_path, "w", encoding="utf-8") as file:
+            yaml.dump(eff_config_mod, file, default_flow_style=False)
+
+        print(f"Generated configs for cutset: {cutset_file}")
         
     # Generate cut variation configs
     cents = list(zip(cutset_config["cent"]["min"], cutset_config["cent"]["max"]))
