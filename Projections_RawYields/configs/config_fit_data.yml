@@ -1,8 +1,5 @@
 inputs:
   data: "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/data/doublecb/Projections/projections.root"
-  mc: 
-    ds: Projections_RawYields/Data/LHC22o_pass7/VsMult/Projections_MC.root
-    dplus: Projections_RawYields/Data/LHC22o_pass7/VsMult/Projections_MC.root
   cutset: "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/configs/cutset.yml"
 
 max_workers: 10

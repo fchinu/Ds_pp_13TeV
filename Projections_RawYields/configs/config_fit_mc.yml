@@ -1,8 +1,5 @@
 inputs:
   data: /home/fchinu/Run3/Ds_OO_5TeV/Projections_RawYields/data/data.root
-  mc: 
-    ds: Projections_RawYields/Data/LHC22o_pass7/VsMult/Projections_MC.root
-    dplus: Projections_RawYields/Data/LHC22o_pass7/VsMult/Projections_MC.root
   cutset: /home/fchinu/Run3/Ds_OO_5TeV/Projections_RawYields/configs/cutset_OO5TeV.yml
 
 max_workers: 10
