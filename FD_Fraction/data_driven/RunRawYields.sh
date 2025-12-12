@@ -43,7 +43,7 @@ if [[ -f "${ConfigFitPromptEnhanced}" ]]; then
 
     for ((attempt=1; attempt<=MAX_RETRIES; attempt++)); do
         echo "Attempt $attempt of $MAX_RETRIES..."
-        nice -n 15 python3 "${PROJ_PATH}/get_raw_yields_ds_dplus_flarefly.py" "${ConfigFitPromptEnhanced}" \
+        nice -n 15 python3 "${PROJ_PATH}/get_raw_yields.py" "${ConfigFitPromptEnhanced}" \
             >& "${RawYieldsDir}/raw_yields_prompt_enhanced.log"
 
         if [[ $? -eq 0 ]]; then
@@ -69,7 +69,7 @@ if [[ ${#FitConfigs[@]} -gt 0 ]]; then
     nice -n 15 parallel --retries ${MAX_RETRIES} -j3 \
         --joblog "${RawYieldsDir}/parallel_joblog.txt" \
         --results "${RawYieldsDir}/logs" \
-        python3 ${PROJ_PATH}/get_raw_yields_ds_dplus_flarefly.py ${FitConfigDir}/config_fit_{1}.yml \
+        python3 ${PROJ_PATH}/get_raw_yields.py ${FitConfigDir}/config_fit_{1}.yml \
         ::: "${FitConfigs[@]}"
     echo "Parallel fits log saved to ${RawYieldsDir}/raw_yields.log"
 else
