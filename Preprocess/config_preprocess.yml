@@ -1,0 +1,35 @@
+outdir: '/home/fchinu/Run3/Ds_Dp_ratio_PbPb'
+centrality: [0, 20]
+
+# pt bins
+ptbins: [
+          1.0,
+          2.0,
+          4.0,
+          6.0,
+          8.0,
+          12.0,
+          24.0
+       ]
+
+preprocess:
+    bkg_cuts: [0.01, 0.01, 0.01, 0.01, 0.1, 0.3]
+    inputs:
+    -   files: [
+              /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Data/Train530885/AnalysisResults_LHC23_pass4_0.root,
+              /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Data/Train530885/AnalysisResults_LHC23_pass4_1.root,
+              /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Data/Train530885/AnalysisResults_LHC23_pass4_2.root,
+              /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Data/Train530885/AnalysisResults_LHC23_pass4_3.root,
+              /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Data/Train530885/AnalysisResults_LHC23_pass4_4.root,
+              /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Data/Train530885/AnalysisResults_LHC23_pass4_5.root,
+              /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Data/Train530885/AnalysisResults_LHC23_pass4_6.root,
+              /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Data/Train530885/AnalysisResults_LHC23_pass4_7.root,
+              /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Data/Train530885/AnalysisResults_LHC23_pass4_8.root,
+              /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Data/Train530885/AnalysisResults_LHC23_pass4_9.root
+        ]
+        outdir: 'data'
+        event_histogram: eventselection-run3/luminosity/hCounterTVXafterBCcuts #eventselection-run3/luminosity/hCounterTVXafterBCcuts
+        collision_histogram: hf-candidate-creator-3prong/hCollisionsCentOcc
+        sparses:
+        -   name: 'Mass'
+            path: 'hf-task-ds/Data/hSparseMass'
