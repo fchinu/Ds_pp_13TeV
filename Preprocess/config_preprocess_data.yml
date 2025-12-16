@@ -31,5 +31,5 @@ preprocess:
         event_histogram: eventselection-run3/luminosity/hCounterTVXafterBCcuts #eventselection-run3/luminosity/hCounterTVXafterBCcuts
         collision_histogram: hf-candidate-creator-3prong/hCollisionsCentOcc
         sparses:
-        -   name: 'Mass'
-            path: 'hf-task-ds/Data/hSparseMass'
+        -   type: reco # reco or gen
+            path: hf-task-ds/Data/hSparseMass

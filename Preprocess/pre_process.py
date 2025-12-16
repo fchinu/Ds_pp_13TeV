@@ -50,21 +50,32 @@ def get_inputs(file, full_cfg, sparse_cfg, debug=False):
     Returns:
         tuple: (sparse, axes) where sparse is the loaded sparse histogram and axes is the dictionary of axes information
     """
-    axes = {
+    axes_reco = {
         'Mass': 0,
         'Pt': 1,
         'Cent': 2,
         'ScoreBkg': 3,
         'ScorePrompt': 4,
-        'ScoreFD': 5
+        'ScoreFD': 5,
+        'NPvContributors': 6,
+        'PtB': 7,
+        'BHadronFlag': 8
+    }
+    axes_gen = {
+        'Pt': 0,
+        'Y': 1,
+        'NPvContributors': 2,
+        'Centrality': 3,
+        'PtB': 4,
+        'BHadronFlag': 5
     }
     sparse = file.Get(sparse_cfg['path'])
     if sparse is None:
-        logger(f"Sparse {sparse_cfg['name']} not found in file {file.GetName()} at path {sparse_cfg['path']}", level='ERROR')
+        logger(f"Sparse {sparse_cfg['type']} not found in file {file.GetName()} at path {sparse_cfg['path']}", level='ERROR')
     else:
         logger(f"Sparse {sparse} loaded from {sparse_cfg['path']}", level='INFO')
 
-    return sparse, axes
+    return sparse, axes_reco if sparse_cfg['type'] == 'reco' else axes_gen
 
 def load_event_collision_histograms_from_task(input_cfg, infile):
     """
@@ -107,11 +118,11 @@ def process_sparse(i_file, infile, full_cfg, sparse_cfg, prep_out_dir, input_cfg
 
     pt_mins, pt_maxs = full_cfg['ptbins'][:-1], full_cfg['ptbins'][1:]
     bkg_maxs = full_cfg['preprocess']['bkg_cuts']
-    axes_to_keep, rebin = ['Mass', 'Pt', 'Cent', 'ScoreBkg', 'ScorePrompt', 'ScoreFD'], [1]*6
-    sparse_type, sparse_path = sparse_cfg['name'], sparse_cfg['path']
+    axes_to_keep, rebin = [list(axes.values())[:sparse.GetNdimensions()]], [1]*sparse.GetNdimensions()
+    sparse_type, sparse_path = sparse_cfg['type'], sparse_cfg['path']
     sparse_dir, sparse_name = sparse_path.rsplit('/', 1)[0], sparse_path.split('/')[-1]
 
-    logger(f"Projecting sparse {sparse_cfg['name']} for file {i_file} into pT bins ({pt_mins} - {pt_maxs}) with bkg cuts {bkg_maxs}", level='INFO')
+    logger(f"Projecting sparse {sparse_cfg['type']} for file {i_file} into pT bins ({pt_mins} - {pt_maxs}) with bkg cuts {bkg_maxs}", level='INFO')
     for pt_min, pt_max, bkg_max in zip(pt_mins, pt_maxs, bkg_maxs):
         logger(f"Processing pT bin {pt_min} - {pt_max} with bkg max {bkg_max}", level='INFO')
         # Create output file
@@ -123,23 +134,17 @@ def process_sparse(i_file, infile, full_cfg, sparse_cfg, prep_out_dir, input_cfg
         sparse.GetAxis(axes.get('PtTrig', axes.get('Pt'))).SetRangeUser(pt_min, pt_max) # PtTrig for correlations, Pt for SP flow
         if axes.get('ScoreBkg') is not None: # Skip sparses for generated info
             sparse.GetAxis(axes['ScoreBkg']).SetRangeUser(0, bkg_max)
-        proj_axes = [axes[ax_to_keep] for ax_to_keep in axes_to_keep]
-        proj_sparse = sparse.Projection(len(proj_axes), array.array('i', proj_axes), 'O')
-        proj_sparse.SetName(sparse.GetName())
-        proj_sparse = proj_sparse.Rebin(array.array('i', rebin))
         make_dir_root_file(sparse_dir, out_file)
         out_file.cd(sparse_dir)
-        proj_sparse.Write(sparse_name, write_opt)
+        sparse.Write(sparse_name, write_opt)
         h_ev.Write(h_ev.GetName().split('/')[-1], write_opt)
         h_coll.Write(h_coll.GetName(), write_opt)
         out_file.Delete(sparse_name + ";*")
-        proj_sparse.Delete()
-        del proj_sparse
 
         gc.collect()
 
         out_file.Close()
-        logger(f'----> Finished processing pT bin {pt_min} - {pt_max} for {i_file}, sparse: {sparse_cfg["name"]}\n', "INFO")
+        logger(f'----> Finished processing pT bin {pt_min} - {pt_max} for {i_file}, sparse: {sparse_cfg["type"]}\n', "INFO")
 
     del sparse
     gc.collect()
@@ -158,10 +163,13 @@ if __name__ == "__main__":
     for input_cfg in full_cfg['preprocess']['inputs']:
         files = [TFile.Open(fp, 'r') for fp in input_cfg['files']]
         for sparse_cfg in input_cfg['sparses']:
-            logger(f"##### Skimming {sparse_cfg['name']} #####", "WARNING")
+            logger(f"##### Skimming {sparse_cfg['type']} #####", "WARNING")
             with concurrent.futures.ThreadPoolExecutor(args.workers) as executor:
                 tasks_data = [executor.submit(process_sparse, i_file, file, full_cfg, sparse_cfg, output_dir, input_cfg) for i_file, file in enumerate(files)]
         [TFile.Close(file) for file in files]
+
+        for task in concurrent.futures.as_completed(tasks_data):
+            task.result()
 
         # use hadd to merge the results in the directories for the different pT bins
         for directory in os.listdir(f"{output_dir}/Preprocess/{input_cfg['outdir']}"):

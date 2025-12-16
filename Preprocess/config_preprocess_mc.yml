@@ -1,0 +1,40 @@
+outdir: '/home/fchinu/Run3/Ds_Dp_ratio_PbPb'
+centrality: [0, 20]
+
+# pt bins
+ptbins: [
+          1.0,
+          2.0,
+          4.0,
+          6.0,
+          8.0,
+          12.0,
+          24.0
+       ]
+
+preprocess:
+    bkg_cuts: [0.01, 0.01, 0.01, 0.01, 0.1, 0.3]
+    inputs:
+    -   files: [
+              /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/MC/Train512716/AnalysisResults_LHC25a5_0.root
+        ]
+        outdir: 'mc'
+        event_histogram: eventselection-run3/luminosity/hCounterTVXafterBCcuts #eventselection-run3/luminosity/hCounterTVXafterBCcuts
+        collision_histogram: hf-candidate-creator-3prong/hCollisionsCentOcc
+        sparses:
+        -   type: reco
+            path: hf-task-ds/MC/Ds/Prompt/hSparseMass
+        -   type: reco
+            path: hf-task-ds/MC/Ds/NonPrompt/hSparseMass
+        -   type: reco
+            path: hf-task-ds/MC/Dplus/Prompt/hSparseMass
+        -   type: reco
+            path: hf-task-ds/MC/Dplus/NonPrompt/hSparseMass
+        -   type: gen
+            path: hf-task-ds/MC/Ds/Prompt/hSparseGen
+        -   type: gen
+            path: hf-task-ds/MC/Ds/NonPrompt/hSparseGen
+        -   type: gen
+            path: hf-task-ds/MC/Dplus/Prompt/hSparseGen
+        -   type: gen
+            path: hf-task-ds/MC/Dplus/NonPrompt/hSparseGen
