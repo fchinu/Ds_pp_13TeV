@@ -8,6 +8,7 @@ inputs:
     hf-task-ds/MC/Dplus/NonPrompt/hSparseMass,
     hf-task-ds/MC/Dplus/Bkg/hSparseMass
   ]
+  is_preprocessed: false
   event_histogram: eventselection-run3/luminosity/hCounterTVXafterBCcuts
   collision_histogram: hf-candidate-creator-3prong/hCollisionsCentOcc
   

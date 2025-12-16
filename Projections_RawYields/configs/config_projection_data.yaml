@@ -1,19 +1,16 @@
 inputs:
-  names: [
-    # /home/fchinu/Run3/Ds_pp_13TeV/Datasets/Ds_pp_run3_ml/Data/Train279067/AnalysisResults_LHC22o_pass7.root,
-    /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Data/Train444799/AnalysisResults_LHC23_pass4_0.root
-
-  ] # string or list of strings
+  names: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Preprocess/data # string or list of strings (can also put only the directory, will pick all root files in it; in case of preprocessed data, put the directory where pt_x_y folders are located)
+  is_preprocessed: true
   sparses: hf-task-ds/Data/hSparseMass
-  event_histogram: lumi-task/hCounterTVXafterBCcuts #eventselection-run3/luminosity/hCounterTVXafterBCcuts
+  event_histogram: hf-task-ds/Data/hCounterTVXafterBCcuts #eventselection-run3/luminosity/hCounterTVXafterBCcuts
+  collision_histogram: hf-task-ds/Data/hCollisionsCentOcc
 
-  cutset: /home/fchinu/Run3/Ds_OO_5TeV/Projections_RawYields/configs/cutset_OO5TeV.yml
+  cutset: "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/configs/cutset.yml"
 
-max_workers: 10
+max_workers: 40
 
 output:
-  directory: /home/fchinu/Run3/Ds_OO_5TeV/Projections_RawYields/data
+  directory: "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/data/test/Projections"
   file_names: [
-    # data_LHC22.root,
     data.root
-  ]
+    ]  # list of output file names (if multiple sparses are provided, must provide same number of output file names). Automatically generated in case of preprocessed data.
