@@ -1,14 +1,18 @@
+"""Script to generate variations of FD fraction calculations based on different trial selections."""
 import argparse
 from pathlib import Path
 import json
 import sys
+import ROOT
+
 sys.path.append(str(Path(__file__).parent.parent.parent.parent / "FD_Fraction" / "data_driven"))
 sys.path.append(str(Path(__file__).parent.parent.parent.parent / "utils"))
-from compute_fraction_cutvar import main as compute_fraction_main
-import ROOT
-ROOT.TH1.AddDirectory(False)
-from plot_utils import get_discrete_matplotlib_palette
+from compute_fraction_cutvar import main as compute_fraction_main  # pylint: disable=wrong-import-position,import-error
+from plot_utils import get_discrete_matplotlib_palette  # pylint: disable=wrong-import-position,import-error
 
+# pylint: disable=no-member # ROOT module members
+
+ROOT.TH1.AddDirectory(False)
 colors, _ = get_discrete_matplotlib_palette("tab10")
 
 def get_trials(inlist, option):
@@ -45,7 +49,7 @@ def create_config(infile: str, trial: str):
     out_dir = Path(__file__).parent / trial
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    with open(infile, 'r') as f:
+    with open(infile, 'r', encoding='utf-8') as f:
         config = json.load(f)
 
     raw_yields_cfg = config['rawyields']['inputfiles']
@@ -63,12 +67,12 @@ def create_config(infile: str, trial: str):
     config['output']['directory'] = str(outdir)
 
     outfile = outdir / infile.name
-    with open(outfile, 'w') as f:
+    with open(outfile, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=4)
 
     return outfile
 
-def dump_outputs(indir):
+def dump_outputs(indir):  # pylint: disable=too-many-locals
     """
     Produce a summary of outputs in the input directory.
     Args:
@@ -91,21 +95,27 @@ def dump_outputs(indir):
         fracs[particle][(cent_min, cent_max)][trial] = h_frac
 
     # set all as last
-    for particle in fracs:
-        for cent_range in fracs[particle]:
-            all_trial = fracs[particle][cent_range].pop('all')
-            fracs[particle][cent_range] = {**fracs[particle][cent_range], 'all': all_trial}
-        
+    for particle, cents in fracs.items():
+        for cent_range, trials in cents.items():
+            all_trial = trials.pop('all')
+            cents[cent_range] = {**trials, 'all': all_trial}
 
-    for particle in fracs:
-        for cent_range in fracs[particle]:
-            c = ROOT.TCanvas(f"c_{particle}_{cent_range[0]}_{cent_range[1]}", f"c_{particle}_{cent_range[0]}_{cent_range[1]}")
-            c.DrawFrame(0, 0.5, 24, 1, f";#it{{p}}_{{T}} (GeV/#it{{c}});Prompt {'D_{s}^{+}' if particle == 'Ds' else 'D^{+}'} fraction")
+    for particle, cents in fracs.items():
+        for cent_range, trials in cents.items():
+            c = ROOT.TCanvas(
+                f"c_{particle}_{cent_range[0]}_{cent_range[1]}",
+                f"c_{particle}_{cent_range[0]}_{cent_range[1]}"
+            )
+            c.DrawFrame(
+                0, 0.5, 24, 1,
+                f";#it{{p}}_{{T}} (GeV/#it{{c}});"
+                f"Prompt {'D_{s}^{+}' if particle == 'Ds' else 'D^{+}'} fraction"
+            )
             leg = ROOT.TLegend(0.6, 0.2, 0.89, 0.59)
             leg.SetTextSize(0.03)
             leg.SetBorderSize(0)
             leg.SetFillStyle(0)
-            for i_trial, (trial, h_frac) in enumerate(fracs[particle][cent_range].items()):
+            for i_trial, (trial, h_frac) in enumerate(trials.items()):
                 h_frac.SetLineWidth(2)
                 h_frac.SetMarkerStyle(ROOT.kFullCircle)
                 h_frac.SetLineColor(colors[i_trial])
@@ -115,9 +125,6 @@ def dump_outputs(indir):
             leg.Draw()
             outname = f"fraction_{particle}_cent_{cent_range[0]}_{cent_range[1]}"
             c.SaveAs(str(indir / f"{outname}.pdf"))
-
-
-
 
 def run(indir):
     """
