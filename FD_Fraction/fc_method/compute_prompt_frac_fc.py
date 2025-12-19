@@ -92,11 +92,11 @@ def fit_histogram(config, hist, initial_pars):
     elif config["fit_function"] == "powerlaw":
         func = ROOT.TF1("func", power_law, 0, 16, len(initial_pars))
 
-        func.SetParLimits(0, 1.e-10, 1.e20)
-        func.SetParLimits(1, 1.e-10, 100.)
-        func.SetParLimits(2, 1.e-10, 100.)
-        func.SetParLimits(3, 1.e-10, 50.0)
-    
+        func.SetParLimits(0, .1, 1000)
+        func.SetParLimits(1, 0.5, 10.)
+        func.SetParLimits(2, 0.5, 10.)
+        func.SetParLimits(3, 0.5, 20.0)
+
 
     for i, par in enumerate(initial_pars):
         func.SetParameter(i, par)
@@ -308,7 +308,7 @@ def get_spectrum(config, particle, is_prompt, cent_min=None, cent_max=None):
     if config["fit_function"] == "tsallis":
         initial_pars = [h_combined.Integral(), 5, 2, mass]  # Example initial parameters
     elif config["fit_function"] == "powerlaw":
-        initial_pars = [h_combined.Integral(), 2, 0.9, 5]  # Example initial parameters
+        initial_pars = [h_combined.Integral()/2, 2.3, 1.70, 3.0]  # Example initial parameters
     func, fit_res = fit_histogram(config, h_combined, initial_pars)
     h_errors = get_confidence_intervals()
     if cent_min is not None and cent_max is not None:
@@ -340,9 +340,9 @@ def fc_from_pb_pb_data(config):
     with ROOT.TFile.Open(config["output"], "RECREATE") as output_file:
         pass
 
-    print("Fitting Ds prompt fraction...")
+    print("Fitting Ds prompt spectrum...")
     g_yield_prompt_from_ci = get_spectrum(config, "Ds", True, cent_min, cent_max)
-    print("Fitting Ds non-prompt fraction...")
+    print("Fitting Ds non-prompt spectrum...")
     g_yield_nonprompt_from_ci = get_spectrum(config, "Ds", False, cent_min, cent_max)
 
     # h_yield_prompt_1_2 = get_yield_1_2(tsallis_prompt, fit_res_prompt)
@@ -354,8 +354,10 @@ def fc_from_pb_pb_data(config):
 
     g_frac_corr_ds = get_fraction_corrected(g_yield_prompt_from_ci, g_yield_nonprompt_from_ci)
     g_frac_raw_ds = get_fraction_raw(h_eff_ds_prompt, h_eff_ds_nonprompt, g_yield_prompt_from_ci, g_yield_nonprompt_from_ci)
-
+    
+    print("Fitting D0 prompt spectrum...")
     g_yield_prompt_from_ci = get_spectrum(config, "D0", True, cent_min, cent_max)
+    print("Fitting D0 non-prompt spectrum...")
     g_yield_nonprompt_from_ci = get_spectrum(config, "D0", False, cent_min, cent_max)
 
     # h_yield_prompt_1_2 = get_yield_1_2(tsallis_prompt, fit_res_prompt)
@@ -403,7 +405,9 @@ def fc_from_pp_data(config):
     g_frac_corr_ds = get_fraction_corrected(g_yield_prompt_from_ci, g_yield_nonprompt_from_ci)
     g_frac_raw_ds = get_fraction_raw(h_eff_ds_prompt, h_eff_ds_nonprompt, g_yield_prompt_from_ci, g_yield_nonprompt_from_ci)
 
+    print("Fitting D+ prompt spectrum...")
     g_yield_prompt_from_ci = get_spectrum(config, "Dplus", True)
+    print("Fitting D+ non-prompt spectrum...")
     g_yield_nonprompt_from_ci = get_spectrum(config, "Dplus", False)
 
     # h_yield_prompt_1_2 = get_yield_1_2(tsallis_prompt, fit_res_prompt)
