@@ -1,0 +1,21 @@
+inputs:
+  efficiency: /Users/fgrosa/cernbox/run3analysis/dsoverd/pbpb/outputs/efficiency/5090/efficiency_lhc25a5_norm_ptweights.root
+  cutset: /Users/fgrosa/cernbox/run3analysis/dsoverd/pbpb/configs/5090/cutset_5090.yml
+
+data: pp # pp or pbpb (use pp data and TAMU RAA predictions or PbPb data)
+raa: # only used if pp enabled
+  use: True
+  model: tamu
+  file: ../../PtWeightsPbPb/raatamu_interpolated.root
+
+fit_function: tsallissim # tsallis or powerlaw
+
+cent:
+  min: 50
+  max: 60
+
+pt:
+  min: [1., 2., 4., 6., 8., 12.]
+  max: [2., 4., 6., 8., 12., 24.]
+
+output: /Users/fgrosa/cernbox/run3analysis/dsoverd/pbpb/outputs/fraction/5090/fc_method/DsPromptNonPrompt_Yield_pp5TeV_Run2_5060_tsallis.root

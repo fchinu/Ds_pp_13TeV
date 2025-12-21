@@ -35,8 +35,17 @@ def get_data(particle, is_prompt, cent_min=None, cent_max=None):
             h_stat = dir_cent.Get("h_stat")
             g_syst = dir_cent.Get("g_syst")
             h_combined = dir_cent.Get("h_combined")
-    
-    return h_stat, g_syst, h_combined
+
+    h_stat_plussyst = h_stat.Clone("h_stat_plussyst")
+    h_stat_minussyst = h_stat.Clone("h_stat_minussyst")
+    for ipt in range(1, h_stat.GetNbinsX()+1):
+        cent = h_stat.GetBinContent(ipt)
+        sys_high = g_syst.GetErrorYhigh(ipt-1)
+        sys_low = g_syst.GetErrorYlow(ipt-1)
+        h_stat_plussyst.SetBinContent(ipt, cent + sys_high)
+        h_stat_minussyst.SetBinContent(ipt, cent - sys_low)
+        
+    return h_stat, g_syst, h_combined, h_stat_plussyst, h_stat_minussyst
 
 
 def tsallis(pt, pars):
@@ -69,6 +78,48 @@ def power_law(pt, pars):
 
     """
     return pars[0] * pt[0] / ((1 + (pt[0] / pars[1])**pars[3])**pars[2])
+
+# definition of shared parameters for Ds, D+ combined Tsallis fit
+pars_tsallis_ds = np.array(
+    [
+        0, # integral Ds
+        1, # n
+        2, # T
+        3 # m(Ds)
+    ],
+    dtype=np.int32
+)  # exp amplitude in B histo and exp common parameter
+
+
+pars_tsallis_dplus = np.array(
+    [
+        4,  # integral D+
+        1,  # n
+        2,  # T
+        5  # m(D+)
+    ],
+    dtype=np.int32,
+)
+
+class GlobalChi2(object):
+    """
+    Class for combined Chi2 in case of simultaneous Ds, D+ Tsallis fit
+    """
+    def __init__(self, f1, f2):
+        self._f1 = f1
+        self._f2 = f2
+
+    def __call__(self, par):
+        # parameter vector is first background (in common 1 and 2) and then is
+        # signal (only in 2)
+
+        # the zero-copy way to get a numpy array from a double *
+        par_arr = np.frombuffer(par, dtype=np.float64, count=6)
+
+        p1 = par_arr[pars_tsallis_ds]
+        p2 = par_arr[pars_tsallis_dplus]
+
+        return self._f1(p1) + self._f2(p2)
 
 def fit_histogram(config, hist, initial_pars):
     """
@@ -104,6 +155,69 @@ def fit_histogram(config, hist, initial_pars):
     fit_res = hist.Fit(func, "IME0S")
     
     return func, fit_res
+
+def simultaneous_fit(h_corrected_yields_ds, h_corrected_yields_dplus, fitter_tsallis):
+    """
+    Simultaneous fit of Ds and D+ with Tsallis
+
+    Parameters:
+    - config (dict): configuration dictionary
+    - hist (TH1): histogram to fit
+    - initial_pars (list): initial parameters for the fit
+
+    Returns:
+    - TF1: fitted Tsallis functions
+    """
+    pt_min = 0.
+    pt_max_ds = h_corrected_yields_ds.GetXaxis().GetBinUpEdge(h_corrected_yields_ds.GetNbinsX())
+    pt_max_dplus = h_corrected_yields_dplus.GetXaxis().GetBinUpEdge(h_corrected_yields_dplus.GetNbinsX())
+    f_corrected_yields_ds = ROOT.TF1("f_corrected_yields_ds_tsallissim", tsallis, pt_min, pt_max_ds, 4)
+    f_corrected_yields_dplus = ROOT.TF1("f_corrected_yields_dplus_tsallissim", tsallis, pt_min, pt_max_dplus, 4)
+
+    wf_corrected_yields_ds = ROOT.Math.WrappedMultiTF1(f_corrected_yields_ds, 1)
+    wf_corrected_yields_dplus = ROOT.Math.WrappedMultiTF1(f_corrected_yields_dplus, 1)
+
+    opt = ROOT.Fit.DataOptions()
+    range_ds = ROOT.Fit.DataRange()
+    range_ds.SetRange(pt_min, pt_max_ds)
+    data_ds = ROOT.Fit.BinData(opt, range_ds)
+    ROOT.Fit.FillData(data_ds, h_corrected_yields_ds)
+    range_dplus = ROOT.Fit.DataRange()
+    range_dplus.SetRange(pt_min, pt_max_ds)
+    data_dplus = ROOT.Fit.BinData(opt, range_dplus)
+    ROOT.Fit.FillData(data_dplus, h_corrected_yields_dplus)
+
+    chi2_ds = ROOT.Fit.Chi2Function(data_ds, wf_corrected_yields_ds)
+    chi2_dplus = ROOT.Fit.Chi2Function(data_dplus, wf_corrected_yields_dplus)
+    global_chi2 = GlobalChi2(chi2_ds, chi2_dplus)
+
+    pars_all = np.array(
+        [h_corrected_yields_ds.Integral(), 10, 0.5, 1.968,
+         h_corrected_yields_dplus.Integral(), 1.870]
+    )
+    fitter_tsallis.Config().SetParamsSettings(6, pars_all)
+    # fix the masses
+    fitter_tsallis.Config().ParSettings(3).Fix()
+    fitter_tsallis.Config().ParSettings(5).Fix()
+    # set limits
+    fitter_tsallis.Config().ParSettings(1).SetLimits(1.5, 15.)
+    fitter_tsallis.Config().MinimizerOptions().SetPrintLevel(0)
+    fitter_tsallis.Config().SetMinimizer("Minuit2", "Migrad")
+
+    # we can't pass the Python object global_chi2 directly to FitFCN.
+    # It needs to be wrapped in a ROOT::Math::Functor.
+    global_chi2_functor = ROOT.Math.Functor(global_chi2, 6)
+
+    # fit FCN function
+    # (specify optionally data size and flag to indicate that is a chi2 fit)
+    fitter_tsallis.FitFCN(global_chi2_functor, 0, data_ds.Size() + data_dplus.Size(), 1)
+    result_tsallis = fitter_tsallis.Result()
+    result_tsallis.Print(ROOT.std.cout)
+    f_corrected_yields_ds.SetFitResult(result_tsallis, pars_tsallis_ds)
+    f_corrected_yields_dplus.SetFitResult(result_tsallis, pars_tsallis_dplus)
+
+    return f_corrected_yields_ds, f_corrected_yields_dplus, result_tsallis
+
 
 def get_confidence_intervals():
     h = ROOT.TH1D("h_confidence_intervals", "", 1000, 0, 16)
@@ -199,7 +313,7 @@ def get_efficiencies_dplus(eff_infile, cent_min, cent_max):
 
     return h_eff_ds_prompt, h_eff_ds_nonprompt
 
-def get_fraction_corrected(g_yield_prompt, g_yield_nonprompt):
+def get_fraction_corrected(g_yield_prompt, g_yield_nonprompt, g_raa_prompt, g_raa_nonprompt):
     """
     Get corrected prompt fraction
 
@@ -219,6 +333,9 @@ def get_fraction_corrected(g_yield_prompt, g_yield_nonprompt):
         bin_center = g_yield_prompt.GetX()[i_pt]
         n_prompt = g_yield_prompt.GetY()[i_pt]
         n_nonprompt = g_yield_nonprompt.GetY()[i_pt]
+        if g_raa_prompt is not None and g_raa_nonprompt is not None:
+            n_prompt = n_prompt * g_raa_prompt.Eval(bin_center)
+            n_nonprompt = n_nonprompt * g_raa_nonprompt.Eval(bin_center)
 
         frac_prompt = n_prompt / (n_prompt + n_nonprompt)
 
@@ -235,7 +352,7 @@ def get_fraction_corrected(g_yield_prompt, g_yield_nonprompt):
 
     return g_frac
 
-def get_fraction_raw(h_eff_prompt, h_eff_nonprompt, g_yield_prompt, g_yield_nonprompt):
+def get_fraction_raw(h_eff_prompt, h_eff_nonprompt, g_yield_prompt, g_yield_nonprompt, g_raa_prompt, g_raa_nonprompt):
     """
     Get raw prompt fraction
 
@@ -257,6 +374,10 @@ def get_fraction_raw(h_eff_prompt, h_eff_nonprompt, g_yield_prompt, g_yield_nonp
         bin_center = g_yield_prompt.GetX()[i_pt]
         n_prompt = g_yield_prompt.GetY()[i_pt]
         n_nonprompt = g_yield_nonprompt.GetY()[i_pt]
+        if g_raa_prompt is not None and g_raa_nonprompt is not None:
+            n_prompt = n_prompt * g_raa_prompt.Eval(bin_center)
+            n_nonprompt = n_nonprompt * g_raa_nonprompt.Eval(bin_center)
+
         eff_prompt = h_eff_prompt.GetBinContent(h_eff_prompt.FindBin(bin_center))
         eff_nonprompt = h_eff_nonprompt.GetBinContent(h_eff_nonprompt.FindBin(bin_center))
         raw_yield_prompt = n_prompt * eff_prompt
@@ -303,19 +424,20 @@ def get_spectrum(config, particle, is_prompt, cent_min=None, cent_max=None):
     with open(config["inputs"]["cutset"], "r") as f:
         cutset = yaml.safe_load(f)
 
-    h_stat, g_syst, h_combined = get_data(particle, is_prompt, cent_min, cent_max)
+    h_stat, g_syst, h_combined, h_stat_plussyst, h_stat_minussys = get_data(particle, is_prompt, cent_min, cent_max)
     mass = 1.968 if particle == "Ds" else 1.865
     if config["fit_function"] == "tsallis":
-        initial_pars = [h_combined.Integral(), 5, 2, mass]  # Example initial parameters
+        initial_pars = [h_stat.Integral(), 5, 2, mass]  # Example initial parameters
     elif config["fit_function"] == "powerlaw":
-        initial_pars = [h_combined.Integral()/2, 2.3, 1.70, 3.0]  # Example initial parameters
-    func, fit_res = fit_histogram(config, h_combined, initial_pars)
+        initial_pars = [h_stat.Integral()/2, 2.3, 1.70, 3.0]  # Example initial parameters
+    func, fit_res = fit_histogram(config, h_stat, initial_pars)
     h_errors = get_confidence_intervals()
     if cent_min is not None and cent_max is not None:
         name = f"{config["fit_function"]}_{particle}_{'Prompt' if is_prompt else 'NonPrompt'}_{cent_min}_{cent_max}"
     else:
         name = f"{config["fit_function"]}_{particle}_{'Prompt' if is_prompt else 'NonPrompt'}"
     h_errors.SetTitle(name)
+
     g_yield_prompt_from_ci = get_yields_from_ci(cutset, h_errors)
 
     with ROOT.TFile.Open(config["output"], "UPDATE") as output_file:
@@ -327,6 +449,81 @@ def get_spectrum(config, particle, is_prompt, cent_min=None, cent_max=None):
         g_yield_prompt_from_ci.Write(f"{particle}{'Prompt' if is_prompt else 'NonPrompt'}_Yields_FromCI")
 
     return g_yield_prompt_from_ci
+
+def get_spectrum_simfit(is_prompt, cent_min=None, cent_max=None):
+    """
+    Get pT spectrum from ROOT file
+
+    Parameters:
+    - is_prompt (bool): True for prompt, False for non-prompt
+    - cent_min (int): minimum centrality
+    - cent_max (int): maximum centrality
+
+    Returns:
+    - TH1: pT spectrum histogram
+    """
+    with open(config["inputs"]["cutset"], "r") as f:
+        cutset = yaml.safe_load(f)
+
+    h_stat_ds, g_syst_ds, h_combined_ds, h_stat_plussys_ds, h_stat_minussys_ds = get_data("Ds", is_prompt, cent_min, cent_max)
+    h_stat_dplus, g_syst_dplus, h_combined_dplus, h_stat_plussys_dplus, h_stat_minussys_dplus = get_data("Dplus", is_prompt, cent_min, cent_max)
+
+    fitter_tsallis = ROOT.Fit.Fitter()
+
+    func_plussyst_ds, func_plussyst_dplus, result_plussyst_tsallis = simultaneous_fit(h_stat_plussys_ds, h_stat_plussys_dplus, fitter_tsallis)
+    cov_mat_plussyst = ROOT.TMatrixDSym(6)
+    result_plussyst_tsallis.GetCovarianceMatrix(cov_mat_plussyst)
+    params_plussyst = result_plussyst_tsallis.GetParams()
+
+    func_minussyst_ds, func_minussyst_dplus, result_minussyst_tsallis = simultaneous_fit(h_stat_minussys_ds, h_stat_minussys_dplus, fitter_tsallis)
+    cov_mat_minussyst = ROOT.TMatrixDSym(6)
+    result_minussyst_tsallis.GetCovarianceMatrix(cov_mat_minussyst)
+    params_minussyst = result_minussyst_tsallis.GetParams()
+
+    func_ds, func_dplus, result_tsallis = simultaneous_fit(h_stat_ds, h_stat_dplus, fitter_tsallis)
+    cov_mat = ROOT.TMatrixDSym(6)
+    result_tsallis.GetCovarianceMatrix(cov_mat)
+    params = result_tsallis.GetParams()
+
+    pt_mins = config["pt"]["min"]
+    pt_maxs = config["pt"]["max"]
+    g_yield_prompt_from_ci_ds = ROOT.TGraphAsymmErrors(len(pt_mins))
+    g_yield_prompt_from_ci_dplus = ROOT.TGraphAsymmErrors(len(pt_mins))
+
+    for ipt, (pt_min, pt_max) in enumerate(zip(pt_mins, pt_maxs)):
+        pt_cent = (pt_min + pt_max) / 2
+        delta_pt = (pt_max - pt_min)
+        pt_unc = delta_pt / 2
+        int_ds = func_ds.Integral(pt_min, pt_max) / delta_pt
+        int_dplus = func_dplus.Integral(pt_min, pt_max) / delta_pt
+        g_yield_prompt_from_ci_ds.SetPoint(ipt, pt_cent, int_ds)
+        g_yield_prompt_from_ci_dplus.SetPoint(ipt, pt_cent, int_dplus)
+        unc_ds = func_ds.IntegralError(pt_min, pt_max, params, cov_mat.GetMatrixArray()) / delta_pt
+        unc_dplus = func_dplus.IntegralError(pt_min, pt_max, params, cov_mat.GetMatrixArray()) / delta_pt
+        unc_syshigh_ds = func_plussyst_ds.Integral(pt_min, pt_max) / delta_pt - int_ds
+        unc_syslow_ds = int_ds - func_minussyst_ds.Integral(pt_min, pt_max) / delta_pt
+        unc_syshigh_dplus = func_plussyst_dplus.Integral(pt_min, pt_max) / delta_pt - int_dplus
+        unc_syslow_dplus = int_dplus - func_minussyst_dplus.Integral(pt_min, pt_max) / delta_pt
+        unc_totlow_ds = np.sqrt(unc_ds**2 + unc_syslow_ds**2)
+        unc_tothigh_ds = np.sqrt(unc_ds**2 + unc_syshigh_ds**2)
+        unc_totlow_dplus = np.sqrt(unc_dplus**2 + unc_syslow_dplus**2)
+        unc_tothigh_dplus = np.sqrt(unc_dplus**2 + unc_syshigh_dplus**2)
+        g_yield_prompt_from_ci_ds.SetPointError(ipt, pt_unc, pt_unc, unc_totlow_ds, unc_tothigh_ds)
+        g_yield_prompt_from_ci_dplus.SetPointError(ipt, pt_unc, pt_unc, unc_totlow_dplus, unc_tothigh_dplus)
+
+    with ROOT.TFile.Open(config["output"], "UPDATE") as output_file:
+        h_stat_ds.Write(f"Ds{'Prompt' if is_prompt else 'NonPrompt'}_Yield_Stat")
+        g_syst_ds.Write(f"Ds{'Prompt' if is_prompt else 'NonPrompt'}_Yield_Syst")
+        h_combined_ds.Write(f"Ds{'Prompt' if is_prompt else 'NonPrompt'}_Yield_Combined")
+        func_ds.Write(f"Tsallissim_Ds{'Prompt' if is_prompt else 'NonPrompt'}")
+        g_yield_prompt_from_ci_ds.Write(f"Ds{'Prompt' if is_prompt else 'NonPrompt'}_Yields_FromCI")
+        h_stat_dplus.Write(f"Dplus{'Prompt' if is_prompt else 'NonPrompt'}_Yield_Stat")
+        g_syst_dplus.Write(f"Dplus{'Prompt' if is_prompt else 'NonPrompt'}_Yield_Syst")
+        h_combined_dplus.Write(f"Dplus{'Prompt' if is_prompt else 'NonPrompt'}_Yield_Combined")
+        func_dplus.Write(f"Tsallissim_Dplus{'Prompt' if is_prompt else 'NonPrompt'}")
+        g_yield_prompt_from_ci_dplus.Write(f"Dplus{'Prompt' if is_prompt else 'NonPrompt'}_Yields_FromCI")
+
+    return g_yield_prompt_from_ci_ds, g_yield_prompt_from_ci_dplus 
 
 def fc_from_pb_pb_data(config):
     # Load cutset from config
@@ -370,7 +567,7 @@ def fc_from_pb_pb_data(config):
     g_frac_corr_dp = get_fraction_corrected(g_yield_prompt_from_ci, g_yield_nonprompt_from_ci)
     g_frac_raw_dp = get_fraction_raw(h_eff_dp_prompt, h_eff_dp_nonprompt, g_yield_prompt_from_ci, g_yield_nonprompt_from_ci)
 
-    output_file = ROOT.TFile.Open(f"DsPromptNonPrompt_Yield_PbPb5TeV_Run2_{cent_min}{cent_max}_tsallis.root", "UPDATE")
+    output_file = ROOT.TFile.Open(config["output"], "UPDATE")
     output_file.cd()
     g_frac_corr_ds.Write("DsPrompt_CorrFraction")
     g_frac_raw_ds.Write("DsPrompt_RawFraction")
@@ -390,42 +587,57 @@ def fc_from_pp_data(config):
     with ROOT.TFile.Open(config["output"], "RECREATE") as output_file:
         pass
 
-    print("Fitting Ds prompt fraction...")
-    g_yield_prompt_from_ci = get_spectrum(config, "Ds", True)
-    print("Fitting Ds non-prompt fraction...")
-    g_yield_nonprompt_from_ci = get_spectrum(config, "Ds", False)
+    if config["fit_function"] != "tsallissim":
+        print("Fitting Ds prompt fraction...")
+        g_yield_prompt_ds_from_ci = get_spectrum(config, "Ds", True)
+        print("Fitting Ds non-prompt fraction...")
+        g_yield_nonprompt_ds_from_ci = get_spectrum(config, "Ds", False)
 
-    # h_yield_prompt_1_2 = get_yield_1_2(tsallis_prompt, fit_res_prompt)
-    # h_yield_nonprompt_1_2 = get_yield_1_2(tsallis_nonprompt, fit_res_nonprompt)
-    # h_yield_prompt_1_2.SetName("h_yield_prompt_1_2")
-    # h_yield_nonprompt_1_2.SetName("h_yield_nonprompt_1_2")
+        # h_yield_prompt_1_2 = get_yield_1_2(tsallis_prompt, fit_res_prompt)
+        # h_yield_nonprompt_1_2 = get_yield_1_2(tsallis_nonprompt, fit_res_nonprompt)
+        # h_yield_prompt_1_2.SetName("h_yield_prompt_1_2")
+        # h_yield_nonprompt_1_2.SetName("h_yield_nonprompt_1_2")
+
+        print("Fitting D+ prompt spectrum...")
+        g_yield_prompt_dplus_from_ci = get_spectrum(config, "Dplus", True)
+        print("Fitting D+ non-prompt spectrum...")
+        g_yield_nonprompt_dplus_from_ci = get_spectrum(config, "Dplus", False)
+
+        # h_yield_prompt_1_2 = get_yield_1_2(tsallis_prompt, fit_res_prompt)
+        # h_yield_nonprompt_1_2 = get_yield_1_2(tsallis_nonprompt, fit_res_nonprompt)
+        # h_yield_prompt_1_2.SetName("h_yield_prompt_1_2")
+        # h_yield_nonprompt_1_2.SetName("h_yield_nonprompt_1_2")
+    else:
+        print("Fitting prompt spectra...")
+        g_yield_prompt_ds_from_ci, g_yield_prompt_dplus_from_ci = get_spectrum_simfit(True)
+        print("Fitting nonprompt spectra...")
+        g_yield_nonprompt_ds_from_ci, g_yield_nonprompt_dplus_from_ci = get_spectrum_simfit(False)
 
     h_eff_ds_prompt, h_eff_ds_nonprompt = get_efficiencies_ds(config["inputs"]["efficiency"], cent_min, cent_max)
-
-    g_frac_corr_ds = get_fraction_corrected(g_yield_prompt_from_ci, g_yield_nonprompt_from_ci)
-    g_frac_raw_ds = get_fraction_raw(h_eff_ds_prompt, h_eff_ds_nonprompt, g_yield_prompt_from_ci, g_yield_nonprompt_from_ci)
-
-    print("Fitting D+ prompt spectrum...")
-    g_yield_prompt_from_ci = get_spectrum(config, "Dplus", True)
-    print("Fitting D+ non-prompt spectrum...")
-    g_yield_nonprompt_from_ci = get_spectrum(config, "Dplus", False)
-
-    # h_yield_prompt_1_2 = get_yield_1_2(tsallis_prompt, fit_res_prompt)
-    # h_yield_nonprompt_1_2 = get_yield_1_2(tsallis_nonprompt, fit_res_nonprompt)
-    # h_yield_prompt_1_2.SetName("h_yield_prompt_1_2")
-    # h_yield_nonprompt_1_2.SetName("h_yield_nonprompt_1_2")
-
     h_eff_dp_prompt, h_eff_dp_nonprompt = get_efficiencies_dplus(config["inputs"]["efficiency"], cent_min, cent_max)
 
-    g_frac_corr_dp = get_fraction_corrected(g_yield_prompt_from_ci, g_yield_nonprompt_from_ci)
-    g_frac_raw_dp = get_fraction_raw(h_eff_dp_prompt, h_eff_dp_nonprompt, g_yield_prompt_from_ci, g_yield_nonprompt_from_ci)
+    g_raa_dp_p, g_raa_ds_p, g_raa_dp_np, g_raa_ds_np = None, None, None, None
+    if config["raa"]["use"]:
+        model = config["raa"]["model"]
+        infile_raa = ROOT.TFile.Open(config["raa"]["file"])
+        g_raa_dp_p = infile_raa.Get(f"gr_d_raa_{model}_{cent_min}_{cent_max}")
+        g_raa_ds_p = infile_raa.Get(f"gr_ds_raa_{model}_{cent_min}_{cent_max}")
+        g_raa_dp_np = infile_raa.Get(f"gr_npd_raa_{model}_{cent_min}_{cent_max}")
+        g_raa_ds_np = infile_raa.Get(f"gr_npds_raa_{model}_{cent_min}_{cent_max}")
+        infile_raa.Close()
 
-    output_file = ROOT.TFile.Open(f"DsPromptNonPrompt_Yield_PbPb5TeV_Run2_{cent_min}{cent_max}_tsallis.root", "UPDATE")
+    g_frac_corr_ds = get_fraction_corrected(g_yield_prompt_ds_from_ci, g_yield_nonprompt_ds_from_ci, g_raa_ds_p, g_raa_ds_np)
+    g_frac_raw_ds = get_fraction_raw(h_eff_ds_prompt, h_eff_ds_nonprompt, g_yield_prompt_ds_from_ci, g_yield_nonprompt_ds_from_ci, g_raa_ds_p, g_raa_ds_np)
+
+    g_frac_corr_dp = get_fraction_corrected(g_yield_prompt_dplus_from_ci, g_yield_nonprompt_dplus_from_ci, g_raa_dp_p, g_raa_dp_np)
+    g_frac_raw_dp = get_fraction_raw(h_eff_dp_prompt, h_eff_dp_nonprompt, g_yield_prompt_dplus_from_ci, g_yield_nonprompt_dplus_from_ci, g_raa_dp_p, g_raa_dp_np)
+
+    output_file = ROOT.TFile.Open(config["output"], "UPDATE")
     output_file.cd()
     g_frac_corr_ds.Write("DsPrompt_CorrFraction")
     g_frac_raw_ds.Write("DsPrompt_RawFraction")
-    g_frac_corr_dp.Write("D0Prompt_CorrFraction")
-    g_frac_raw_dp.Write("D0Prompt_RawFraction")
+    g_frac_corr_dp.Write("DplusPrompt_CorrFraction")
+    g_frac_raw_dp.Write("DplusPrompt_RawFraction")
     output_file.Close()
 
 if __name__ == "__main__":
