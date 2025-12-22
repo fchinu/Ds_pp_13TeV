@@ -3,110 +3,10 @@ Script for evaluation of pt weights (interpolation)
 """
 
 import argparse
+import sys
 import pandas as pd
 import ROOT
-
-
-def read_tamu(infile, graph_name, is_beauty=False):
-    """
-    Function to read TAMU files and convert predictions to a graph
-    """
-
-    df = pd.read_csv(infile, sep=" ", comment="#", header=0)
-    graph = ROOT.TGraph(1)
-    graph.SetNameTitle(graph_name, ";#it{p}_{T} (GeV/#it{c}); #it{R}_{AA}")
-    if is_beauty:
-        for ipt, (pt, raa) in enumerate(zip(df["PtCent"].to_numpy(), df["R_AA"].to_numpy())):
-            graph.SetPoint(ipt, pt, raa)
-            if ipt == len(df)-1 and pt < 50.:
-                graph.SetPoint(ipt, 50., raa)
-    else:
-        for ipt, (pt, raa_min, raa_max) in enumerate(zip(df["PtCent"].to_numpy(),
-                                            df["R_AA_min"].to_numpy(),
-                                            df["R_AA_max"].to_numpy())):
-            raa_cent = (raa_min + raa_max) / 2
-            graph.SetPoint(ipt, pt, raa_cent)
-            if ipt == len(df)-1 and pt < 50.:
-                graph.SetPoint(ipt, 50., raa_cent)
-
-    return graph
-
-
-def read_fonll(infile, hist_name, which="central"):
-    """
-    Function to read FONLL files and convert predictions to a histogram
-    """
-
-    columns = ["pt", "central", "min", "max", "min_sc", "max_sc", "min_mass", "max_mass", "min_pdf",
-               "max_pdf", "fr=.5.5", "fr=22", "fr=21", "fr=12", "fr=1.5", "fr=.51"]
-    df = pd.read_csv(infile, sep=" ", comment="#", names=columns)
-    pt_cents = df["pt"].to_numpy()
-    delta_pt = pt_cents[1]-pt_cents[0]
-    pt_min = pt_cents[0]-delta_pt/2
-    pt_max = pt_cents[-1]+delta_pt/2
-    hist = ROOT.TH1D(hist_name, ";#it{p}_{T} (GeV/#it{c}); d#sigma/d#it{p}_{T} (a.u.)",
-                    len(df), pt_min, pt_max)
-    for ipt, xsec in enumerate(df[which].to_numpy()):
-        hist.SetBinContent(ipt, xsec)
-    return hist
-
-
-def get_centrality_interpolation(graphs, base_name):
-    """
-    Function to compute centrality interpolation
-    """
-
-    cents = [0 + 10 * icent for icent in range(10)] #0-10 to 80-90
-    model_exists = {}
-    for cent_min, cent_max in zip(cents[:-1], cents[1:]):
-        cent_key = f"{cent_min}_{cent_max}"
-        model_exists[cent_key] = True
-        if cent_key not in graphs:
-            graphs[cent_key] = ROOT.TGraph(1)
-            graphs[cent_key].SetNameTitle(f"{base_name}_{cent_key}",
-                                          ";#it{p}_{T} (GeV/#it{c}); #it{R}_{AA}")
-            model_exists[cent_key] = False
-
-    for ipt in range(graphs["0_10"].GetN()): # assuming 0-10% always there
-        graph_interp = ROOT.TGraph(1)
-        func_interp = ROOT.TF1("func_interp", "pol1", 0., 90., 2)
-        icent = 0
-        for cent_key, cent_exists in model_exists.items():
-            if cent_exists:
-                cent_min = float(cent_key.split(sep="_")[0])
-                cent_max = float(cent_key.split(sep="_")[1])
-                cent_mid = (cent_min+cent_max)/2
-                graph_interp.SetPoint(
-                    icent, cent_mid, graphs[cent_key].GetPointY(ipt))
-                icent += 1
-        graph_interp.Fit(func_interp, "Q0")
-        for icent, cent_key in enumerate(model_exists.keys()):
-            if not model_exists[cent_key]:
-                cent_min = float(cent_key.split(sep="_")[0])
-                cent_max = float(cent_key.split(sep="_")[1])
-                cent_mid = (cent_min+cent_max)/2
-                graphs[cent_key].SetPoint(
-                    ipt, graphs["0_10"].GetPointX(ipt), func_interp.Eval(cent_mid))
-
-
-def get_fonll_times_raa(hist_fonll, graphs_raa, base_name):
-    """
-    Function to compute FONLL x RAA
-    """
-    cents = [0 + 10 * icent for icent in range(10)] #0-10 to 80-90
-    hists = {}
-    for cent_min, cent_max in zip(cents[:-1], cents[1:]):
-        cent_key = f"{cent_min}_{cent_max}"
-        hists[cent_key] = hist_fonll.Clone(f"{base_name}_{cent_key}")
-        hists[cent_key].SetDirectory(0)
-        for ipt in range(1, hists[cent_key].GetNbinsX()+1):
-            pt_cent = hists[cent_key].GetBinCenter(ipt)
-            hists[cent_key].SetBinContent(
-                ipt, hist_fonll.GetBinContent(ipt) * graphs_raa[cent_key].Eval(pt_cent))
-        hists[cent_key].Scale(1./hists[cent_key].Integral())
-
-    return hists
-
+from utils import read_tamu, read_fonll, get_centrality_interpolation, get_fonll_times_raa
 
 def compute_weights(hists_dndpt, hist_mcgen, base_name):
     """
@@ -165,26 +65,26 @@ def get_pt_weights(model):
     # read RAA models
     gr_ds_raa, gr_d_raa, gr_b_raa, gr_bs_raa = {}, {}, {}, {}
     if model == "tamu":
-        gr_d_raa["0_10"] = read_tamu("PromptD0_TAMU_RAA_5TeV_010.txt", "gr_d_raa_tamu_010")
-        gr_d_raa["30_50"] = read_tamu("PromptD0_TAMU_RAA_5TeV_3050.txt", "gr_d_raa_tamu_3050")
-        gr_ds_raa["0_10"] = read_tamu("PromptDs_TAMU_RAA_5TeV_010.txt", "gr_ds_raa_tamu_010")
-        gr_ds_raa["30_50"] = read_tamu("PromptDs_TAMU_RAA_5TeV_3050.txt", "gr_ds_raa_tamu_3050")
-        gr_b_raa["0_10"] = read_tamu("B_TAMU_RAA_5TeV_010.txt", "gr_b_raa_tamu_010", True)
-        gr_b_raa["30_50"] = read_tamu("B_TAMU_RAA_5TeV_3050.txt", "gr_b_raa_tamu_3050", True)
-        gr_bs_raa["0_10"] = read_tamu("Bs_TAMU_RAA_5TeV_010.txt", "gr_bs_raa_tamu_3050", True)
-        gr_bs_raa["30_50"] = read_tamu("Bs_TAMU_RAA_5TeV_3050.txt", "gr_bs_raa_tamu_3050", True)
+        gr_d_raa["0_10"] = read_tamu("PromptD0_TAMU_RAA_5TeV_010.txt", "gr_d_raa_tamu_0_10")
+        gr_d_raa["30_50"] = read_tamu("PromptD0_TAMU_RAA_5TeV_3050.txt", "gr_d_raa_tamu_30_50")
+        gr_ds_raa["0_10"] = read_tamu("PromptDs_TAMU_RAA_5TeV_010.txt", "gr_ds_raa_tamu_0_10")
+        gr_ds_raa["30_50"] = read_tamu("PromptDs_TAMU_RAA_5TeV_3050.txt", "gr_ds_raa_tamu_30_50")
+        gr_b_raa["0_10"] = read_tamu("B_TAMU_RAA_5TeV_010.txt", "gr_b_raa_tamu_0_10", True)
+        gr_b_raa["30_50"] = read_tamu("B_TAMU_RAA_5TeV_3050.txt", "gr_b_raa_tamu_30_50", True)
+        gr_bs_raa["0_10"] = read_tamu("Bs_TAMU_RAA_5TeV_010.txt", "gr_bs_raa_tamu_0_10", True)
+        gr_bs_raa["30_50"] = read_tamu("Bs_TAMU_RAA_5TeV_3050.txt", "gr_bs_raa_tamu_30_50", True)
 
         # assume most peripheral to be = 0.8
-        gr_ds_raa["80_90"] = gr_ds_raa["0_10"].Clone("gr_ds_raa_tamu_8090")
+        gr_ds_raa["80_90"] = gr_ds_raa["0_10"].Clone("gr_ds_raa_tamu_80_90")
         for ipt in range(gr_ds_raa["80_90"].GetN()):
             gr_ds_raa["80_90"].SetPoint(ipt, gr_ds_raa["80_90"].GetPointX(ipt), 0.8)
-        gr_d_raa["80_90"] = gr_d_raa["0_10"].Clone("gr_d_raa_tamu_8090")
+        gr_d_raa["80_90"] = gr_d_raa["0_10"].Clone("gr_d_raa_tamu_80_90")
         for ipt in range(gr_d_raa["80_90"].GetN()):
             gr_d_raa["80_90"].SetPoint(ipt, gr_d_raa["80_90"].GetPointX(ipt), 0.8)
-        gr_b_raa["80_90"] = gr_b_raa["0_10"].Clone("gr_b_raa_tamu_8090")
+        gr_b_raa["80_90"] = gr_b_raa["0_10"].Clone("gr_b_raa_tamu_80_90")
         for ipt in range(gr_b_raa["80_90"].GetN()):
             gr_b_raa["80_90"].SetPoint(ipt, gr_b_raa["80_90"].GetPointX(ipt), 0.8)
-        gr_bs_raa["80_90"] = gr_bs_raa["0_10"].Clone("gr_bs_raa_tamu_8090")
+        gr_bs_raa["80_90"] = gr_bs_raa["0_10"].Clone("gr_bs_raa_tamu_80_90")
         for ipt in range(gr_bs_raa["80_90"].GetN()):
             gr_bs_raa["80_90"].SetPoint(ipt, gr_bs_raa["80_90"].GetPointX(ipt), 0.8)
 
@@ -382,5 +282,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Calculate pT weights")
     parser.add_argument("--model", "-m", metavar="text", help="Enabled model", default="tamu")
     args = parser.parse_args()
+
+    models = ["tamu"]
+    if args.model not in models:
+        print(f"Model {args.model} not yet implemented. Available options: {models}") 
+        sys.exit()
 
     get_pt_weights(args.model)
