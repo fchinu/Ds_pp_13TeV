@@ -72,60 +72,6 @@ def create_config(infile: str, trial: str):
 
     return outfile
 
-def dump_outputs(indir):  # pylint: disable=too-many-locals
-    """
-    Produce a summary of outputs in the input directory.
-    Args:
-        indir (Path): path to the input directory
-    """
-    infiles = indir.rglob("*.root")
-    fracs = {"Ds": {}, "Dplus": {}}
-    for file in infiles:
-        particle = file.parent.name
-        trial = file.parent.parent.name
-        if file.stem.split('_')[-1] == "MB":
-            cent_min, cent_max = "0", "100"
-        else:
-            cent_min, cent_max = file.stem.split('_')[-2], file.stem.split('_')[-1]
-
-        with ROOT.TFile.Open(str(file)) as f:
-            h_frac = f.Get("hRawFracPrompt_cent_0_10")
-        if (cent_min, cent_max) not in fracs[particle]:
-            fracs[particle][(cent_min, cent_max)] = {}
-        fracs[particle][(cent_min, cent_max)][trial] = h_frac
-
-    # set all as last
-    for particle, cents in fracs.items():
-        for cent_range, trials in cents.items():
-            all_trial = trials.pop('all')
-            cents[cent_range] = {**trials, 'all': all_trial}
-
-    for particle, cents in fracs.items():
-        for cent_range, trials in cents.items():
-            c = ROOT.TCanvas(
-                f"c_{particle}_{cent_range[0]}_{cent_range[1]}",
-                f"c_{particle}_{cent_range[0]}_{cent_range[1]}"
-            )
-            c.DrawFrame(
-                0, 0.5, 24, 1,
-                f";#it{{p}}_{{T}} (GeV/#it{{c}});"
-                f"Prompt {'D_{s}^{+}' if particle == 'Ds' else 'D^{+}'} fraction"
-            )
-            leg = ROOT.TLegend(0.6, 0.2, 0.89, 0.59)
-            leg.SetTextSize(0.03)
-            leg.SetBorderSize(0)
-            leg.SetFillStyle(0)
-            for i_trial, (trial, h_frac) in enumerate(trials.items()):
-                h_frac.SetLineWidth(2)
-                h_frac.SetMarkerStyle(ROOT.kFullCircle)
-                h_frac.SetLineColor(colors[i_trial])
-                h_frac.SetMarkerColor(colors[i_trial])
-                h_frac.Draw("same")
-                leg.AddEntry(h_frac, trial, "lp")
-            leg.Draw()
-            outname = f"fraction_{particle}_cent_{cent_range[0]}_{cent_range[1]}"
-            c.SaveAs(str(indir / f"{outname}.pdf"))
-
 def run(indir):
     """
     Run the trial selection based on the input configuration file.
@@ -140,9 +86,6 @@ def run(indir):
         for trial in trials:
             outfile = create_config(infile, trial)
             compute_fraction_main(str(outfile))
-
-
-    dump_outputs(Path(__file__).parent)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Get trials based on option")

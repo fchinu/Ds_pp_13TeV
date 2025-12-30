@@ -1,0 +1,8 @@
+trial_dir: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Systematics/FD_Fraction/VsMult/trials
+central_frac: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/merged_low_high_pt/Fractions # Path to the folder with Ds and D+ fraction folders
+
+assigned_syst: 
+  0-10: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+  10-20: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+
+output_dir: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Systematics/FD_Fraction/VsMult
