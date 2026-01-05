@@ -85,22 +85,21 @@ def make_cuts_ml():
     var_key = ['ml_output_bkg', 'ml_output_prompt']
     var_tag = ['outBkg', 'outPrompt'] # used in file names to reduce length
     step_variation_pos = [
-                    {"1.0": 0.00666, "2.0": 0.05, "4.0": 0.10666, "6.0": 0.11666, "8.0": 0.11, "12.0": 0.1033},
-                    {"1.0": 0.1, "2.0": 0.1, "4.0": 0.1, "6.0": 0.1, "8.0": 0.1, "12.0": 0.1},
+                    {"1.0": 0.0005, "2.0": 0.002, "4.0": 0.01, "6.0": 0.01, "8.0": 0.02, "12.0": 0.02},
+                    {"1.0": 0.15, "2.0": 0.15, "4.0": 0.15, "6.0": 0.15, "8.0": 0.15, "12.0": 0.15},
                     ]
     step_variation_neg = [
-                    {"1.0": 0.005, "2.0": 0.02, "4.0": 0.033, "6.0": 0.0533, "8.0": 0.06, "12.0": 0.066},
-                    {"1.0": 0.1, "2.0": 0.1, "4.0": 0.1, "6.0": 0.1, "8.0": 0.1, "12.0": 0.1},
+                    {"1.0": 0.0005, "2.0": 0.0015, "4.0": 0.0035, "6.0": 0.0035, "8.0": 0.02, "12.0": 0.025},
+                    {"1.0": 0.03, "2.0": 0.03, "4.0": 0.03, "6.0": 0.03, "8.0": 0.03, "12.0": 0.03},
                     ]
-    
 
-    num_step_pos = [3,3]
-    num_step_neg = [3,3]
+    num_step_pos = [2,2]
+    num_step_neg = [2,2]
     edge_to_vary = ['max', 'min']
 
-    in_dir = '/home/fchinu/Run3/Ds_pp_13TeV/Projections_RawYields/configs/'
-    cut_file_central = 'cutset_pp13TeV_multiplicity.yml'
-    out_dir = '/home/fchinu/Run3/Ds_pp_13TeV/Systematics/BDT/VsMult/configs/cutsets/'
+    in_dir = '/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/data/doublecb/Projections/'
+    cut_file_central = 'cutset.yml'
+    out_dir = '/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Systematics/BDT/VsMult/configs/cutsets/'
     out_file_tag = 'cutset_ML_'
 
     if not os.path.exists(out_dir):
@@ -132,6 +131,7 @@ def make_cuts_ml():
                         new_value = round(min_val + step * step_variation_pos[i][f'{pt_min:.1f}'], 5)
                     if(new_value < 0. or new_value >= max_val):
                         print("Warning: cut is negative or min value is greater then max value")
+                        print(round(min_val + step * step_variation_pos[i][f'{pt_min:.1f}'], 5))
                         new_value = min_val
                 else:
                     if step < 0.:
@@ -140,6 +140,7 @@ def make_cuts_ml():
                         new_value = round(max_val + step * step_variation_pos[i][f'{pt_min:.1f}'], 5)
                     if(new_value > 1. or new_value <= min_val):
                         print("Warning: cut is > 1 or min value is greater then max value")
+                        print(round(max_val + step * step_variation_pos[i][f'{pt_min:.1f}'], 5))
                         new_value = max_val
                 modified_list.append(new_value)
             cuts[edge_to_vary[i]] = modified_list
