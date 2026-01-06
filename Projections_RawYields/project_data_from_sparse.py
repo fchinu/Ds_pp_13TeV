@@ -9,53 +9,14 @@ from pathlib import Path
 import argparse
 from itertools import product
 from concurrent.futures import ProcessPoolExecutor
+import sys
+sys.path.append(str(Path(__file__).resolve().parents[1] / 'utils'))
+from utils import pt_folders_exist, get_root_files_in_directory
 import numpy as np
 import yaml
 import ROOT
 # pylint: disable=no-member
 
-def pt_folders_exist(folder_name, pt_cuts):
-    """
-    Check if pt folders exist in the given ROOT folder.
-
-    Args:
-    - folder_name (str): The name of the ROOT folder.
-    - cutset (list): List of cutsets to check for pt folders.
-
-    Returns:
-    - bool: True if all pt folders exist, False otherwise.
-    """
-    folder_pt_mins = []  # list of pt mins in the folders
-    folder_pt_maxs = []  # list of pt maxs in the folders
-
-    folder_path = Path(folder_name)
-    for folder in folder_path.iterdir():
-        if folder.is_dir() and not folder.name.startswith("pt_"):
-            continue
-        suffix = folder.name[3:]  # remove 'pt_' prefix
-        pt_min_str, pt_max_str = suffix.split('_')[0:2]
-        folder_pt_mins.append(int(pt_min_str) / 10.0)
-        folder_pt_maxs.append(int(pt_max_str) / 10.0)
-
-    folder_pt_intervals = set(zip(folder_pt_mins, folder_pt_maxs))
-    for pt_min, pt_max in zip(pt_cuts[0], pt_cuts[1]):
-        if (pt_min, pt_max) not in folder_pt_intervals:
-            return False
-    return True
-
-def get_root_files_in_directory(directory):
-    """
-    Get all ROOT files in the specified directory.
-
-    Args:
-    - directory (str): The directory to search for ROOT files.
-
-    Returns:
-    - root_files (list): A list of ROOT file paths.
-    """
-    path = Path(directory)
-    root_files = [str(f) for f in sorted(path.glob('*.root'))]
-    return root_files
 
 def get_file_names_from_string(
         input_files_names_str: str,
@@ -160,6 +121,7 @@ def load_sparse_from_task(config_input, pt_cuts):
     for input_file_name, sparse_name in zip(input_files_names, sparse_names):
         with ROOT.TFile.Open(input_file_name, "READ") as input_file:
             sparses.append(input_file.Get(sparse_name))
+    print(sparses)
     return sparses
 
 
