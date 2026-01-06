@@ -12,14 +12,17 @@ PDG_IDS = {"ds": 431, "dplus": 411}
 
 SIGNAL_DEFAULTS = {
     "gaussian": {
+        "mu": {"init": None, "min": None, "max": None, "fix": False},
         "sigma": {"init": 0.01, "min": 0.001, "max": 0.03, "fix": False}
     },
     "doublegaus": {
+        "mu": {"init": None, "min": None, "max": None, "fix": False},
         "sigma1": {"init": 0.01, "min": 0.001, "max": 0.03, "fix": False},
         "sigma2": {"init": 0.01, "min": 0.001, "max": 0.03, "fix": False},
         "frac1": {"init": 0.01, "min": 0.0, "max": 1.0, "fix": False}
     },
     "doublecb": {
+        "mu": {"init": None, "min": None, "max": None, "fix": False},
         "sigma": {"init": 0.01, "min": 0.001, "max": 0.03, "fix": False},
         "alphar": {"init": 0.5, "min": 0.0, "max": 10.0, "fix": False},
         "alphal": {"init": 0.5, "min": 0.0, "max": 10.0, "fix": False},
@@ -27,11 +30,13 @@ SIGNAL_DEFAULTS = {
         "nr": {"init": 1.0, "min": 0.0, "max": 10.0, "fix": False}
     },
     "doublecbsymm": {
+        "mu": {"init": None, "min": None, "max": None, "fix": False},
         "sigma": {"init": 0.01, "min": 0.001, "max": 0.03, "fix": False},
         "alpha": {"init": 5.0, "min": 0.5, "max": 10.0, "fix": False},
         "n": {"init": 10.0, "min": 5.0, "max": 100.0, "fix": False}
     },
     "genergausexptailsymm": {
+        "mu": {"init": None, "min": None, "max": None, "fix": False},
         "sigma": {"init": 0.01, "min": 0.001, "max": 0.03, "fix": False},
         "alpha": {"init": 3.0, "min": 0.0, "max": 10.0, "fix": False}
     }
@@ -196,9 +201,10 @@ class FitExecutor:  # pylint: disable=too-many-instance-attributes
                     param, value, min_val, max_val, fix = self._get_param_settings(
                         idx, name, defaults, True
                     )
-                    self._fitter.set_signal_initpar(
-                        idx, param, value, limits=[min_val, max_val], fix=fix
-                    )
+                    if value:
+                        self._fitter.set_signal_initpar(
+                            idx, param, value, limits=[min_val, max_val], fix=fix
+                        )
 
         # Background parameters
         for idx, bkg_func in enumerate(self._bkg_functions):
@@ -232,7 +238,7 @@ class FitExecutor:  # pylint: disable=too-many-instance-attributes
         if converged:
             results = {
                 "raw_yields": [list(self._fitter.get_raw_yield(i)) for i in range(n_signal)],
-                "mean": [list(self._fitter.get_mass(i)) for i in range(n_signal)],
+                "mu": [list(self._fitter.get_mass(i)) for i in range(n_signal)],
                 "chi2": float(self._fitter.get_chi2_ndf()),
                 "significance": [list(self._fitter.get_significance(i)) for i in range(n_signal)],
                 "signal": [list(self._fitter.get_signal(i)) for i in range(n_signal)],

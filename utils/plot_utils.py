@@ -22,7 +22,6 @@ def get_discrete_matplotlib_palette(paletteName, n_colors=10):
         colors = cmap.colors
     except:
         colors = sns.color_palette(paletteName, n_colors=n_colors)
-        print(colors)
     ROOTColorIndices = []
     ROOTColors = []
     for color in colors:
@@ -30,4 +29,20 @@ def get_discrete_matplotlib_palette(paletteName, n_colors=10):
         ROOTColors.append(ROOT.TColor(idx, color[0], color[1], color[2],"color%i" % idx))
         ROOTColorIndices.append(idx)
         
+    return ROOTColorIndices, ROOTColors
+
+def get_discrete_from_continuous_matplotlib_palette(paletteName, n_colors=10):
+    """Get discrete colors from a continuous matplotlib colormap."""
+    
+    # Get n discrete RGBA colors from matplotlib colormap
+    cmap = mpl.colormaps[paletteName]
+    colors = [cmap(i / (n_colors - 1)) for i in range(n_colors)]
+    
+    ROOTColorIndices = []
+    ROOTColors = []
+    for color in colors:
+        idx = ROOT.TColor.GetFreeColorIndex()
+        ROOTColors.append(ROOT.TColor(idx, color[0], color[1], color[2],"color%i" % idx))
+        ROOTColorIndices.append(idx)
+    
     return ROOTColorIndices, ROOTColors
