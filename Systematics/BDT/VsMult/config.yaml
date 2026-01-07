@@ -3,62 +3,38 @@ inputs:
   commonfilenames:
     rawyield: "Projections_RawYields/doublecb/mass_fits"
     efficiency: "Efficiency/efficiency_"
-  prompt_frac_ds: "FD_Fraction/data_driven/VsMult/mult_differential/2023/ds/doublecb/CutVarDs_pp13TeV_MB.root" #MB one
-  prompt_frac_dplus: "FD_Fraction/data_driven/VsMult/mult_differential/2023/dplus/doublecb/CutVarDs_pp13TeV_MB.root" #MB one
+  prompt_frac_ds: "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/merged_low_high_pt/Fractions/Ds/CutVarDs_pp13TeV_MB.root" #MB one
+  prompt_frac_dplus: "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/merged_low_high_pt/Fractions/Dplus/CutVarDplus_pp13TeV_MB.root" #MB one
   cutsets: [
     "_outBkg_pos00_outPrompt_pos00",
     "_outBkg_neg01_outPrompt_neg01",
     "_outBkg_neg01_outPrompt_neg02",
-    "_outBkg_neg01_outPrompt_neg03",
     "_outBkg_neg01_outPrompt_pos00",
     "_outBkg_neg01_outPrompt_pos01",
     "_outBkg_neg01_outPrompt_pos02",
-    "_outBkg_neg01_outPrompt_pos03",
     "_outBkg_neg02_outPrompt_neg01",
     "_outBkg_neg02_outPrompt_neg02",
-    "_outBkg_neg02_outPrompt_neg03",
     "_outBkg_neg02_outPrompt_pos00",
     "_outBkg_neg02_outPrompt_pos01",
     "_outBkg_neg02_outPrompt_pos02",
-    "_outBkg_neg02_outPrompt_pos03",
-    "_outBkg_neg03_outPrompt_neg01",
-    "_outBkg_neg03_outPrompt_neg02",
-    "_outBkg_neg03_outPrompt_neg03",
-    "_outBkg_neg03_outPrompt_pos00",
-    "_outBkg_neg03_outPrompt_pos01",
-    "_outBkg_neg03_outPrompt_pos02",
-    "_outBkg_neg03_outPrompt_pos03",
     "_outBkg_pos00_outPrompt_neg01",
     "_outBkg_pos00_outPrompt_neg02",
-    "_outBkg_pos00_outPrompt_neg03",
     "_outBkg_pos00_outPrompt_pos01",
     "_outBkg_pos00_outPrompt_pos02",
-    "_outBkg_pos00_outPrompt_pos03",
     "_outBkg_pos01_outPrompt_neg01",
     "_outBkg_pos01_outPrompt_neg02",
-    "_outBkg_pos01_outPrompt_neg03",
     "_outBkg_pos01_outPrompt_pos00",
     "_outBkg_pos01_outPrompt_pos01",
     "_outBkg_pos01_outPrompt_pos02",
-    "_outBkg_pos01_outPrompt_pos03",
     "_outBkg_pos02_outPrompt_neg01",
     "_outBkg_pos02_outPrompt_neg02",
-    "_outBkg_pos02_outPrompt_neg03",
     "_outBkg_pos02_outPrompt_pos00",
     "_outBkg_pos02_outPrompt_pos01",
     "_outBkg_pos02_outPrompt_pos02",
-    "_outBkg_pos02_outPrompt_pos03",
-    "_outBkg_pos03_outPrompt_neg01",
-    "_outBkg_pos03_outPrompt_neg02",
-    "_outBkg_pos03_outPrompt_neg03",
-    "_outBkg_pos03_outPrompt_pos00",
-    "_outBkg_pos03_outPrompt_pos01",
-    "_outBkg_pos03_outPrompt_pos02",
-    "_outBkg_pos03_outPrompt_pos03",
   ]
     # Add more cut sets as needed
 
-cutset_file: Projections_RawYields/configs/cutset_pp13TeV_multiplicity.yml
+cutset_file: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/data/doublecb/Projections/cutset.yml
 
 br:
   ds_to_phipi_to_kkpi: 2.21e-2  #https://pdglive.lbl.gov/BranchingRatio.action?pdgid=S034.114&home=MXXX040
