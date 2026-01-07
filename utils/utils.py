@@ -1,3 +1,5 @@
+from dataclasses import dataclass, field
+from pathlib import Path
 import shutil
 import os
 import sys
@@ -46,3 +48,84 @@ def make_dir_root_file(directory, file):
         logger(f"Directory {directory} already exists in file {file.GetName()}", level='WARNING')
 
 
+def enforce_list(var):
+	"""
+	Ensure that the input variable is a list.
+
+	Parameters:
+	- var (any): The input variable.
+
+	Returns:
+	- list: The input variable as a list.
+	"""
+	if not isinstance(var, list):
+		var = [var]
+	return var
+
+@dataclass
+class BinInfoBase:
+    """The template - contains all the logic."""
+    mins: list[float]
+    maxs: list[float]
+    edges: list[float] = field(init=False, repr=True)
+
+    def __post_init__(self):
+        if len(self.mins) != len(self.maxs):
+            raise ValueError("mins and maxs must have the same length.")
+        self.edges = self.mins + ([self.maxs[-1]] if self.maxs else [])
+
+@dataclass
+class CentralityInfo(BinInfoBase):
+    """Identical to BinInfoBase, but explicitly for Centrality."""
+    pass
+
+@dataclass
+class PtInfo(BinInfoBase):
+    """Identical to BinInfoBase, but explicitly for Pt."""
+    pass
+
+
+def pt_folders_exist(folder_name, pt_cuts):
+    """
+    Check if pt folder structure (as created in preprocessing) exists.
+      	It should contain folders named as 'pt_<pt_min>_<pt_max>'.
+
+    Args:
+    - folder_name (str): The name of the folder.
+    - cutset (list): List of cutsets to check for pt folders.
+
+    Returns:
+    - bool: True if all pt folders exist, False otherwise.
+    """
+    folder_pt_mins = []  # list of pt mins in the folders
+    folder_pt_maxs = []  # list of pt maxs in the folders
+
+    folder_path = Path(folder_name)
+    for folder in folder_path.iterdir():
+        if folder.is_dir() and not folder.name.startswith("pt_"):
+            continue
+        suffix = folder.name[3:]  # remove 'pt_' prefix
+        pt_min_str, pt_max_str = suffix.split('_')[0:2]
+        folder_pt_mins.append(int(pt_min_str) / 10.0)
+        folder_pt_maxs.append(int(pt_max_str) / 10.0)
+
+    folder_pt_intervals = set(zip(folder_pt_mins, folder_pt_maxs))
+    for pt_min, pt_max in zip(pt_cuts[0], pt_cuts[1]):
+        if (pt_min, pt_max) not in folder_pt_intervals:
+            return False
+    return True
+
+
+def get_root_files_in_directory(directory):
+    """
+    Get all ROOT files in the specified directory.
+
+    Args:
+    - directory (str): The directory to search for ROOT files.
+
+    Returns:
+    - root_files (list): A list of ROOT file paths.
+    """
+    path = Path(directory)
+    root_files = [str(f) for f in sorted(path.glob('*.root'))]
+    return root_files

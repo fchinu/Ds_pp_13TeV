@@ -1,9 +1,11 @@
 '''
 Script to evaluate the efficiency starting from the output THnSparse.
 '''
+from importlib.metadata import files
 from math import sqrt
 import argparse
 import itertools
+from pathlib import Path
 import os
 from dataclasses import dataclass
 from typing import Optional, Tuple, List, Dict
@@ -13,25 +15,13 @@ import yaml
 import ROOT
 # pylint: disable=no-member
 import sys # pylint: disable=wrong-import-order
+sys.path.append(os.path.abspath(f"{__file__}/../../utils")) # pylint: disable=wrong-import-position
+from utils import enforce_list, CentralityInfo, PtInfo, pt_folders_exist, get_root_files_in_directory
 
 PARTICLE_CLASSES = [("Ds", "Prompt"), ("Ds", "NonPrompt"),
                     ("Dplus", "Prompt"), ("Dplus", "NonPrompt")] # Ds must be the first one
 ROOT.TH1.AddDirectory(False)
 ROOT.TH2.AddDirectory(False)
-
-@dataclass
-class CentralityInfo:
-    """Container for centrality bin information."""
-    mins: List[float]
-    maxs: List[float]
-
-
-@dataclass
-class PtInfo:
-    """Container for pT bin information."""
-    mins: List[float]
-    maxs: List[float]
-    edges: List[float]
 
 class EfficiencyCalculator:
     """
@@ -52,6 +42,7 @@ class EfficiencyCalculator:
         self.histos_pv_weights = self._load_pv_weights() if self.cfg['weights']['npv']['apply'] else None
         self.histos_pt_weights = self._load_pt_weights() if self.cfg['weights']['pt']['apply'] else None
         self.apply_cent_sel = self.cfg['inputs']['apply_cent_sel']
+        self.is_preprocessed = self.cfg['inputs']['sparse']['is_preprocessed']
 
         self.histos, self.histos_fine_bins = [], []
         self.histos_bdt, self.histos_cent = [], []
@@ -83,8 +74,7 @@ class EfficiencyCalculator:
         """Extract pT information from cuts config."""
         pt_mins = self.cuts_cfg['pt']['min']
         pt_maxs = self.cuts_cfg['pt']['max']
-        pt_edges = pt_mins + [pt_maxs[-1]]
-        return PtInfo(mins=pt_mins, maxs=pt_maxs, edges=pt_edges)
+        return PtInfo(mins=pt_mins, maxs=pt_maxs)
 
     def _extract_cuts_axes(self) -> Tuple[List[Tuple[float, float]], List[int]]:
         """Extract variable names and cuts from the cuts config."""
@@ -98,20 +88,6 @@ class EfficiencyCalculator:
             self.cuts_cfg[var]['max'])) for var in var_names]
         axes = [self.cuts_cfg[var]['axisnum'] for var in var_names]
         return cuts, axes
-
-    def _enforce_list(self, var):
-        """
-        Ensure that the input variable is a list.
-
-        Parameters:
-        - var (any): The input variable.
-
-        Returns:
-        - list: The input variable as a list.
-        """
-        if not isinstance(var, list):
-            var = [var]
-        return var
 
     def _load_pv_weights(self) -> Dict[str, ROOT.TH1F]:
         """
@@ -201,6 +177,63 @@ class EfficiencyCalculator:
 
                 self.canvas_cent.append(ROOT.TCanvas(
                     f"canvas_cent_{particle}{origin}", f"canvas_cent_{particle}{origin}", 800, 600))
+    
+    def _load_sparses_from_filename(self,
+        in_file_name: str,
+        particle: str,
+        origin: str,
+        cent_min: int = None,
+        cent_max: int = None
+        ) -> Tuple[ROOT.THnSparse, ROOT.THnSparse, int]:
+        """
+        Load THnSpares from a single input file.
+        """
+        suffix = ""
+        if cent_min is not None and cent_max is not None:
+            suffix = f"_{cent_min}_{cent_max}"
+
+        with ROOT.TFile.Open(in_file_name) as in_file:
+            try:
+                h_sparse_gen_particles = in_file.Get(f"hf-task-ds/MC/{particle}/{origin}/hSparseGen{suffix}")
+                try:
+                    h_sparse_gen_particles.GetEntries()
+                except:  # Backward compatibility (before the renaming of the sparse)
+                    h_sparse_gen_particles = in_file.Get(f"hf-task-ds/MC/{particle}/{origin}/hPtYNPvContribGen{suffix}")
+                    h_sparse_gen_particles.GetEntries()
+            except:
+                print(f"ERROR: histogram hf-task-ds/MC/{particle}/{origin}/hSparseGen{suffix} not found in file {in_file_name}."
+                      " Using the unweighted sparse instead.")
+                suffix = ""
+                h_sparse_gen_particles = in_file.Get(f"hf-task-ds/MC/{particle}/{origin}/hSparseGen{suffix}")
+                try:
+                    h_sparse_gen_particles.GetEntries()
+                except:  # Backward compatibility (before the renaming of the sparse)
+                    h_sparse_gen_particles = in_file.Get(f"hf-task-ds/MC/{particle}/{origin}/hPtYNPvContribGen{suffix}")
+                    h_sparse_gen_particles.GetEntries()
+
+            h_sparse_reco = in_file.Get(f"hf-task-ds/MC/{particle}/{origin}/hSparseMass{suffix}")
+            if self.cfg["weights"]["npv"]["reweight_on_data_events"]:
+                if self.is_preprocessed:
+                    n_events_mc = in_file.Get("hf-task-ds/Data/hCounterTVXafterBCcuts").GetEntries()
+                else:
+                    n_events_mc = in_file.Get("lumi-task/hCounterTVXafterBCcuts").GetEntries()
+            else:
+                n_events_mc = None
+
+            return h_sparse_gen_particles, h_sparse_reco, n_events_mc
+
+    def _load_sparse_pt_cent(self, particle: str, origin: str, cent_range: Tuple[float, float], pt_range: Tuple[float, float]) -> Tuple[List[ROOT.THnSparse], List[ROOT.THnSparse], List[int]]:
+        """
+        Load THnSpares from input files for specific pT and centrality ranges.
+        """
+        # get all root files in the pt folders
+        file_name = Path(self.cfg["inputs"]["sparse"]["file_names"]) / \
+            f'pt_{int(pt_range[0]*10)}_{int(pt_range[1]*10)}' / \
+            f'AnalysisResults_pt_{int(pt_range[0]*10)}_{int(pt_range[1]*10)}.root'
+
+        h_sparse_gen, h_sparse_reco, n_ev_mc = self._load_sparses_from_filename(str(file_name), particle, origin, cent_range[0], cent_range[1])
+
+        return h_sparse_gen, h_sparse_reco, n_ev_mc
 
     def _load_sparses(self, particle: str, origin: str) -> Tuple[List[ROOT.THnSparse], List[ROOT.THnSparse], List[int]]:
         """
@@ -210,21 +243,31 @@ class EfficiencyCalculator:
         h_sparses_reco = []
         n_events_mc = []
 
-        self._enforce_list(self.cfg["inputs"]["sparse"]["file_names"])
-        for in_file_name in self.cfg["inputs"]["sparse"]["file_names"]:
-            in_file = ROOT.TFile.Open(in_file_name)
-            h_sparses_gen_particles.append(in_file.Get(f"hf-task-ds/MC/{particle}/{origin}/hSparseGen"))
-            try:
-                h_sparses_gen_particles[-1].GetEntries()
-            except:  # Backward compatibility (before the renaming of the sparse)
-                h_sparses_gen_particles.pop()
-                h_sparses_gen_particles.append(in_file.Get(f"hf-task-ds/MC/{particle}/{origin}/hPtYNPvContribGen"))
-                h_sparses_gen_particles[-1].GetEntries()
+        if self.is_preprocessed:
+            # check if pt folders exist
+            if not pt_folders_exist(self.cfg["inputs"]["sparse"]["file_names"], (self.pt_info.mins, self.pt_info.maxs)):
+                raise ValueError("Not all pt folders exist in the provided directory.")
 
-            h_sparses_reco.append(in_file.Get(f"hf-task-ds/MC/{particle}/{origin}/hSparseMass"))
-            if self.cfg["weights"]["npv"]["reweight_on_data_events"]:
-                n_events_mc.append(in_file.Get("lumi-task/hCounterTVXafterBCcuts").GetEntries())
-            in_file.Close()
+            # get all root files in the pt folders
+            folders = [
+                Path(self.cfg["inputs"]["sparse"]["file_names"]) / f'pt_{int(pt_min*10)}_{int(pt_max*10)}'
+                for pt_min, pt_max in zip(self.pt_info.mins, self.pt_info.maxs)
+            ]
+            files = []
+            for f in folders:
+                files += get_root_files_in_directory(f)
+            for f in files:
+                h_sparse_gen, h_sparse_reco, n_ev_mc = self._load_sparses_from_filename(f, particle, origin)
+                h_sparses_gen_particles.append(h_sparse_gen)
+                h_sparses_reco.append(h_sparse_reco)
+                n_events_mc.append(n_ev_mc)
+        else:
+            file_names = enforce_list(self.cfg["inputs"]["sparse"]["file_names"])
+            for in_file_name in file_names:
+                h_sparse_gen, h_sparse_reco, n_ev_mc = self._load_sparses_from_filename(in_file_name, particle, origin)
+                h_sparses_gen_particles.append(h_sparse_gen)
+                h_sparses_reco.append(h_sparse_reco)
+                n_events_mc.append(n_ev_mc)
 
         return h_sparses_gen_particles, h_sparses_reco, n_events_mc
 
@@ -233,7 +276,7 @@ class EfficiencyCalculator:
         if self.cfg["weights"]["npv"]["reweight_on_data_events"]:
             n_events_data = []
             for an_results in self.cfg["weights"]["npv"]["data_analysis_results"]:
-                an_results = self._enforce_list(an_results)
+                an_results = enforce_list(an_results)
                 n_events_data.append(0)
                 for an_result in an_results:
                     in_file = ROOT.TFile.Open(an_result)
@@ -282,9 +325,9 @@ class EfficiencyCalculator:
         - eff (float): The efficiency.
         - unc (float): The uncertainty of the efficiency.
         """
-        sels = self._enforce_list(sels)
-        recos = self._enforce_list(recos)
-        gens = self._enforce_list(gens)
+        sels = enforce_list(sels)
+        recos = enforce_list(recos)
+        gens = enforce_list(gens)
         tot_sel, tot_reco, tot_gen = 0, 0, 0
         if ev_weights is None:
             ev_weights = [1] * len(sels)
@@ -571,8 +614,12 @@ class EfficiencyCalculator:
 
         use_cent = apply_cent_sel or self.cfg["weights"]["npv"]["apply"] or self.cfg["weights"]["pt"]["apply"]
         for idx, (particle, origin) in enumerate(self.particle_origin):
-            h_sparses_gen_particles, h_sparses_reco, n_events_mc = self._load_sparses(particle, origin)
-            event_weights = self._get_event_weights(n_events_mc)
+            if not self.is_preprocessed:
+                h_sparses_gen_particles, h_sparses_reco, n_events_mc = self._load_sparses(particle, origin)
+            if self.cfg["weights"]["npv"]["reweight_on_data_events"]:
+                event_weights = self._get_event_weights(n_events_mc)
+            else:
+                event_weights = None
 
             # Decide whether to iterate over centrality bins
             cent_bins = (
@@ -580,18 +627,25 @@ class EfficiencyCalculator:
             )
 
             for i_cent, cent_range in enumerate(cent_bins):
-                h_sparses_gen_particles_for_eff = [s.Clone() for s in h_sparses_gen_particles] # After rewighting (if any)
-                h_sparses_reco_for_eff = [s.Clone() for s in h_sparses_reco] # After rewighting (if any)
+                if not self.is_preprocessed:
+                    h_sparses_gen_particles_for_eff = [s.Clone() for s in h_sparses_gen_particles] # After rewighting (if any)
+                    h_sparses_reco_for_eff = [s.Clone() for s in h_sparses_reco] # After rewighting (if any)
 
-                # Apply weights if requested
-                if self.histos_pv_weights is not None or self.histos_pt_weights is not None:
-                    for h_sparse_gen, h_sparse_reco in zip(h_sparses_gen_particles_for_eff, h_sparses_reco_for_eff):
-                        self._apply_weights(h_sparse_gen, particle, origin, cent_range[0], cent_range[1], is_gen=True)
-                        self._apply_weights(h_sparse_reco, particle, origin, cent_range[0], cent_range[1], is_gen=False)
+                    # Apply weights if requested
+                    if self.histos_pv_weights is not None or self.histos_pt_weights is not None:
+                        for h_sparse_gen, h_sparse_reco in zip(h_sparses_gen_particles_for_eff, h_sparses_reco_for_eff):
+                            self._apply_weights(h_sparse_gen, particle, origin, cent_range[0], cent_range[1], is_gen=True)
+                            self._apply_weights(h_sparse_reco, particle, origin, cent_range[0], cent_range[1], is_gen=False)
 
                 for i_pt, (pt_min, pt_max) in enumerate(zip(self.pt_info.mins, self.pt_info.maxs)):
                     if self.cfg["verbose"]:
                         print(f"Processing pT bin {pt_min} - {pt_max} for {particle} {origin}")
+                    if self.is_preprocessed:
+                        h_sparses_gen_particles_for_eff, h_sparses_reco_for_eff, n_events_mc = self._load_sparse_pt_cent(particle, origin, cent_range, (pt_min, pt_max))
+                        if self.cfg["weights"]["npv"]["reweight_on_data_events"]:
+                            event_weights = self._get_event_weights(n_events_mc)
+                        h_sparses_gen_particles_for_eff = enforce_list(h_sparses_gen_particles_for_eff)
+                        h_sparses_reco_for_eff = enforce_list(h_sparses_reco_for_eff)
 
                     eff, unc, bdt_eff, _ = self.get_eff(
                         (particle, origin),
@@ -604,7 +658,8 @@ class EfficiencyCalculator:
 
                     self._fill_eff_histos(idx, i_pt, i_cent, eff, unc, bdt_eff, use_cent)
 
-            del h_sparses_gen_particles, h_sparses_reco
+            if not self.is_preprocessed:
+                del h_sparses_gen_particles, h_sparses_reco
 
         self.dump_outputs(out_file_name, use_cent)
 

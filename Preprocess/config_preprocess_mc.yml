@@ -16,12 +16,14 @@ preprocess:
     bkg_cuts: [0.01, 0.01, 0.01, 0.01, 0.1, 0.3]
     inputs:
     -   files: [
-              /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/MC/Train512716/AnalysisResults_LHC25a5_0.root
+                /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/MC/Train512716/AnalysisResults_LHC25a5_0.root
         ]
-        outdir: 'mc'
+        is_mc: True
         event_histogram: eventselection-run3/luminosity/hCounterTVXafterBCcuts #eventselection-run3/luminosity/hCounterTVXafterBCcuts
         collision_histogram: hf-candidate-creator-3prong/hCollisionsCentOcc
         sparses:
+        -   type: reco
+            path: hf-task-ds/Data/hSparseMass
         -   type: reco
             path: hf-task-ds/MC/Ds/Prompt/hSparseMass
         -   type: reco
@@ -38,3 +40,27 @@ preprocess:
             path: hf-task-ds/MC/Dplus/Prompt/hSparseGen
         -   type: gen
             path: hf-task-ds/MC/Dplus/NonPrompt/hSparseGen
+
+    weights:
+        centralitybins: [0, 10, 20] # centrality bins for weights
+        npv:
+            apply: False
+            file_name: '/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Efficiency/VsMult/weights_LHC24h1_FT0M.root'
+        pt:
+            apply: True
+            file_name: '/home/fchinu/Run3/Ds_Dp_ratio_PbPb/PtWeightsPbPb/ptweights_tamu.root'
+            base_hist_name: 
+                Ds: 
+                    Prompt: 'hist_ds_weights_tamu_*'
+                    NonPrompt: 'hist_bs_weights_tamu_*' # not exact, it should be a mixture 50%-50% of B and Bs
+                Dplus: 
+                    Prompt: 'hist_d_weights_tamu_*'
+                    NonPrompt: 'hist_b_weights_tamu_*'
+
+        axis_pt_gen: 0
+        axis_ptb_gen: 4
+        axis_npv_gen: 2
+        axis_pt_reco: 1
+        axis_ptb_reco: 7
+        axis_npv_reco: 6
+        axis_cent_gen: 3
