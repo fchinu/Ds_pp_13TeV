@@ -113,12 +113,10 @@ def dump_uncertainties(fracs, cfg): # pylint: disable=too-many-locals
         for i_pt in range(1, ratios['all'].GetNbinsX() + 1):
             rms_pt.append([])
             for _, trial in ratios.items():
-                rms_pt[-1].append(trial.GetBinContent(i_pt))
+                rms_pt[-1].append(trial.GetBinContent(i_pt) / ratios['central'].GetBinContent(i_pt))
         rms_pt = np.std(np.array(rms_pt), axis=1)
 
         with ROOT.TFile.Open(str(outdir / "syst.root"), "UPDATE") as f_out:
-            f_out.mkdir(f"cent_{cent_range[0]}_{cent_range[1]}")
-            f_out.cd(f"cent_{cent_range[0]}_{cent_range[1]}")
             h_rms = ratios['all'].Clone(
                 f"hRMS_DsDplus_cent_{cent_range[0]}_{cent_range[1]}"
             )
@@ -128,7 +126,7 @@ def dump_uncertainties(fracs, cfg): # pylint: disable=too-many-locals
             h_rms.Write()
 
             h_assigned_syst = ratios['all'].Clone(
-                f"hAssignedSyst_DsDplus_cent_{cent_range[0]}_{cent_range[1]}"
+                f"assigned_syst_{cent_range[0]}_{cent_range[1]}"
             )
 
             for i_pt in range(1, ratios['all'].GetNbinsX() + 1):
@@ -173,11 +171,10 @@ def dump_uncertainties(fracs, cfg): # pylint: disable=too-many-locals
             rms_pt_all_comb.append([])
             for _, trial in ratios_all_comb.items():
                 rms_pt_all_comb[-1].append(trial.GetBinContent(i_pt))
-        rms_pt_all_comb = np.std(np.array(rms_pt_all_comb), axis=1)
+        central_array = np.array([ratios_all_comb['central_central'].GetBinContent(i_pt) for i_pt in range(1, ratios_all_comb['all_all'].GetNbinsX() + 1)])
+        rms_pt_all_comb = np.sqrt(np.std(np.array(rms_pt_all_comb), axis=1)**2 + (np.mean(np.array(rms_pt_all_comb), axis=1)-central_array)**2) / central_array
 
         with ROOT.TFile.Open(str(outdir / "syst.root"), "UPDATE") as f_out:
-            f_out.mkdir(f"cent_{cent_range[0]}_{cent_range[1]}")
-            f_out.cd(f"cent_{cent_range[0]}_{cent_range[1]}")
             h_rms = ratios_all_comb['all_all'].Clone(
                 f"hRMS_all_comb_DsDplus_cent_{cent_range[0]}_{cent_range[1]}"
             )
@@ -206,6 +203,12 @@ def dump_uncertainties(fracs, cfg): # pylint: disable=too-many-locals
                 ratio_hist.SetMarkerColor(colors[i_trial])
                 ratio_hist.Draw("same")
                 leg.AddEntry(ratio_hist, trial, "lp")
+
+            ratios_all_comb["all_all"].SetLineWidth(3)
+            ratios_all_comb["all_all"].SetMarkerStyle(ROOT.kFullCircle)
+            ratios_all_comb["all_all"].SetLineColor(ROOT.kBlack)
+            ratios_all_comb["all_all"].SetMarkerColor(ROOT.kBlack)
+            ratios_all_comb["all_all"].Draw("same")
             leg.Draw()
             c_trials.Write()
 
