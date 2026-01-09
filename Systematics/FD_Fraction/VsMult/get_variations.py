@@ -13,7 +13,6 @@ from plot_utils import get_discrete_matplotlib_palette  # pylint: disable=wrong-
 # pylint: disable=no-member # ROOT module members
 
 ROOT.TH1.AddDirectory(False)
-colors, _ = get_discrete_matplotlib_palette("tab10")
 
 def get_trials(inlist, option):
     """
