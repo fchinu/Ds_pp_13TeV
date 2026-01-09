@@ -1,0 +1,19 @@
+inputs:
+  cutset: Projections_RawYields/configs/cutset.yml
+  ratio_file: Ratios/ds_over_dplus_ratios_020_norm.root
+  syst_files:
+    rawy: Systematics/RawYields/vsMult/merge_low_high_pt/syst.root
+    bdt: Systematics/BDT/VsMult/output/output.root
+    prompt_frac: Systematics/FD_Fraction/VsMult/syst.root
+
+br:
+  - value: 2.21e-2 # Ds -> phi pi+ -> K+ K- pi+
+    unc_high: 0.06e-2
+    unc_low: 0.06e-2
+  - value: 2.69e-3 # D+ -> phi pi+ -> K+ K- pi+
+    unc_high: 0.07e-3
+    unc_low: 0.08e-3
+
+is_pp: false
+
+output_name: Ratios/ratio_w_syst.root
