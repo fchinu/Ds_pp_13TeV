@@ -6,7 +6,7 @@ import argparse
 import sys
 import pandas as pd
 import ROOT
-from utils import read_tamu, get_centrality_interpolation
+from utils import read_tamu, read_lido, get_centrality_interpolation
 
 def get_interpolated_raa(model):
     """
@@ -50,27 +50,44 @@ def get_interpolated_raa(model):
         for ipt in range(gr_bs_raa["80_90"].GetN()):
             gr_bs_raa["80_90"].SetPoint(ipt, gr_bs_raa["80_90"].GetPointX(ipt), 0.8)
 
+    if model == "lido":
+        gr_d_raa["0_10"] = read_lido("lido/D-meson-Raa-010.dat", "gr_d_raa_lido_0_10")
+        gr_d_raa["30_50"] = read_lido("lido/D-meson-Raa-3050.dat", "gr_d_raa_lido_30_50")
+        gr_b_raa["0_10"] = read_lido("lido/B-meson-Raa-010.dat", "gr_b_raa_lido_0_10")
+        gr_b_raa["30_50"] = read_lido("lido/B-meson-Raa-3050.dat", "gr_b_raa_lido_30_50")
+
+        # assume most peripheral to be = 0.8
+        gr_d_raa["80_90"] = gr_d_raa["0_10"].Clone("gr_d_raa_lido_80_90")
+        for ipt in range(gr_d_raa["80_90"].GetN()):
+            gr_d_raa["80_90"].SetPoint(ipt, gr_d_raa["80_90"].GetPointX(ipt), 0.8)
+
+        gr_b_raa["80_90"] = gr_b_raa["0_10"].Clone("gr_b_raa_lido_80_90")
+        for ipt in range(gr_b_raa["80_90"].GetN()):
+            gr_b_raa["80_90"].SetPoint(ipt, gr_b_raa["80_90"].GetPointX(ipt), 0.8)
+
     # interpolate to obtain all centralities
-    get_centrality_interpolation(gr_ds_raa, f"gr_ds_raa_{model}")
     get_centrality_interpolation(gr_d_raa, f"gr_d_raa_{model}")
-    get_centrality_interpolation(gr_npds_raa, f"gr_npds_raa_{model}")
-    get_centrality_interpolation(gr_npd_raa, f"gr_npd_raa_{model}")
     get_centrality_interpolation(gr_b_raa, f"gr_b_raa_{model}")
-    get_centrality_interpolation(gr_bs_raa, f"gr_bs_raa_{model}")
+    if model != "lido": # non prompt and strange mesons not available for lido
+        get_centrality_interpolation(gr_ds_raa, f"gr_ds_raa_{model}")
+        get_centrality_interpolation(gr_npds_raa, f"gr_npds_raa_{model}")
+        get_centrality_interpolation(gr_npd_raa, f"gr_npd_raa_{model}")
+        get_centrality_interpolation(gr_bs_raa, f"gr_bs_raa_{model}")
 
     outfile = ROOT.TFile(f"raa{model}_interpolated.root", "recreate")
-    for graph in gr_ds_raa.values():
-        graph.Write()
     for graph in gr_d_raa.values():
-        graph.Write()
-    for graph in gr_npds_raa.values():
-        graph.Write()
-    for graph in gr_npd_raa.values():
         graph.Write()
     for graph in gr_b_raa.values():
         graph.Write()
-    for graph in gr_bs_raa.values():
-        graph.Write()
+    if model != "lido":
+        for graph in gr_ds_raa.values():
+            graph.Write()
+        for graph in gr_npds_raa.values():
+            graph.Write()
+        for graph in gr_npd_raa.values():
+            graph.Write()
+        for graph in gr_bs_raa.values():
+            graph.Write()
     outfile.Close()
 
 
@@ -79,7 +96,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", "-m", metavar="text", help="Enabled model", default="tamu")
     args = parser.parse_args()
 
-    models = ["tamu"]
+    models = ["tamu", "lido"]
     if args.model not in models:
         print(f"Model {args.model} not yet implemented. Available options: {models}") 
         sys.exit()
