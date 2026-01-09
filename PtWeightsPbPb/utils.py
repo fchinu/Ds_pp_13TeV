@@ -29,6 +29,21 @@ def read_tamu(infile, graph_name, is_beauty=False):
 
     return graph
 
+def read_lido(infile, graph_name):
+    """
+    Function to read LIDO files and convert predictions to a graph
+    """
+
+    df = pd.read_csv(infile, sep=" ", comment="#", header=0)
+    graph = ROOT.TGraph(1)
+    graph.SetNameTitle(graph_name, ";#it{p}_{T} (GeV/#it{c}); #it{R}_{AA}")
+    for ipt, (pt, raa) in enumerate(zip(df["pT"].to_numpy(), df["Raa"].to_numpy())):
+        graph.SetPoint(ipt, pt, raa)
+        if ipt == len(df)-1 and pt < 50.:
+            graph.SetPoint(ipt, 50., raa)
+
+    return graph
+
 def read_fonll(infile, hist_name, which="central"):
     """
     Function to read FONLL files and convert predictions to a histogram

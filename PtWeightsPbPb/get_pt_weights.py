@@ -6,7 +6,7 @@ import argparse
 import sys
 import pandas as pd
 import ROOT
-from utils import read_tamu, read_fonll, get_centrality_interpolation, get_fonll_times_raa
+from utils import read_tamu, read_lido, read_fonll, get_centrality_interpolation, get_fonll_times_raa
 
 def compute_weights(hists_dndpt, hist_mcgen, base_name):
     """
@@ -88,21 +88,39 @@ def get_pt_weights(model):
         for ipt in range(gr_bs_raa["80_90"].GetN()):
             gr_bs_raa["80_90"].SetPoint(ipt, gr_bs_raa["80_90"].GetPointX(ipt), 0.8)
 
+    if model == "lido":
+        gr_d_raa["0_10"] = read_lido("lido/D-meson-Raa-010.dat", "gr_d_raa_lido_0_10")
+        gr_d_raa["30_50"] = read_lido("lido/D-meson-Raa-3050.dat", "gr_d_raa_lido_30_50")
+        gr_b_raa["0_10"] = read_lido("lido/B-meson-Raa-010.dat", "gr_b_raa_lido_0_10")
+        gr_b_raa["30_50"] = read_lido("lido/B-meson-Raa-3050.dat", "gr_b_raa_lido_30_50")
+
+        # assume most peripheral to be = 0.8
+        gr_d_raa["80_90"] = gr_d_raa["0_10"].Clone("gr_d_raa_lido_80_90")
+        for ipt in range(gr_d_raa["80_90"].GetN()):
+            gr_d_raa["80_90"].SetPoint(ipt, gr_d_raa["80_90"].GetPointX(ipt), 0.8)
+
+        gr_b_raa["80_90"] = gr_b_raa["0_10"].Clone("gr_b_raa_lido_80_90")
+        for ipt in range(gr_b_raa["80_90"].GetN()):
+            gr_b_raa["80_90"].SetPoint(ipt, gr_b_raa["80_90"].GetPointX(ipt), 0.8)
+
     # interpolate to obtain all centralities
-    get_centrality_interpolation(gr_ds_raa, f"gr_ds_raa_{model}")
     get_centrality_interpolation(gr_d_raa, f"gr_d_raa_{model}")
     get_centrality_interpolation(gr_b_raa, f"gr_b_raa_{model}")
-    get_centrality_interpolation(gr_bs_raa, f"gr_bs_raa_{model}")
+    if model != "lido": # only D and B for lido
+        get_centrality_interpolation(gr_ds_raa, f"gr_ds_raa_{model}")
+        get_centrality_interpolation(gr_bs_raa, f"gr_bs_raa_{model}")
 
-    hist_dndpt_ds = get_fonll_times_raa(hist_fonll_ds, gr_ds_raa, f"hist_ds_dndpt_{model}")
     hist_dndpt_d = get_fonll_times_raa(hist_fonll_d, gr_d_raa, f"hist_d_dndpt_{model}")
-    hist_dndpt_bs = get_fonll_times_raa(hist_fonll_b, gr_bs_raa, f"hist_bs_dndpt_{model}")
     hist_dndpt_b = get_fonll_times_raa(hist_fonll_b, gr_b_raa, f"hist_b_dndpt_{model}")
+    if model != "lido": # only D and B for lido
+        hist_dndpt_ds = get_fonll_times_raa(hist_fonll_ds, gr_ds_raa, f"hist_ds_dndpt_{model}")
+        hist_dndpt_bs = get_fonll_times_raa(hist_fonll_b, gr_bs_raa, f"hist_bs_dndpt_{model}")
 
-    hist_weights_ds = compute_weights(hist_dndpt_ds, hist_ds_mcgen, f"hist_ds_weights_{model}")
     hist_weights_d = compute_weights(hist_dndpt_d, hist_d_mcgen, f"hist_d_weights_{model}")
-    hist_weights_bs = compute_weights(hist_dndpt_bs, hist_bs_mcgen, f"hist_bs_weights_{model}")
     hist_weights_b = compute_weights(hist_dndpt_b, hist_b_mcgen, f"hist_b_weights_{model}")
+    if model != "lido": # only D and B for lido
+        hist_weights_ds = compute_weights(hist_dndpt_ds, hist_ds_mcgen, f"hist_ds_weights_{model}")
+        hist_weights_bs = compute_weights(hist_dndpt_bs, hist_bs_mcgen, f"hist_bs_weights_{model}")
 
     colors = {
         "0_10": ROOT.kRed+2,
@@ -144,15 +162,16 @@ def get_pt_weights(model):
         graph.Write()
     leg.Draw()
     canv_raa.cd(2).DrawFrame(0., 0., 12., 2., ";#it{p}_{T} (GeV/#it{c});#it{R}_{AA}(D_{s}^{#plus})")
-    for cent, graph in gr_ds_raa.items():
-        if cent == "30_50":
-            continue
-        graph.SetLineColor(colors[cent])
-        graph.SetLineWidth(2)
-        graph.SetMarkerColor(colors[cent])
-        graph.Draw()
-        outfile.cd("raa")
-        graph.Write()
+    if model != "lido": # only D and B for lido
+        for cent, graph in gr_ds_raa.items():
+            if cent == "30_50":
+                continue
+            graph.SetLineColor(colors[cent])
+            graph.SetLineWidth(2)
+            graph.SetMarkerColor(colors[cent])
+            graph.Draw()
+            outfile.cd("raa")
+            graph.Write()
     canv_raa.cd(3).DrawFrame(0., 0., 24., 3., ";#it{p}_{T} (GeV/#it{c});#it{R}_{AA}(B)")
     for cent, graph in gr_b_raa.items():
         if cent == "30_50":
@@ -164,15 +183,16 @@ def get_pt_weights(model):
         outfile.cd("raa")
         graph.Write()
     canv_raa.cd(4).DrawFrame(0., 0., 24., 3., ";#it{p}_{T} (GeV/#it{c});#it{R}_{AA}(B_{s}^{0})")
-    for cent, graph in gr_bs_raa.items():
-        if cent == "30_50":
-            continue
-        graph.SetLineColor(colors[cent])
-        graph.SetLineWidth(2)
-        graph.SetMarkerColor(colors[cent])
-        graph.Draw()
-        outfile.cd("raa")
-        graph.Write()
+    if model != "lido": # only D and B for lido
+        for cent, graph in gr_bs_raa.items():
+            if cent == "30_50":
+                continue
+            graph.SetLineColor(colors[cent])
+            graph.SetLineWidth(2)
+            graph.SetMarkerColor(colors[cent])
+            graph.Draw()
+            outfile.cd("raa")
+            graph.Write()
     canv_raa.Write()
 
     outfile.cd()
@@ -192,13 +212,14 @@ def get_pt_weights(model):
     canv_dndpt.cd(2).DrawFrame(0., 1.e-7, 24., 1.e-1, ";#it{p}_{T} (GeV/#it{c});d#it{N}(D_{s}^{#plus})/d#it{p}_{T} (a.u.)")
     canv_dndpt.cd(2).SetLogy()
     hist_ds_mcgen.Draw("histsame")
-    for cent, hist in hist_dndpt_ds.items():
-        hist.SetLineColor(colors[cent])
-        hist.SetLineWidth(2)
-        hist.SetMarkerColor(colors[cent])
-        hist.Draw("histsame")
-        outfile.cd("dndpt")
-        hist.Write()
+    if model != "lido": # only D and B for lido
+        for cent, hist in hist_dndpt_ds.items():
+            hist.SetLineColor(colors[cent])
+            hist.SetLineWidth(2)
+            hist.SetMarkerColor(colors[cent])
+            hist.Draw("histsame")
+            outfile.cd("dndpt")
+            hist.Write()
     canv_dndpt.cd(3).DrawFrame(0., 1.e-7, 50., 1.e-1, ";#it{p}_{T} (GeV/#it{c});d#it{N}(B)/d#it{p}_{T} (a.u.)")
     canv_dndpt.cd(3).SetLogy()
     hist_b_mcgen.Draw("histsame")
@@ -217,13 +238,14 @@ def get_pt_weights(model):
     canv_dndpt.cd(4).DrawFrame(0., 1.e-7, 50., 1.e-1, ";#it{p}_{T} (GeV/#it{c});d#it{N}(B_{s}^{0})/d#it{p}_{T} (a.u.)")
     canv_dndpt.cd(4).SetLogy()
     hist_bs_mcgen.Draw("histsame")
-    for cent, hist in hist_dndpt_bs.items():
-        hist.SetLineColor(colors[cent])
-        hist.SetLineWidth(2)
-        hist.SetMarkerColor(colors[cent])
-        hist.Draw("histsame")
-        outfile.cd("dndpt")
-        hist.Write()
+    if model != "lido": # only D and B for lido
+        for cent, hist in hist_dndpt_bs.items():
+            hist.SetLineColor(colors[cent])
+            hist.SetLineWidth(2)
+            hist.SetMarkerColor(colors[cent])
+            hist.Draw("histsame")
+            outfile.cd("dndpt")
+            hist.Write()
     canv_dndpt.Write()
 
     outfile.cd()
@@ -241,11 +263,12 @@ def get_pt_weights(model):
         hist.Write()
     canv_weights.cd(2).DrawFrame(0., 1.e-1, 24., 1.e1, ";#it{p}_{T} (GeV/#it{c});#it{p}_{T}-weights (D_{s}^{#plus})")
     canv_weights.cd(2).SetLogy()
-    for cent, hist in hist_weights_ds.items():
-        hist.SetLineColor(colors[cent])
-        hist.SetLineWidth(2)
-        hist.SetMarkerColor(colors[cent])
-        hist.Draw("histsame")
+    if model != "lido": # only D and B for lido
+        for cent, hist in hist_weights_ds.items():
+            hist.SetLineColor(colors[cent])
+            hist.SetLineWidth(2)
+            hist.SetMarkerColor(colors[cent])
+            hist.Draw("histsame")
         outfile.cd("weights")
         hist.Write()
     canv_weights.cd(3).DrawFrame(0., 1.e-1, 50., 1.e1, ";#it{p}_{T} (GeV/#it{c});#it{p}_{T}-weights (B)")
@@ -263,13 +286,14 @@ def get_pt_weights(model):
     leg_weights.Draw()
     canv_weights.cd(4).DrawFrame(0., 1.e-1, 50., 1.e1, ";#it{p}_{T} (GeV/#it{c});#it{p}_{T}-weights (B_{s}^{0})")
     canv_weights.cd(4).SetLogy()
-    for cent, hist in hist_weights_bs.items():
-        hist.SetLineColor(colors[cent])
-        hist.SetLineWidth(2)
-        hist.SetMarkerColor(colors[cent])
-        hist.Draw("histsame")
-        outfile.cd("weights")
-        hist.Write()
+    if model != "lido": # only D and B for lido
+        for cent, hist in hist_weights_bs.items():
+            hist.SetLineColor(colors[cent])
+            hist.SetLineWidth(2)
+            hist.SetMarkerColor(colors[cent])
+            hist.Draw("histsame")
+            outfile.cd("weights")
+            hist.Write()
     canv_weights.Write()
     outfile.Close()
 
@@ -283,7 +307,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", "-m", metavar="text", help="Enabled model", default="tamu")
     args = parser.parse_args()
 
-    models = ["tamu"]
+    models = ["tamu", "lido"]
     if args.model not in models:
         print(f"Model {args.model} not yet implemented. Available options: {models}") 
         sys.exit()
