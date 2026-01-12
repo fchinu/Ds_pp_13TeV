@@ -1,0 +1,40 @@
+inputs:
+    fc: [
+      /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/DsPromptNonPrompt_Yield_pp5TeV_Run2_010_tsallis.root,
+      /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/DsPromptNonPrompt_Yield_pp5TeV_Run2_1020_tsallis.root,
+      /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/DsPromptNonPrompt_Yield_pp5TeV_Run2_2030_tsallis_soft.root,
+      /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/DsPromptNonPrompt_Yield_pp5TeV_Run2_3040_tsallis_soft.root,
+      /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/DsPromptNonPrompt_Yield_pp5TeV_Run2_4050_tsallis_soft.root,
+      /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/DsPromptNonPrompt_Yield_pp5TeV_Run2_5060_tsallis.root,
+      /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/DsPromptNonPrompt_Yield_pp5TeV_Run2_6070_tsallis.root,
+      /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/DsPromptNonPrompt_Yield_pp5TeV_Run2_7080_tsallis.root,
+      /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/DsPromptNonPrompt_Yield_pp5TeV_Run2_8090_tsallis.root
+    ]
+    data_driven_ds: [
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/merged_low_high_pt/Fractions/Ds/CutVarDs_pp13TeV_0_10.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/merged_low_high_pt/Fractions/Ds/CutVarDs_pp13TeV_10_20.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/CutVarDs_pbpb_2030.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/CutVarDs_pbpb_3040.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/CutVarDs_pbpb_4050.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/CutVarDs_pp13TeV_50_60.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/CutVarDs_pp13TeV_60_70.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/CutVarDs_pp13TeV_70_80.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/CutVarDs_pp13TeV_80_90.root
+    ]
+    data_driven_dplus: [
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/merged_low_high_pt/Fractions/Dplus/CutVarDplus_pp13TeV_0_10.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/merged_low_high_pt/Fractions/Dplus/CutVarDplus_pp13TeV_10_20.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/CutVarDplus_pbpb_2030.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/CutVarDplus_pbpb_3040.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/CutVarDplus_pbpb_4050.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/CutVarDplus_pp13TeV_50_60.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/CutVarDplus_pp13TeV_60_70.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/CutVarDplus_pp13TeV_70_80.root,
+        /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons/CutVarDplus_pp13TeV_80_90.root
+    ]
+    cent:
+        mins: [0, 10, 20, 30, 40, 50, 60, 70, 80]
+        maxs: [10, 20, 30, 40, 50, 60, 70, 80, 90]
+
+output_dir: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/comparisons
+ 
