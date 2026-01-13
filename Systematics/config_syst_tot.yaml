@@ -4,7 +4,8 @@ inputs:
   syst_files:
     rawy: Systematics/RawYields/vsMult/merge_low_high_pt/syst.root
     bdt: Systematics/BDT/VsMult/output/output.root
-    prompt_frac: Systematics/FD_Fraction/VsMult/syst.root
+    prompt_frac: Systematics/FD_Fraction/VsMult/merge/systematic.root
+    pt_shape: Systematics/PtShape/VsMult/systematic.root
 
 br:
   - value: 2.21e-2 # Ds -> phi pi+ -> K+ K- pi+

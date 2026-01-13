@@ -1,0 +1,14 @@
+inputs:
+  data_driven: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Systematics/FD_Fraction/VsMult/syst.root
+  fc: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Systematics/FD_Fraction/VsMult/fc_method/systematic.root
+
+cent:
+  mins: [0, 10]
+  maxs: [10, 20]
+
+
+swap_with_fc:
+  "0_10": [[1, 2]]
+  "10_20": [[1, 2]]
+
+output: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Systematics/FD_Fraction/VsMult/merge/systematic.root

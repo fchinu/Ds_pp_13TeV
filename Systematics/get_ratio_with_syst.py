@@ -66,9 +66,13 @@ def get_cross_sec_with_syst(config_file_name):
 
     uncs_low = {}
     uncs_high = {}
+    uncs_no_br_low = {}
+    uncs_no_br_high = {}
     for pt_min, pt_max in zip(pt_mins, pt_maxs):
         uncs_low[(pt_min, pt_max)] = []
         uncs_high[(pt_min, pt_max)] = []
+        uncs_no_br_low[(pt_min, pt_max)] = []
+        uncs_no_br_high[(pt_min, pt_max)] = []
 
         with ROOT.TFile.Open(config['inputs']['ratio_file']) as f:
             g_ratio = f.Get(f'g_ratio_dndeta_{pt_min*10:.0f}_{pt_max*10:.0f}')
@@ -80,36 +84,77 @@ def get_cross_sec_with_syst(config_file_name):
             g_ratio.SetPointEXhigh(i_cent, unc_dn_deta_high)
 
         # Get systematics graphs (pt dependent)
-        g_systs_rel = {}
-        g_systs = {}
+        g_systs_rel_lower = {}
+        g_systs_rel_upper = {}
+        g_systs_lower = {}
+        g_systs_upper = {}
         for syst_name, file_name in config['inputs']['syst_files'].items():
-            print(syst_name)
+
             with ROOT.TFile.Open(file_name) as f:
                 try:
-                    h_syst = f.Get('assigned_syst')
-                    g_systs_rel[syst_name] = g_ratio.Clone()
-                    for i_cent in range(g_systs_rel[syst_name].GetN()):
-                        g_systs_rel[syst_name].SetPointY(
-                            i_cent,
-                            h_syst.GetBinContent(h_syst.FindBin((pt_min+pt_max)/2))
-                        )
+                    try:
+                        h_syst = f.Get('assigned_syst')
+                        g_systs_rel_lower[syst_name] = g_ratio.Clone()
+                        g_systs_rel_upper[syst_name] = g_ratio.Clone()
+                        for i_cent in range(g_systs_rel_lower[syst_name].GetN()):
+                            g_systs_rel_lower[syst_name].SetPointY(
+                                i_cent,
+                                h_syst.GetBinContent(h_syst.FindBin((pt_min+pt_max)/2))
+                            )
+                            g_systs_rel_upper[syst_name].SetPointY(
+                                i_cent,
+                                h_syst.GetBinContent(h_syst.FindBin((pt_min+pt_max)/2))
+                            )
 
+                    except:
+                        g_systs_rel_lower[syst_name] = g_ratio.Clone()
+                        g_systs_rel_upper[syst_name] = g_ratio.Clone()
+                        for i_cent in range(g_systs_rel_lower[syst_name].GetN()):
+                            syst_vs_pt = f.Get(f'assigned_syst_{cent_mins[i_cent]}_{cent_maxs[i_cent]}')
+                            g_systs_rel_lower[syst_name].SetPointY(
+                                i_cent,
+                                syst_vs_pt.GetBinContent(syst_vs_pt.FindBin((pt_min+pt_max)/2))
+                            )
+                            g_systs_rel_upper[syst_name].SetPointY(
+                                i_cent,
+                                syst_vs_pt.GetBinContent(syst_vs_pt.FindBin((pt_min+pt_max)/2))
+                            )
+                    g_systs_lower[syst_name] = g_systs_rel_lower[syst_name].Clone()
+                    g_systs_upper[syst_name] = g_systs_rel_upper[syst_name].Clone()
+                    for i_cent in range(g_systs_lower[syst_name].GetN()):
+                        g_systs_lower[syst_name].SetPointY(
+                            i_cent,
+                            g_systs_rel_lower[syst_name].GetPointY(i_cent)*g_ratio.GetPointY(i_cent)
+                        )
+                        g_systs_upper[syst_name].SetPointY(
+                            i_cent,
+                            g_systs_rel_upper[syst_name].GetPointY(i_cent)*g_ratio.GetPointY(i_cent)
+                        )
                 except:
-                    g_systs_rel[syst_name] = g_ratio.Clone()
-                    current_g_syst = g_systs_rel[syst_name]
-                    for i_cent in range(current_g_syst.GetN()):
-                        print(f"assigned_syst_{cent_mins[i_cent]}_{cent_maxs[i_cent]}")
-                        syst_vs_pt = f.Get(f'assigned_syst_{cent_mins[i_cent]}_{cent_maxs[i_cent]}')
-                        current_g_syst.SetPointY(
+                    g_systs_rel_lower[syst_name] = g_ratio.Clone()
+                    g_systs_rel_upper[syst_name] = g_ratio.Clone()
+                    for i_cent in range(g_systs_rel_lower[syst_name].GetN()):
+                        syst_vs_pt = f.Get(f'assigned_syst_lower_{cent_mins[i_cent]}_{cent_maxs[i_cent]}')
+                        g_systs_rel_lower[syst_name].SetPointY(
                             i_cent,
                             syst_vs_pt.GetBinContent(syst_vs_pt.FindBin((pt_min+pt_max)/2))
                         )
-                g_systs[syst_name] = g_systs_rel[syst_name].Clone()
-                for i_cent in range(g_systs[syst_name].GetN()):
-                    g_systs[syst_name].SetPointY(
-                        i_cent,
-                        g_systs_rel[syst_name].GetPointY(i_cent)*g_ratio.GetPointY(i_cent)
-                    )
+                        syst_vs_pt = f.Get(f'assigned_syst_upper_{cent_mins[i_cent]}_{cent_maxs[i_cent]}')
+                        g_systs_rel_upper[syst_name].SetPointY(
+                            i_cent,
+                            syst_vs_pt.GetBinContent(syst_vs_pt.FindBin((pt_min+pt_max)/2))
+                        )
+                    g_systs_lower[syst_name] = g_systs_rel_lower[syst_name].Clone()
+                    g_systs_upper[syst_name] = g_systs_rel_upper[syst_name].Clone()
+                    for i_cent in range(g_systs_lower[syst_name].GetN()):
+                        g_systs_lower[syst_name].SetPointY(
+                            i_cent,
+                            g_systs_rel_lower[syst_name].GetPointY(i_cent)*g_ratio.GetPointY(i_cent)
+                        )
+                        g_systs_upper[syst_name].SetPointY(
+                            i_cent,
+                            g_systs_rel_upper[syst_name].GetPointY(i_cent)*g_ratio.GetPointY(i_cent)
+                        )
 
         # Get systematics graphs (cent independent)
         unc_br_ds_low_rel = config["br"][0]["unc_low"] / config["br"][0]["value"]
@@ -124,73 +169,101 @@ def get_cross_sec_with_syst(config_file_name):
             unc_br_ds_high_rel**2 + unc_br_dplus_low_rel**2
         )
 
-        g_systs_rel['br_low'] = g_ratio.Clone()
-        for i_cent in range(g_systs_rel['br_low'].GetN()):
-            g_systs_rel['br_low'].SetPointY(i_cent, unc_br_ratio_low_rel)
+        g_systs_rel_lower['br'] = g_ratio.Clone()
+        for i_cent in range(g_systs_rel_lower['br'].GetN()):
+            g_systs_rel_lower['br'].SetPointY(i_cent, unc_br_ratio_low_rel)
 
-        g_systs_rel['br_high'] = g_ratio.Clone()
-        for i_cent in range(g_systs_rel['br_high'].GetN()):
-            g_systs_rel['br_high'].SetPointY(i_cent, unc_br_ratio_high_rel)
+        g_systs_rel_upper['br'] = g_ratio.Clone()
+        for i_cent in range(g_systs_rel_upper['br'].GetN()):
+            g_systs_rel_upper['br'].SetPointY(i_cent, unc_br_ratio_high_rel)
 
         with ROOT.TFile.Open(config['output_name'], 'update') as f:
-            for syst_name, g_syst in g_systs_rel.items():
-                g_syst.Write(f'{syst_name}_{pt_min*10:.0f}_{pt_max*10:.0f}_rel')
-            for syst_name, g_syst in g_systs.items():
-                g_syst.Write(f'{syst_name}_{pt_min*10:.0f}_{pt_max*10:.0f}')
-        
+            for syst_name, g_syst in g_systs_rel_lower.items():
+                g_syst.Write(f'{syst_name}_lower_{pt_min*10:.0f}_{pt_max*10:.0f}_rel')
+            for syst_name, g_syst in g_systs_rel_upper.items():
+                g_syst.Write(f'{syst_name}_upper_{pt_min*10:.0f}_{pt_max*10:.0f}_rel')
+            for syst_name, g_syst in g_systs_lower.items():
+                g_syst.Write(f'{syst_name}_lower_{pt_min*10:.0f}_{pt_max*10:.0f}')
+            for syst_name, g_syst in g_systs_upper.items():
+                g_syst.Write(f'{syst_name}_upper_{pt_min*10:.0f}_{pt_max*10:.0f}')
 
-        g_total_syst_low = g_ratio.Clone("g_total_syst_low")
-        g_total_syst_high = g_ratio.Clone("g_total_syst_high")
-        g_total_syst_low_rel = g_ratio.Clone("g_total_syst_low_rel")
-        g_total_syst_high_rel = g_ratio.Clone("g_total_syst_high_rel")
+        g_total_syst_lower = g_ratio.Clone("g_total_syst_lower")
+        g_total_syst_upper = g_ratio.Clone("g_total_syst_upper")
+        g_total_syst_rel_lower = g_ratio.Clone("g_total_syst_rel_lower")
+        g_total_syst_rel_upper = g_ratio.Clone("g_total_syst_rel_upper")
 
-        g_total_syst_no_br = g_ratio.Clone("g_total_syst_no_br")
-        g_total_syst_no_br_rel = g_ratio.Clone("g_total_syst_no_br_rel")
+        g_total_syst_no_br_lower = g_ratio.Clone("g_total_syst_no_br_lower")
+        g_total_syst_no_br_upper = g_ratio.Clone("g_total_syst_no_br_upper")
+        g_total_syst_no_br_rel_lower = g_ratio.Clone("g_total_syst_no_br_rel_lower")
+        g_total_syst_no_br_rel_upper = g_ratio.Clone("g_total_syst_no_br_rel_upper")
+
         # Evaluate total systematics
         for i in range(g_ratio.GetN()):
-            unc = 0
-            for syst_name, g_syst in g_systs_rel.items():
+            unc_lower = 0
+            unc_upper = 0
+            for syst_name, g_syst in g_systs_rel_lower.items():
                 if "br" not in syst_name:
-                    unc += g_syst.GetPointY(i)**2
+                    unc_lower += g_syst.GetPointY(i)**2
+            for syst_name, g_syst in g_systs_rel_upper.items():
+                if "br" not in syst_name:
+                    unc_upper += g_syst.GetPointY(i)**2
 
-            unc_low = np.sqrt(unc + g_systs_rel['br_low'].GetPointY(i)**2)
-            unc_high = np.sqrt(unc + g_systs_rel['br_high'].GetPointY(i)**2)
+            g_total_syst_no_br_rel_lower.SetPointY(i, np.sqrt(unc_lower))
+            g_total_syst_no_br_rel_upper.SetPointY(i, np.sqrt(unc_upper))
+            g_total_syst_no_br_lower.SetPointY(i, g_ratio.GetPointY(i)*np.sqrt(unc_lower))
+            g_total_syst_no_br_upper.SetPointY(i, g_ratio.GetPointY(i)*np.sqrt(unc_upper))
 
-            g_total_syst_low_rel.SetPointY(i, unc_low)
-            g_total_syst_high_rel.SetPointY(i, unc_high)
-            g_total_syst_no_br_rel.SetPointY(i, np.sqrt(unc))
+            uncs_no_br_low[(pt_min, pt_max)].append(g_ratio.GetPointY(i)*np.sqrt(unc_lower))
+            uncs_no_br_high[(pt_min, pt_max)].append(g_ratio.GetPointY(i)*np.sqrt(unc_upper))
 
-            g_total_syst_low.SetPointY(i, g_ratio.GetPointY(i)*unc_low)
-            g_total_syst_high.SetPointY(i, g_ratio.GetPointY(i)*unc_high)
-            g_total_syst_no_br.SetPointY(i, g_ratio.GetPointY(i)*np.sqrt(unc))
-            uncs_low[(pt_min, pt_max)].append(g_ratio.GetPointY(i)*unc_low)
-            uncs_high[(pt_min, pt_max)].append(g_ratio.GetPointY(i)*unc_high)
+            unc_lower = np.sqrt(unc_lower + g_systs_rel_lower['br'].GetPointY(i)**2)
+            unc_upper = np.sqrt(unc_upper + g_systs_rel_upper['br'].GetPointY(i)**2)
+
+            g_total_syst_rel_lower.SetPointY(i, unc_lower)
+            g_total_syst_rel_upper.SetPointY(i, unc_upper)
+            g_total_syst_lower.SetPointY(i, g_ratio.GetPointY(i)*unc_lower)
+            g_total_syst_upper.SetPointY(i, g_ratio.GetPointY(i)*unc_upper)
+
+            uncs_low[(pt_min, pt_max)].append(g_ratio.GetPointY(i)*unc_lower)
+            uncs_high[(pt_min, pt_max)].append(g_ratio.GetPointY(i)*unc_upper)
 
         g_syst = g_ratio.Clone("g_syst")
         for i in range(g_ratio.GetN()):
-            g_syst.SetPointEYlow(i, g_total_syst_low.GetPointY(i))
-            g_syst.SetPointEYhigh(i, g_total_syst_high.GetPointY(i))
+            g_syst.SetPointEYlow(i, g_total_syst_lower.GetPointY(i))
+            g_syst.SetPointEYhigh(i, g_total_syst_upper.GetPointY(i))
+
+        g_syst_no_br = g_ratio.Clone("g_syst_no_br")
+        for i in range(g_ratio.GetN()):
+            g_syst_no_br.SetPointEYlow(i, g_total_syst_no_br_lower.GetPointY(i))
+            g_syst_no_br.SetPointEYhigh(i, g_total_syst_no_br_upper.GetPointY(i))
         
         with ROOT.TFile.Open(config['output_name'], 'update') as f:
-            g_total_syst_high.Write(f'g_total_syst_high_{pt_min*10:.0f}_{pt_max*10:.0f}')
-            g_total_syst_low.Write(f'g_total_syst_low_{pt_min*10:.0f}_{pt_max*10:.0f}')
-            g_total_syst_no_br.Write(f'g_total_syst_no_br_{pt_min*10:.0f}_{pt_max*10:.0f}')
-            g_total_syst_high_rel.Write(f'g_total_syst_high_{pt_min*10:.0f}_{pt_max*10:.0f}_rel')
-            g_total_syst_low_rel.Write(f'g_total_syst_low_{pt_min*10:.0f}_{pt_max*10:.0f}_rel')
-            g_total_syst_no_br_rel.Write(f'g_total_syst_no_br_{pt_min*10:.0f}_{pt_max*10:.0f}_rel')
+            g_total_syst_upper.Write(f'g_total_syst_upper_{pt_min*10:.0f}_{pt_max*10:.0f}')
+            g_total_syst_lower.Write(f'g_total_syst_lower_{pt_min*10:.0f}_{pt_max*10:.0f}')
+            g_total_syst_no_br_upper.Write(f'g_total_syst_no_br_upper_{pt_min*10:.0f}_{pt_max*10:.0f}')
+            g_total_syst_no_br_lower.Write(f'g_total_syst_no_br_lower_{pt_min*10:.0f}_{pt_max*10:.0f}')
+            g_total_syst_rel_upper.Write(f'g_total_syst_upper_{pt_min*10:.0f}_{pt_max*10:.0f}_rel')
+            g_total_syst_rel_lower.Write(f'g_total_syst_lower_{pt_min*10:.0f}_{pt_max*10:.0f}_rel')
+            g_total_syst_no_br_rel_lower.Write(f'g_total_syst_no_br_lower{pt_min*10:.0f}_{pt_max*10:.0f}_rel')
+            g_total_syst_no_br_rel_upper.Write(f'g_total_syst_no_br_upper_{pt_min*10:.0f}_{pt_max*10:.0f}_rel')
             g_syst.Write(f'g_syst_{pt_min*10:.0f}_{pt_max*10:.0f}')
+            g_syst_no_br.Write(f'g_syst_no_br_{pt_min*10:.0f}_{pt_max*10:.0f}')
             g_ratio.Write(f'g_stat_{pt_min*10:.0f}_{pt_max*10:.0f}')
 
     for i_cent, (cent_min, cent_max) in enumerate(zip(cent_mins, cent_maxs)):
         with ROOT.TFile.Open(config['inputs']['ratio_file']) as f:
             h_stat_vs_pt = f.Get(f'centrality_{cent_min}_{cent_max}/h_ratio')
             g_syst_vs_pt = ROOT.TGraphAsymmErrors(h_stat_vs_pt)
+            g_syst_vs_pt_no_br = ROOT.TGraphAsymmErrors(h_stat_vs_pt)
             for i in range(g_syst_vs_pt.GetN()):
                 g_syst_vs_pt.SetPointEYlow(i, uncs_low[(pt_min, pt_max)][i_cent])
                 g_syst_vs_pt.SetPointEYhigh(i, uncs_high[(pt_min, pt_max)][i_cent])
+                g_syst_vs_pt_no_br.SetPointEYlow(i, uncs_no_br_low[(pt_min, pt_max)][i_cent])
+                g_syst_vs_pt_no_br.SetPointEYhigh(i, uncs_no_br_high[(pt_min, pt_max)][i_cent])
         with ROOT.TFile.Open(config['output_name'], 'update') as f:
-            g_syst_vs_pt.Write(f'g_syst_vs_pt_{cent_min}_{cent_max}')
             h_stat_vs_pt.Write(f'h_stat_vs_pt_{cent_min}_{cent_max}')
+            g_syst_vs_pt.Write(f'g_syst_vs_pt_{cent_min}_{cent_max}')
+            g_syst_vs_pt_no_br.Write(f'g_syst_vs_pt_no_br_{cent_min}_{cent_max}')
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Get cross section with systematics')
