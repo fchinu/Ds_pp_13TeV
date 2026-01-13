@@ -1,0 +1,22 @@
+inputs: [
+  /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Efficiency/efficiency/default/efficiency_LHC25a5.root,
+  /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Systematics/PtShape/VsMult/efficiency_lido/efficiency_LHC25a5.root
+]
+
+labels: ["TAMU", "LIDO"]
+
+cent:
+  mins: [0, 10]
+  maxs: [10, 20]
+
+assigned_syst: [
+    [0.01, 0.01],
+    [0.01, 0.01],
+    [0.01, 0.01],
+    [0.01, 0.01],
+    [0.01, 0.01],
+    [0.01, 0.01],
+  ]
+
+
+output_dir: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Systematics/PtShape/VsMult
