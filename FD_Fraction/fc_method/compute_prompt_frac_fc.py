@@ -523,6 +523,34 @@ def get_spectrum_simfit(is_prompt, cent_min=None, cent_max=None):
         func_dplus.Write(f"Tsallissim_Dplus{'Prompt' if is_prompt else 'NonPrompt'}")
         g_yield_prompt_from_ci_dplus.Write(f"Dplus{'Prompt' if is_prompt else 'NonPrompt'}_Yields_FromCI")
 
+    func_ds.SetLineColor(ROOT.kRed-2)
+    func_dplus.SetLineColor(ROOT.kAzure-3)
+    h_combined_ds.SetMarkerStyle(ROOT.kFullCircle)
+    h_combined_ds.SetLineColor(ROOT.kRed)
+    h_combined_ds.SetMarkerColor(ROOT.kRed)
+    h_combined_dplus.SetMarkerStyle(ROOT.kFullCircle)
+    h_combined_dplus.SetLineColor(ROOT.kAzure-5)
+    h_combined_dplus.SetMarkerColor(ROOT.kAzure-5)
+    c = ROOT.TCanvas("c", "c", 800, 600)
+    c.SetLogy()
+    c.DrawFrame(0, 1.e-4, 24, 100, " ;#it{p}_{T} (GeV/#it{c});d#it{#sigma}/d#it{p}_{T} #mub(GeV/#it{c})^{-1}")
+
+    leg = ROOT.TLegend(0.55, 0.65, 0.85, 0.85)
+    leg.SetBorderSize(0)
+    leg.SetFillStyle(0)
+    leg.AddEntry(h_combined_ds, f"{'Prompt' if is_prompt else 'NonPrompt'} D_{{s}}^{{+}} data", "pl")
+    leg.AddEntry(func_ds, f"{'Prompt' if is_prompt else 'NonPrompt'} D_{{s}}^{{+}} fit", "l")
+    leg.AddEntry(h_combined_dplus, f"{'Prompt' if is_prompt else 'NonPrompt'} D^{{+}} data", "pl")
+    leg.AddEntry(func_dplus, f"{'Prompt' if is_prompt else 'NonPrompt'} D^{{+}} fit", "l")
+    leg.Draw()
+
+    func_ds.Draw("same")
+    h_combined_ds.Draw("E same")
+    func_dplus.Draw("same")
+    h_combined_dplus.Draw("E same")
+
+    c.SaveAs(config["output"].replace(".root", f"_{'Prompt' if is_prompt else 'NonPrompt'}.pdf"))
+
     return g_yield_prompt_from_ci_ds, g_yield_prompt_from_ci_dplus 
 
 def fc_from_pb_pb_data(config):
