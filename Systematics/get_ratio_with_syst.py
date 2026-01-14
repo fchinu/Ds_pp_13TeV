@@ -256,10 +256,10 @@ def get_cross_sec_with_syst(config_file_name):
             g_syst_vs_pt = ROOT.TGraphAsymmErrors(h_stat_vs_pt)
             g_syst_vs_pt_no_br = ROOT.TGraphAsymmErrors(h_stat_vs_pt)
             for i in range(g_syst_vs_pt.GetN()):
-                g_syst_vs_pt.SetPointEYlow(i, uncs_low[(pt_min, pt_max)][i_cent])
-                g_syst_vs_pt.SetPointEYhigh(i, uncs_high[(pt_min, pt_max)][i_cent])
-                g_syst_vs_pt_no_br.SetPointEYlow(i, uncs_no_br_low[(pt_min, pt_max)][i_cent])
-                g_syst_vs_pt_no_br.SetPointEYhigh(i, uncs_no_br_high[(pt_min, pt_max)][i_cent])
+                g_syst_vs_pt.SetPointEYlow(i, uncs_low[(pt_mins[i], pt_maxs[i])][i_cent])
+                g_syst_vs_pt.SetPointEYhigh(i, uncs_high[(pt_mins[i], pt_maxs[i])][i_cent])
+                g_syst_vs_pt_no_br.SetPointEYlow(i, uncs_no_br_low[(pt_mins[i], pt_maxs[i])][i_cent])
+                g_syst_vs_pt_no_br.SetPointEYhigh(i, uncs_no_br_high[(pt_mins[i], pt_maxs[i])][i_cent])
         with ROOT.TFile.Open(config['output_name'], 'update') as f:
             h_stat_vs_pt.Write(f'h_stat_vs_pt_{cent_min}_{cent_max}')
             g_syst_vs_pt.Write(f'g_syst_vs_pt_{cent_min}_{cent_max}')
