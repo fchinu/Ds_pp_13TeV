@@ -33,6 +33,14 @@ def get_hist_from_graph(graph):
         hist.SetBinError(i + 1, 1.e-12)
     return hist
 
+def get_ratio_graphs(graph_1, graph_2, labels):
+    g_ratio = graph_1.Clone(f"g_ratio_{labels[0]}_over_{labels[1]}")
+    for i in range(g_ratio.GetN()):
+        g_ratio.SetPointY(i, graph_1.GetY()[i] / graph_2.GetY()[i])
+        # Correlated uncertainties
+        g_ratio.SetPointEYlow(i, abs(graph_1.GetErrorYlow(i) / graph_1.GetY()[i] - graph_2.GetErrorYlow(i) / graph_2.GetY()[i]) * g_ratio.GetY()[i])
+        g_ratio.SetPointEYhigh(i, abs(graph_1.GetErrorYhigh(i) / graph_1.GetY()[i] - graph_2.GetErrorYhigh(i) / graph_2.GetY()[i]) * g_ratio.GetY()[i])
+    return g_ratio
 
 def compare(config_path):
     with open(config_path, "r") as f:
@@ -141,6 +149,69 @@ def compare(config_path):
     c_ds.SaveAs(f"{cfg['output_dir']}/compare_fc_data_driven_ds.pdf")
     c_dp.SaveAs(f"{cfg['output_dir']}/compare_fc_data_driven_dp.pdf")
 
+    c_ratio = ROOT.TCanvas("c_ratio", "c_ratio", 2400, 2400)
+    c_ratio.Divide(3, 3, 0.01, 0.01)
+    
+    cent_text = ROOT.TLatex()
+    cent_text.SetNDC()
+    cent_text.SetTextSize(0.05)
+    cent_text.SetTextFont(42)
+
+
+    histos_dd = []
+    legs_ratio = []
+    for i_cent, (cent_min, cent_max) in enumerate(zip(cent_mins, cent_maxs)):
+        c_ratio.cd(i_cent + 1).DrawFrame(0, 0, 24, 2, "; #it{p}_{T} (GeV/#it{c}); D_{s}^{+}/D^{+} prompt fraction ratio")
+        # cent_text.DrawLatex(0.6, 0.5, f"{cent_min}#minus{cent_max}%")
+        # try:
+        with ROOT.TFile.Open(str(files_dd_ds[i_cent])) as f_dd:
+            h_dd_ds = f_dd.Get(f"hRawFracPrompt_cent_{cent_min}_{cent_max}")
+            if (cent_min, cent_max) == (80, 90) or (cent_min, cent_max) == (70, 80):
+                # exclude last point
+                h_dd_ds.SetBinContent(h_dd_ds.GetNbinsX(), 1.e12)
+            h_dd_ds.SetMarkerStyle(ROOT.kOpenCircle)
+            h_dd_ds.SetMarkerColor(ROOT.kRed)
+            h_dd_ds.SetLineColor(ROOT.kRed)
+        with ROOT.TFile.Open(str(files_dd_dp[i_cent])) as f_dd:
+            h_dd_dp = f_dd.Get(f"hRawFracPrompt_cent_{cent_min}_{cent_max}")
+            if (cent_min, cent_max) == (80, 90) or (cent_min, cent_max) == (70, 80):
+                # exclude last point
+                h_dd_dp.SetBinContent(h_dd_dp.GetNbinsX(), 1.e12)
+            h_dd_dp.SetMarkerStyle(ROOT.kOpenCircle)
+            h_dd_dp.SetMarkerColor(ROOT.kRed)
+            h_dd_dp.SetLineColor(ROOT.kRed)
+        with ROOT.TFile.Open(str(files_fc[i_cent])) as f_fc:
+            g_fc_ds = f_fc.Get("DsPrompt_RawFraction")
+            g_fc_ds.SetMarkerStyle(ROOT.kFullCircle)
+            g_fc_ds.SetMarkerColor(ROOT.kAzure - 3)
+            g_fc_ds.SetLineColor(ROOT.kAzure - 3)
+            g_fc_ds.SetFillColorAlpha(ROOT.kAzure - 3, 0.3)
+            g_fc_ds.SetFillStyle(1001)
+            g_fc_dp = f_fc.Get("DplusPrompt_RawFraction")
+            g_fc_dp.SetMarkerStyle(ROOT.kFullCircle)
+            g_fc_dp.SetMarkerColor(ROOT.kAzure - 3)
+            g_fc_dp.SetLineColor(ROOT.kAzure - 3)
+            g_fc_dp.SetFillColorAlpha(ROOT.kAzure - 3, 0.3)
+            g_fc_dp.SetFillStyle(1001)
+        g_ratio_fc = get_ratio_graphs(g_fc_ds, g_fc_dp, ["Ds FC", "Dp FC"])
+        histos_dd.append(h_dd_ds.Clone(f"h_ratio_dd_cent_{cent_min}_{cent_max}"))
+        histos_dd[-1].Divide(h_dd_dp)
+        if (cent_min, cent_max) == (80, 90) or (cent_min, cent_max) == (70, 80):
+            # exclude last point
+            histos_dd[-1].SetBinContent(histos_dd[-1].GetNbinsX(), 1.e12)
+
+        g_ratio_fc.Draw("E2 SAME")
+        histos_dd[-1].Draw("SAME")
+
+        legs_ratio.append(ROOT.TLegend(0.4, 0.3, 0.8, 0.45))
+        legs_ratio[-1].SetBorderSize(0)
+        legs_ratio[-1].SetFillStyle(0)
+        legs_ratio[-1].SetTextSize(0.05)
+        legs_ratio[-1].SetHeader(f"{cent_min}#minus{cent_max}%")
+        legs_ratio[-1].AddEntry(histos_dd[-1], f"Data-driven", "pl")
+        legs_ratio[-1].AddEntry(g_ratio_fc, f"FC method", "lf")
+        legs_ratio[-1].Draw()
+    c_ratio.SaveAs(f"{cfg['output_dir']}/compare_fc_data_driven_ratio.pdf")
 
 
 if __name__ == "__main__":
