@@ -1,0 +1,9 @@
+# For correlated background template definition (no centrality/multiplicity dependence)
+mass: 
+    axisnum: 0
+    name: 'inv_mass'
+pt: 
+    axisnum: 1
+    min: [1, 2, 4, 6, 8, 12]
+    max: [2, 4, 6, 8, 12, 24]
+    name: 'fPt'

@@ -1,0 +1,29 @@
+inputs:
+  names: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets//MC/Train512716/AnalysisResults_LHC25a5_0.root # string or list of strings
+  sparses: [
+    hf-task-ds/Data/hSparseMass,
+    hf-task-ds/MC/Ds/Prompt/hSparseMass,
+    hf-task-ds/MC/Ds/NonPrompt/hSparseMass,
+    hf-task-ds/MC/Dplus/Prompt/hSparseMass,
+    hf-task-ds/MC/Dplus/NonPrompt/hSparseMass,
+    hf-task-ds/MC/Dplus/Bkg/hSparseMass
+  ]
+  is_preprocessed: false
+  event_histogram: eventselection-run3/luminosity/hCounterTVXafterBCcuts
+  collision_histogram: hf-candidate-creator-3prong/hCollisionsCentOcc
+  
+  cutset: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/configs/cutset_pp13TeV_no_mult_no_bdt_MC.yml
+
+max_workers: 10
+
+output:
+  directory: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/MC/LHC25a5/wo_bdt
+  file_names: [
+    data.root,
+    ds_prompt.root,
+    ds_nonprompt.root,
+    dplus_prompt.root,
+    dplus_nonprompt.root,
+    dplus_bkg.root
+  ]
+
