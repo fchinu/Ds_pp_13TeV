@@ -1,0 +1,47 @@
+inputs:
+  sparse:
+    file_names: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Preprocess/mc_reweighted
+    is_preprocessed: True
+    axis_pt_gen: 0
+    axis_ptb_gen: 4
+    axis_npv_gen: 2
+    axis_pt_reco: 1
+    axis_ptb_reco: 7
+    axis_npv_reco: 6
+    axis_cent_gen: 3
+    axes_bdt: [3, 4, 5] # BDT axes
+  task_name: 'hf-task-ds' #['hf-task-ds', 'hf-task-ds-WithNPV']
+  cutset: "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Efficiency/efficiency/default/cutset.yml"
+  apply_cent_sel: True
+
+weights:
+  npv:
+    apply: False
+    file_name: '/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Efficiency/VsMult/weights_LHC24h1_FT0M.root'
+    reweight_on_data_events: False # To apply weights for datasets with different sizes
+    data_analysis_results: [
+      '/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Ds_pp_run3_ml/Data/Train279067/AnalysisResults_LHC22o_pass7.root',
+      [
+        '/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Ds_pp_run3_ml/Data/Train290606/AnalysisResults_LHC23_pass4_001.root',
+        '/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Ds_pp_run3_ml/Data/Train290606/AnalysisResults_LHC23_pass4_002.root',
+        '/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Ds_pp_run3_ml/Data/Train290606/AnalysisResults_LHC23_pass4_003.root',
+        '/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Ds_pp_run3_ml/Data/Train290606/AnalysisResults_LHC23_pass4_004.root',
+        '/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Ds_pp_run3_ml/Data/Train290606/AnalysisResults_LHC23_pass4_005.root',
+        '/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Ds_pp_run3_ml/Data/Train290606/AnalysisResults_LHC23_pass4_006.root',
+        '/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Ds_pp_run3_ml/Data/Train290606/AnalysisResults_LHC23_pass4_007.root'
+      ]
+    ]
+  pt:
+    apply: True
+    file_name: '/home/fchinu/Run3/Ds_Dp_ratio_PbPb/PtWeightsPbPb/ptweights_tamu.root'
+    base_hist_name: 
+      Ds: 
+        Prompt: 'hist_ds_weights_tamu_*'
+        NonPrompt: 'hist_bs_weights_tamu_*' # not exact, it should be a mixture 50%-50% of B and Bs
+      Dplus: 
+        Prompt: 'hist_d_weights_tamu_*'
+        NonPrompt: 'hist_b_weights_tamu_*'
+
+verbose: False
+output_dir: "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Efficiency/efficiency/default"
+suffix: 'LHC25a5' #['FT0M', 'NTracksPV']

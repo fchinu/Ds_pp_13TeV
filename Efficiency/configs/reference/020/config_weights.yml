@@ -1,0 +1,17 @@
+particles: ["Ds", "Dplus"]
+origins: ["Prompt", "NonPrompt"]
+
+inputs:
+  mc: "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/MC/Train512716/AnalysisResults_LHC25a5_0.root"
+  data: "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Datasets/Data/Train530885/AnalysisResults_LHC23_pass4_0.root"
+  task_names: ["hf-task-ds"]
+
+  histos_names: ["hNPvContribCands"] # , "hNPvContribCandsInSignalRegionDs", "hNPvContribCandsInSignalRegionDplus"
+  histos_names_as_data_only: ["hNPvContribAll"] # We do not save the histogram for the different particle species (as it is the same for all)
+
+  cutset: "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Efficiency/efficiency/test/cutset.yml"
+
+
+output:
+  directory: "/home/fchinu/Run3/Ds_pp_13TeV/Efficiency/VsMult"
+  suffix: ["LHC24d3b_new_model_swap_prongs"]
