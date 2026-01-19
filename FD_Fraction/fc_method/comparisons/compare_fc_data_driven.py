@@ -15,22 +15,17 @@ ROOT.gStyle.SetLabelSize(0.05, "XYZ")
 ROOT.gStyle.SetTitleOffset(1.3, "Y")
 ROOT.gStyle.SetTitleOffset(1.0, "X")
 
-def get_hist_from_graph(graph):
+def get_hist_from_graph(graph, name="hist_from_graph"):
     """Convert a TGraphErrors to a TH1D histogram."""
     n_points = graph.GetN()
     edges = [graph.GetX()[i] - graph.GetErrorX(i) for i in range(n_points)]
     edges += [graph.GetX()[n_points - 1] + graph.GetErrorX(n_points - 1)]
     edges = np.asarray(edges, "d")
-    hist = ROOT.TH1D(
-        "hist_from_graph",
-        "hist_from_graph",
-        n_points,
-        edges
-    )
-    for i in range(n_points):
-        y = graph.GetY()[i]
-        hist.SetBinContent(i + 1, y)
-        hist.SetBinError(i + 1, 1.e-12)
+    hist = ROOT.TH1D(name, name, n_points, edges)
+    for ipt in range(n_points):
+        y = graph.GetY()[ipt]
+        hist.SetBinContent(ipt + 1, y)
+        hist.SetBinError(ipt + 1, 1.e-12)
     return hist
 
 def get_ratio_graphs(graph_1, graph_2, labels):
@@ -42,6 +37,21 @@ def get_ratio_graphs(graph_1, graph_2, labels):
         g_ratio.SetPointEYhigh(i, abs(graph_1.GetErrorYhigh(i) / graph_1.GetY()[i] - graph_2.GetErrorYhigh(i) / graph_2.GetY()[i]) * g_ratio.GetY()[i])
     return g_ratio
 
+def get_graph_from_hist(hist, name="graph_from_hist"):
+    """Convert TH1D histogram into TGraphAsymmErrors"""
+    n_points = hist.GetNbinsX()
+    graph = ROOT.TGraphAsymmError(n_points)
+    graph.SetName(name)
+    for ipt in range(n_points):
+        pt_cent = hist.GetBinCenter(ipt+1)
+        pt_unc = hist.GetBinWidth(ipt+1)/4
+        content = hist.GetBinContent(ipt+1)
+        error = hist.GetBinError(ipt+1)
+        graph.SetPoint(ipt, pt_cent, content)
+        graph.SetPointError(ipt, pt_unc, pt_unc, error, error)
+
+    return graph
+
 def compare(config_path):
     with open(config_path, "r") as f:
         cfg = yaml.safe_load(f)
@@ -52,7 +62,9 @@ def compare(config_path):
     cent_mins = cfg["inputs"]["cent"]["mins"]
     cent_maxs = cfg["inputs"]["cent"]["maxs"]
     
-    
+    with open("../../../Systematics/database_systematics_pbpb.yml", "r") as sys_db:
+        cfg_sys = yaml.safe_load(sys_db)
+
     c_ds = ROOT.TCanvas("c_ds", "c_ds", 2400, 2400)
     c_ds.Divide(3, 3, 0.01, 0.01)
     
@@ -72,7 +84,9 @@ def compare(config_path):
                 if (cent_min, cent_max) == (80, 90) or (cent_min, cent_max) == (70, 80):
                     # exclude last point
                     h_dd.SetBinContent(h_dd.GetNbinsX(), 1.e12)
-
+                elif (cent_min, cent_max) == (0, 10) or (cent_min, cent_max) == (10, 20):
+                    # exclude first point
+                    h_dd.SetBinContent(1., 1.e12)
                 h_dd.SetMarkerStyle(ROOT.kOpenCircle)
                 h_dd.SetMarkerColor(ROOT.kRed)
                 h_dd.SetLineColor(ROOT.kRed)
@@ -121,6 +135,9 @@ def compare(config_path):
             if (cent_min, cent_max) == (80, 90) or (cent_min, cent_max) == (70, 80):
                 # exclude last point
                 h_dd.SetBinContent(h_dd.GetNbinsX(), 1.e12)
+            elif (cent_min, cent_max) == (0, 10) or (cent_min, cent_max) == (10, 20):
+                # exclude first point
+                h_dd.SetBinContent(1., 1.e12)
             h_dd.SetMarkerStyle(ROOT.kOpenCircle)
             h_dd.SetMarkerColor(ROOT.kRed)
             h_dd.SetLineColor(ROOT.kRed)
@@ -157,8 +174,7 @@ def compare(config_path):
     cent_text.SetTextSize(0.05)
     cent_text.SetTextFont(42)
 
-
-    histos_dd = []
+    histos_dd, graphs_dd = [], []
     legs_ratio = []
     for i_cent, (cent_min, cent_max) in enumerate(zip(cent_mins, cent_maxs)):
         c_ratio.cd(i_cent + 1).DrawFrame(0, 0, 24, 2, "; #it{p}_{T} (GeV/#it{c}); D_{s}^{+}/D^{+} prompt fraction ratio")
@@ -199,8 +215,22 @@ def compare(config_path):
         if (cent_min, cent_max) == (80, 90) or (cent_min, cent_max) == (70, 80):
             # exclude last point
             histos_dd[-1].SetBinContent(histos_dd[-1].GetNbinsX(), 1.e12)
+        elif (cent_min, cent_max) == (0, 10) or (cent_min, cent_max) == (10, 20):
+            # exclude first point
+            histos_dd[-1].SetBinContent(1., 1.e12)
+        graphs_dd.append(get_graph_from_hist(histos_dd[-1]), f"g_ratio_dd_cent_{cent_min}_{cent_max}")
+        for ipt in range(graphs_dd[-1].GetNbinsX()):
+            ratio = graphs_dd[-1].GetPointY(ipt)
+            pt_unc = graphs_dd[-1].GetErrorXlow(ipt)
+            graphs_dd[-1].SetPointError(ipt, pt_unc, pt_unc,
+                                        ratio * cfg_sys["systematics"][f"cent_{cent_min}_{cent_max}"]["np_frac"][ipt],
+                                        ratio * cfg_sys["systematics"][f"cent_{cent_min}_{cent_max}"]["np_frac"][ipt])
+        graphs_dd[-1].SetFillStyle(0)
+        graphs_dd[-1].SetLineColor(ROOT.kRed)
+        graphs_dd[-1].SetLineWidth(2)
 
         g_ratio_fc.Draw("E2 SAME")
+        graphs_dd[-1].Draw("2")
         histos_dd[-1].Draw("SAME")
 
         legs_ratio.append(ROOT.TLegend(0.4, 0.3, 0.8, 0.45))
