@@ -1,0 +1,30 @@
+mb_files:
+  ds: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/merged_low_high_pt/Fractions/Ds/CutVarDs_pp13TeV_MB.root
+  dplus: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/merged_low_high_pt/Fractions/Dplus/CutVarDplus_pp13TeV_MB.root
+fc_files:
+  "0_10": /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/DsPromptNonPrompt_Yield_pp5TeV_Run2_010_tsallis.root
+  "10_20": /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/fc_method/DsPromptNonPrompt_Yield_pp5TeV_Run2_1020_tsallis.root
+
+cent:
+  mins: [0, 10]
+  maxs: [10, 20]
+
+swap_with_mb:
+  ds:
+    "0_10": [[1, 2]]
+    "10_20": [[1, 2]]
+  dplus: 
+    "0_10": [[1, 2]]
+    "10_20": [[1, 2]]
+
+swap_with_fc:
+  ds:
+    "0_10": [[1, 2]]
+    "10_20": [[1, 2]]
+  dplus: 
+    "0_10": [[1, 2]]
+    "10_20": [[1, 2]]
+
+output:
+  ds: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/merged_low_high_pt/Fractions/Ds/mix_fc/CutVarDs_pp13TeV  # no extension
+  dplus: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/merged_low_high_pt/Fractions/Dplus/mix_fc/CutVarDplus_pp13TeV  # no extension
