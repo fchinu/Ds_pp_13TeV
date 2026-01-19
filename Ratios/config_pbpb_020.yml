@@ -1,14 +1,18 @@
 inputs:
   files:
-    raw_yields: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Projections_RawYields/data/norm_vars/RawYields/mass_fits.root
-    eff: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Efficiency/efficiency/LHC25a5_norm_vars/efficiency_LHC25a5_norm_vars.root
-    frac_ds: [null, null, null, null]
-    frac_dp: [null, null, null, null]
+    raw_yields: Projections_RawYields/data/doublecb/RawYields/mass_fits.root
+    eff: Efficiency/efficiency/default/efficiency_LHC25a5.root
+    frac_ds: [
+      FD_Fraction/data_driven/merged_low_high_pt/Fractions/Ds/mix_fc/CutVarDs_pp13TeV_0_10.root,
+      FD_Fraction/data_driven/merged_low_high_pt/Fractions/Ds/mix_fc/CutVarDs_pp13TeV_10_20.root]
+    frac_dp: [
+      FD_Fraction/data_driven/merged_low_high_pt/Fractions/Dplus/mix_fc/CutVarDplus_pp13TeV_0_10.root,
+      FD_Fraction/data_driven/merged_low_high_pt/Fractions/Dplus/mix_fc/CutVarDplus_pp13TeV_10_20.root]
   histo_names:
     raw_yields_ds: ["h_raw_yields_ds_0_10", "h_raw_yields_ds_10_20"]
     raw_yields_dp: ["h_raw_yields_dplus_0_10", "h_raw_yields_dplus_10_20"]
-    eff_ds: ["eff_DsPrompt_cent_0_20", "eff_DsPrompt_cent_0_20"] #not enough MC to do cent dependent, assume to be the same
-    eff_dp: ["eff_DplusPrompt_cent_0_20", "eff_DplusPrompt_cent_0_20"] #not enough MC to do cent dependent, assume to be the same
+    eff_ds: ["eff_DsPrompt_cent_0_10", "eff_DsPrompt_cent_10_20"] #not enough MC to do cent dependent, assume to be the same
+    eff_dp: ["eff_DplusPrompt_cent_0_10", "eff_DplusPrompt_cent_10_20"] #not enough MC to do cent dependent, assume to be the same
 
 centrality:
   mins: [0, 10]
@@ -22,4 +26,4 @@ br:
   ds_to_phipi_to_kkpi: 0.0225
   dplus_to_phipi_to_kkpi: 0.00269
 
-output_file: /home/fchinu/Run3/Ds_Dp_ratio_PbPb/Ratios/ds_over_dplus_ratios_020_norm.root
+output_file: Ratios/ds_over_dplus_ratios_020_norm.root
