@@ -74,16 +74,24 @@ def draw_graphs(graph_stat, graph_syst, c=ROOT.kBlack, s=1., m=ROOT.kFullCircle)
     graph_stat.Draw("pz, same")
     graph_syst.Draw("pz2, same")
 
+
 def draw_alice_pbpb(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
-    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Ratios/ds_over_dplus_ratios_020_norm.root") as infile:
-        graph_stat_0_20 = infile.Get(f"g_ratio_dndeta_{pt_min*10:.0f}_{pt_max*10:.0f}")
-    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Ratios/ds_over_dplus_ratios_5090_norm.root") as infile:
-        graph_stat_50_90 = infile.Get(f"g_ratio_dndeta_{pt_min*10:.0f}_{pt_max*10:.0f}")
+    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Ratios/ratio_w_syst.root") as infile:
+        graph_stat_0_20 = infile.Get(f"g_stat_{pt_min*10:.0f}_{pt_max*10:.0f}")
+        graph_syst_0_20 = infile.Get(f"g_syst_no_br_{pt_min*10:.0f}_{pt_max*10:.0f}")
+    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/Data/ds_over_dplus_ratios_2050.root") as infile:
+        graph_stat_20_50 = infile.Get(f"g_stat_{pt_min*10:.0f}_{pt_max*10:.0f}")
+        graph_syst_20_50 = infile.Get(f"g_syst_no_br_{pt_min*10:.0f}_{pt_max*10:.0f}")
+    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/Data/ds_over_dplus_ratios_5090.root") as infile:
+        graph_stat_50_90 = infile.Get(f"g_stat_{pt_min*10:.0f}_{pt_max*10:.0f}")
+        graph_syst_50_90 = infile.Get(f"g_syst_no_br_{pt_min*10:.0f}_{pt_max*10:.0f}")
 
     if (pt_min, pt_max) == (12, 24):
         #remove first two points for 50-90%
         graph_stat_50_90.SetPoint(2, 0, 1.e9)
         graph_stat_50_90.SetPoint(3, 0, 1.e9)
+        graph_syst_50_90.SetPoint(2, 0, 1.e9)
+        graph_syst_50_90.SetPoint(3, 0, 1.e9)
 
     graph_stat_0_20.SetMarkerStyle(m)
     graph_stat_0_20.SetMarkerSize(s)
@@ -91,19 +99,47 @@ def draw_alice_pbpb(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
     graph_stat_0_20.SetLineColor(c)
     graph_stat_0_20.SetLineWidth(1)
     graph_stat_0_20.Draw("pz, same")
+    graph_syst_0_20.SetMarkerStyle(m)
+    graph_syst_0_20.SetMarkerSize(s)
+    graph_syst_0_20.SetMarkerColor(c)
+    graph_syst_0_20.SetLineColor(c)
+    graph_syst_0_20.SetLineWidth(1)
+    graph_syst_0_20.SetFillStyle(0)
+    graph_syst_0_20.Draw("pz2, same")
+    graph_stat_20_50.SetMarkerStyle(m)
+    graph_stat_20_50.SetMarkerSize(s)
+    graph_stat_20_50.SetMarkerColor(c)
+    graph_stat_20_50.SetLineColor(c)
+    graph_stat_20_50.SetLineWidth(1)
+    graph_stat_20_50.Draw("pz, same")
+    graph_syst_20_50.SetMarkerStyle(m)
+    graph_syst_20_50.SetMarkerSize(s)
+    graph_syst_20_50.SetMarkerColor(c)
+    graph_syst_20_50.SetLineColor(c)
+    graph_syst_20_50.SetLineWidth(1)
+    graph_syst_20_50.SetFillStyle(0)
+    graph_syst_20_50.Draw("pz2, same")
     graph_stat_50_90.SetMarkerStyle(m)
     graph_stat_50_90.SetMarkerSize(s)
     graph_stat_50_90.SetMarkerColor(c)
     graph_stat_50_90.SetLineColor(c)
     graph_stat_50_90.SetLineWidth(1)
     graph_stat_50_90.Draw("pz, same")
+    graph_syst_50_90.SetMarkerStyle(m)
+    graph_syst_50_90.SetMarkerSize(s)
+    graph_syst_50_90.SetMarkerColor(c)
+    graph_syst_50_90.SetLineColor(c)
+    graph_syst_50_90.SetLineWidth(1)
+    graph_syst_50_90.SetFillStyle(0)
+    graph_syst_50_90.Draw("pz2, same")
     return graph_stat_0_20#, graph_stat_50_90
 
 
+
 def draw_alice_pp(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
-    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/Ratios/VsMult/w_syst/ratio_with_syst.root") as infile:
+    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/Ratios/VsMult/w_syst/ratio_w_syst.root") as infile:
         graph_stat = infile.Get(f"g_stat_{pt_min*10:.0f}_{pt_max*10:.0f}")
-        graph_syst = infile.Get(f"g_syst_{pt_min*10:.0f}_{pt_max*10:.0f}")
+        graph_syst = infile.Get(f"g_syst_no_br_{pt_min*10:.0f}_{pt_max*10:.0f}")
     
     #set x unc. for the systematic box
     for i in range(graph_syst.GetN()):
@@ -508,6 +544,11 @@ def main(do_pythia, do_epos):
     pt_text.SetTextFont(43)
     pt_text.SetTextSize(40)
 
+    pp_unc_text = ROOT.TLatex(0.6, 0.15, '')
+    pp_unc_text.SetNDC()
+    pp_unc_text.SetTextFont(43)
+    pp_unc_text.SetTextSize(40)
+
     c = ROOT.TCanvas("canvas", "canvas", 2400, 1600)
     c.Divide(3, 2, 0.000, 0.000)
     # Set margins
@@ -527,7 +568,7 @@ def main(do_pythia, do_epos):
         results[i] = functions[i](1, 2, c=colors_used[i], s=sizes_used[i], m=markers_used[i])
 
     x, y = to_pad_coordinates(0.05, 0.9)
-    alice_text = ROOT.TLatex(x, y, 'ALICE Work in Progress')
+    alice_text = ROOT.TLatex(x, y, 'ALICE Preliminary')
     alice_text.SetNDC()
     alice_text.SetTextFont(43)
     alice_text.SetTextSize(50)
@@ -693,17 +734,20 @@ def main(do_pythia, do_epos):
     x, y = to_pad_coordinates(0.05, 0.9)
     pt_text.DrawLatexNDC(x, y, '12#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[.5]{24} GeV/#it{c}')
 
+    x, y = to_pad_coordinates(0.05, 0.1)
+    pp_unc_text.DrawLatexNDC(x, y, 'pp uncertainty on #kern[-0.05]{#it{x}-axis scaled by 5}')
+
     ROOT.gPad.RedrawAxis()
 
     if do_pythia and do_epos:
-        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_2023_combined.pdf")
-        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_2023_combined.root")
+        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_combined.pdf")
+        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_combined.root")
     elif do_pythia:
-        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_2023_pythia.pdf")
-        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_2023_pythia.root")
+        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_pythia.pdf")
+        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_pythia.root")
     elif do_epos:
-        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_2023_epos.pdf")
-        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_2023_epos.root")
+        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_epos.pdf")
+        c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_vs_pred_epos.root")
 
 
 if __name__ == '__main__':
@@ -713,7 +757,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if not args.pythia and not args.epos:
-        print("Please specify at least one of --pythia or --epos")
-        exit(1)
+        # Run all combinations
+        main(True, True)
+        main(True, False)
+        main(False, True)
 
     main(args.pythia, args.epos)

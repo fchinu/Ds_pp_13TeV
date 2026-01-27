@@ -50,6 +50,32 @@ def draw_alice_pbpb(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
         graph_syst_50_90.SetPoint(2, 0, 1.e9)
         graph_syst_50_90.SetPoint(3, 0, 1.e9)
 
+
+    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/Figures/Ratio/VsMult/ds_over_dplus_vs_mult_run2.root") as infile:
+        graph_stat_run2 = infile.Get(f"pt_{pt_min}_{pt_max}/graph_stat_pbpb2018_pt{pt_min}_{pt_max}")
+        graph_syst_run2 = infile.Get(f"pt_{pt_min}_{pt_max}/graph_syst_pbpb2018_pt{pt_min}_{pt_max}")
+    try:
+        graph_stat_run2.SetMarkerStyle(m)
+        graph_stat_run2.SetMarkerSize(s)
+        graph_stat_run2.SetMarkerColor(ROOT.kRed)
+        graph_stat_run2.SetLineColor(ROOT.kRed)
+        graph_stat_run2.SetLineWidth(1)
+        graph_syst_run2.SetMarkerStyle(m)
+        graph_syst_run2.SetMarkerSize(s)
+        graph_syst_run2.SetMarkerColor(ROOT.kRed)
+        graph_syst_run2.SetLineColor(ROOT.kRed)
+        graph_syst_run2.SetLineWidth(1)
+        graph_syst_run2.SetFillStyle(0)
+        graph_stat_run2.Draw("pz, same")
+        graph_syst_run2.Draw("pz2, same")
+    except:
+        pass
+
+    if (pt_min, pt_max) == (12, 24):
+        #remove first two points for 50-90%
+        graph_stat_50_90.SetPoint(2, 0, 1.e9)
+        graph_stat_50_90.SetPoint(3, 0, 1.e9)
+
     graph_stat_0_20.SetMarkerStyle(m)
     graph_stat_0_20.SetMarkerSize(s)
     graph_stat_0_20.SetMarkerColor(c)
@@ -93,9 +119,9 @@ def draw_alice_pbpb(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
 
 
 def draw_alice_pp(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
-    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/Ratios/VsMult/w_syst/ratio_w_syst.root") as infile:
+    with ROOT.TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/Ratios/VsMult/w_syst/ratio_with_syst.root") as infile:
         graph_stat = infile.Get(f"g_stat_{pt_min*10:.0f}_{pt_max*10:.0f}")
-        graph_syst = infile.Get(f"g_syst_no_br_{pt_min*10:.0f}_{pt_max*10:.0f}")
+        graph_syst = infile.Get(f"g_syst_{pt_min*10:.0f}_{pt_max*10:.0f}")
     
     #set x unc. for the systematic box
     for i in range(graph_syst.GetN()):
@@ -161,11 +187,6 @@ if __name__ == '__main__':
     pp_unc_text.SetTextFont(43)
     pp_unc_text.SetTextSize(40)
 
-    br_unc_text = ROOT.TLatex(0.6, 0.15, '')
-    br_unc_text.SetNDC()
-    br_unc_text.SetTextFont(43)
-    br_unc_text.SetTextSize(40)
-
     c = ROOT.TCanvas("canvas", "canvas", 2400, 1600)
     c.Divide(3, 2, 0.000, 0.000)
     # Set margins
@@ -184,7 +205,7 @@ if __name__ == '__main__':
     alice_pbpb = draw_alice_pbpb(1, 2, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
 
     x, y = to_pad_coordinates(0.05, 0.9)
-    alice_text = ROOT.TLatex(x, y, 'ALICE Preliminary')
+    alice_text = ROOT.TLatex(x, y, 'ALICE Work in Progress')
     alice_text.SetNDC()
     alice_text.SetTextFont(43)
     alice_text.SetTextSize(50)
@@ -213,11 +234,6 @@ if __name__ == '__main__':
 
     x, y = to_pad_coordinates(0.05, 0.9)
     pt_text.DrawLatexNDC(x, y, '4#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{6} GeV/#it{c}')
-
-    x, y = to_pad_coordinates(0.05, 0.1)
-    br_unc_text.DrawLatexNDC(x, y, '#lower[-0.03]{^{+4.0}}')
-    br_unc_text.DrawLatexNDC(x, y, '_{#minus3.8}')
-    br_unc_text.DrawLatexNDC(x, y, '#kern[.12]{% BR uncertainty not shown}')
 
     ROOT.gPad.RedrawAxis()
 
@@ -278,5 +294,5 @@ if __name__ == '__main__':
 
     ROOT.gPad.RedrawAxis()
 
-    c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_alice.pdf")
-    c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_alice.root")
+    c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_alice_run2.pdf")
+    c.SaveAs("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Figures/Ratio/VsMult/ratio_alice_run2.root")
