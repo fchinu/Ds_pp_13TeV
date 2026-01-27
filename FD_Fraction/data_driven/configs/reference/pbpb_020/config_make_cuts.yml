@@ -1,0 +1,19 @@
+var_key: ['ml_output_fd']
+var_tag: ['outFD']
+step_variation:
+  - "1.0": 0.03
+    "2.0": 0.03
+    "4.0": 0.03
+    "6.0": 0.03
+    "8.0": 0.04
+    "12.0": 0.04
+num_step_pos: 20
+num_step_pos_half_step: 0
+num_step_neg: 0
+num_step_neg_half_step: 0
+edge_to_vary: ['min']
+
+in_dir: "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/merged_low_high_pt/"
+cut_file_central: "cutset.yml"
+out_dir: "/home/fchinu/Run3/Ds_Dp_ratio_PbPb/FD_Fraction/data_driven/merged_low_high_pt/configs/cutsets/"
+out_file_tag: "cutset_ML_Prompt"

@@ -10,12 +10,13 @@ import numpy as np
 
 sys.path.append(str(Path(__file__).parent.parent.parent.parent / "FD_Fraction" / "data_driven"))
 sys.path.append(str(Path(__file__).parent.parent.parent.parent / "utils"))
-from plot_utils import get_discrete_from_continuous_matplotlib_palette  # pylint: disable=wrong-import-position,import-error
+from plot_utils import get_discrete_from_continuous_matplotlib_palette, get_discrete_matplotlib_palette  # pylint: disable=wrong-import-position,import-error
 
 # pylint: disable=no-member # ROOT module members
 
-colors, _ = get_discrete_from_continuous_matplotlib_palette("magma", 60)
-colors = colors[5::]  # Take some sparse colors
+colors, c_idx_1 = get_discrete_matplotlib_palette("tab10")
+colors_ratio, c_idx_2 = get_discrete_from_continuous_matplotlib_palette("magma", 60)
+colors_ratio = colors_ratio[5::]  # Take some sparse colors
 
 ROOT.TH1.AddDirectory(False)
 
@@ -199,8 +200,8 @@ def dump_uncertainties(fracs, cfg): # pylint: disable=too-many-locals
             for i_trial, (trial, ratio_hist) in enumerate(ratios_all_comb.items()):
                 ratio_hist.SetLineWidth(2)
                 ratio_hist.SetMarkerStyle(ROOT.kFullCircle)
-                ratio_hist.SetLineColor(colors[i_trial])
-                ratio_hist.SetMarkerColor(colors[i_trial])
+                ratio_hist.SetLineColor(colors_ratio[i_trial])
+                ratio_hist.SetMarkerColor(colors_ratio[i_trial])
                 ratio_hist.Draw("same")
                 leg.AddEntry(ratio_hist, trial, "lp")
 
