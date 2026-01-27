@@ -1,0 +1,47 @@
+inputs:
+  cent_0_10: 
+    file: ds_over_dplus_ratios_020_norm.root
+    mult_bin: 0
+  cent_10_20:
+    file: ds_over_dplus_ratios_020_norm.root
+    mult_bin: 1
+  cent_20_30: 
+    file: ds_over_dplus_ratios_2050_norm.root
+    mult_bin: 0
+  cent_30_40: 
+    file: ds_over_dplus_ratios_2050_norm.root
+    mult_bin: 1
+  cent_40_50: 
+    file: ds_over_dplus_ratios_2050_norm.root
+    mult_bin: 2
+  cent_50_60: 
+    file: ds_over_dplus_ratios_5090_norm.root
+    mult_bin: 0
+  cent_60_70: 
+    file: ds_over_dplus_ratios_5090_norm.root
+    mult_bin: 1
+  cent_70_80: 
+    file: ds_over_dplus_ratios_5090_norm.root
+    mult_bin: 2
+  cent_80_90: 
+    file: ds_over_dplus_ratios_5090_norm.root
+    mult_bin: 3
+
+br:
+  ds_to_phipi_to_kkpi: 0.0225
+  dplus_to_phipi_to_kkpi: 0.00269
+
+extrap:
+  fit:
+    pt_max_ds: 8.
+    pt_max_dplus: 8.
+  main: tsallis_sim # tsallis, tsallis_sim, powlaw, or modelN where N should correspond to the index in the entry below
+  unc: [0.05, 0.05, 0.03, 0.03, 0.03, 0.03, 0.03, 0.05, 0.05]
+  sys_unc_db: ../Systematics/database_systematics_pbpb.yml
+
+models:
+  inputs: ["ds_dp_extrap_factors_pbpb_epos4hq.root"]
+  labels: ["EPOS4HQ"]
+
+output:
+  suffix: _pbpb

@@ -1,0 +1,42 @@
+inputs:
+  cent_0_1:
+    file: ds_over_dplus_ratios_pp.root
+    mult_bin: 0
+  cent_1_10:
+    file: ds_over_dplus_ratios_pp.root
+    mult_bin: 1
+  cent_10_30:
+    file: ds_over_dplus_ratios_pp.root
+    mult_bin: 2
+  cent_30_50:
+    file: ds_over_dplus_ratios_pp.root
+    mult_bin: 3
+  cent_50_70:
+    file: ds_over_dplus_ratios_pp.root
+    mult_bin: 4
+  cent_70_100:
+    file: ds_over_dplus_ratios_pp.root
+    mult_bin: 5
+
+br:
+  ds_to_phipi_to_kkpi: 0.0225
+  dplus_to_phipi_to_kkpi: 0.00269
+
+extrap:
+  fit:
+    pt_max_ds: 24.
+    pt_max_dplus: 24.
+  main: tsallis_sim # tsallis, tsallis_sim, powlaw, or modelN where N should correspond to the index in the entry below
+  unc: [0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02]
+  sys_unc_db: ../Systematics/database_systematics_pp.yml
+
+models:
+  inputs: ["ds_dp_extrap_factors_pp_monash.root",
+           "ds_dp_extrap_factors_pp_mode2.root",
+           "ds_dp_extrap_factors_pp_sccr.root"]
+  labels: ["PYTHIA8 Monash",
+           "PYTHIA8 CR-BLC Mode2",
+           "PYTHIA8 SC-CR"]
+
+output:
+  suffix: _pp
