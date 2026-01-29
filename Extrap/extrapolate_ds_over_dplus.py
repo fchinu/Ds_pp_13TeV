@@ -217,6 +217,8 @@ def extapolate(config_file_name):
     gsyst_br_ds_over_dp_ptint.SetNameTitle("gsyst_br_ds_over_dp_ptint", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5};#sigma(D_{s}^{#plus})/#sigma(D^{#plus})")
     gsyst_extrap_ds_over_dp_ptint = ROOT.TGraphAsymmErrors(1)
     gsyst_extrap_ds_over_dp_ptint.SetNameTitle("gsyst_extrap_ds_over_dp_ptint", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5};#sigma(D_{s}^{#plus})/#sigma(D^{#plus})")
+    gsyst_tot_nobr_ds_over_dp_ptint = ROOT.TGraphAsymmErrors(1)
+    gsyst_tot_nobr_ds_over_dp_ptint.SetNameTitle("gsyst_tot_nobr_ds_over_dp_ptint", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5};#sigma(D_{s}^{#plus})/#sigma(D^{#plus})")
     set_obj_style(gstat_ds_over_dp_vis, ROOT.kBlack)
     set_obj_style(gsyst_ds_over_dp_vis, ROOT.kBlack, 0, 0)
     set_obj_style(gsyst_br_ds_over_dp_vis, ROOT.kBlack, 0, 0)
@@ -224,6 +226,7 @@ def extapolate(config_file_name):
     set_obj_style(gsyst_ds_over_dp_ptint, ROOT.kRed+1, 0, 0)
     set_obj_style(gsyst_br_ds_over_dp_ptint, ROOT.kRed+1, 0, 0)
     set_obj_style(gsyst_extrap_ds_over_dp_ptint, ROOT.kRed+1, 0, 1000, 0.3)
+    set_obj_style(gsyst_tot_nobr_ds_over_dp_ptint, ROOT.kRed+1, 0, 0)
 
     max_mult = 1.
     for icent, cent in enumerate(config["inputs"]):
@@ -439,6 +442,11 @@ def extapolate(config_file_name):
         gsyst_extrap_ds_over_dp_ptint.SetPointError(icent, mult_unc_low*2, mult_unc_high*2, ratio_ptint_extrap * config["extrap"]["unc"][icent],
                                                     ratio_ptint_extrap * config["extrap"]["unc"][icent])
 
+        sys_tot_low = np.sqrt(sys_ratio_low_ptint_extrap**2 + ratio_ptint_extrap * config["extrap"]["unc"][icent]**2)
+        sys_tot_high = np.sqrt(sys_ratio_high_ptint_extrap**2 + ratio_ptint_extrap * config["extrap"]["unc"][icent]**2)
+        gsyst_tot_nobr_ds_over_dp_ptint.SetPoint(icent, mult_cent, ratio_ptint_extrap)
+        gsyst_tot_nobr_ds_over_dp_ptint.SetPointError(icent, mult_unc_low, mult_unc_high, sys_tot_low, sys_tot_high)
+
         # BR uncertainty overall normalisation, we put it separately
         br_unc_low = np.sqrt(db_sys["systematics"]["br"]["ds"]["low"]**2 + db_sys["systematics"]["br"]["dplus"]["high"]**2)
         br_unc_high = np.sqrt(db_sys["systematics"]["br"]["ds"]["high"]**2 + db_sys["systematics"]["br"]["dplus"]["low"]**2)
@@ -560,6 +568,7 @@ def extapolate(config_file_name):
     gsyst_ds_over_dp_ptint.Write()
     gsyst_extrap_ds_over_dp_ptint.Write()
     gstat_ds_over_dp_ptint.Write()
+    gsyst_tot_nobr_ds_over_dp_ptint.Write()
     outfile.Close()
 
 
