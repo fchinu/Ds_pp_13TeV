@@ -164,38 +164,70 @@ def get_cuts(cuts_config):
             If centrality selections are provided, they are included in the cuts.
     """
     if "cent" in cuts_config:
-        centrality_sels = cuts_config.pop("cent")
-        centrality_sels = [{
-            'varname': 'cent',
-            'axis': centrality_sels["axisnum"],
-            'min': min_cent,
-            'max': max_cent
-        } for min_cent, max_cent in zip(centrality_sels["min"], centrality_sels["max"])]
+        cent_cfg = cuts_config.pop("cent")
+        centrality_sels = [
+            {'varname': 'cent', 'axis': cent_cfg['axisnum'], 'min': mn, 'max': mx}
+            for mn, mx in zip(cent_cfg['min'], cent_cfg['max'])
+        ]
     else:
         centrality_sels = None
 
-    # Extract variable names and cuts from the config
-    var_names = list(cuts_config.keys())
-    var_names.remove('mass')
+    var_names = [v for v in cuts_config if v != 'mass']
+    cuts_list  = [cuts_config[v] for v in var_names]
+    axes       = [c['axisnum'] for c in cuts_list]
+    mins_list  = [c['min'] for c in cuts_list]
+    maxs_list  = [c['max'] for c in cuts_list]
 
-    cuts_list = [cuts_config[var] for var in var_names]
-    axes = [cut['axisnum'] for cut in cuts_list]
-    mins_list = [cut['min'] for cut in cuts_list]
-    maxs_list = [cut['max'] for cut in cuts_list]
+    # Check for list-of-lists (centrality-dependent cuts per pt bin)
+    has_cent_dependent = any(isinstance(mins[0], list) for mins in mins_list)
 
-    cuts = []
-    for (mins_var, maxs_var), axis, var_name in zip(zip(mins_list, maxs_list), axes, var_names):
-        cuts.append([
-            {'varname': var_name, 'min': min_var, 'max': max_var, 'axis': axis}
-            for min_var, max_var in zip(mins_var, maxs_var)
-        ])
-    cuts = [*zip(*cuts)]
+    if has_cent_dependent:
+        if not centrality_sels:
+            raise ValueError(
+                "Centrality selections must be provided when any cut is a list of lists."
+            )
+        n_cent = len(centrality_sels)
 
-    if centrality_sels:
-        cuts = [
-            (*cut, centrality_sel)
-            for cut, centrality_sel in product(cuts, centrality_sels)
+        per_var_per_cent = []
+        for var_name, axis, mins, maxs in zip(var_names, axes, mins_list, maxs_list):
+            if isinstance(mins[0], list):
+                assert len(mins) == n_cent, (
+                    f"'{var_name}' has {len(mins)} cent bins but {n_cent} were provided."
+                )
+                per_var_per_cent.append([
+                    [{'varname': var_name, 'min': mn, 'max': mx, 'axis': axis}
+                     for mn, mx in zip(mins_cent, maxs_cent)]
+                    for mins_cent, maxs_cent in zip(mins, maxs)
+                ])
+            else:
+                cut_list = [
+                    {'varname': var_name, 'min': mn, 'max': mx, 'axis': axis}
+                    for mn, mx in zip(mins, maxs)
+                ]
+                per_var_per_cent.append([cut_list] * n_cent)
+
+        cuts = []
+        for i_cent, cent_sel in enumerate(centrality_sels):
+            pt_cuts = list(zip(*[per_var_per_cent[v][i_cent] for v in range(len(var_names))]))
+            for cut_tuple in pt_cuts:
+                cuts.append((*cut_tuple, cent_sel))
+
+    else:
+        per_var = [
+            [{'varname': var_name, 'min': mn, 'max': mx, 'axis': axis}
+             for mn, mx in zip(mins, maxs)]
+            for var_name, axis, mins, maxs in zip(var_names, axes, mins_list, maxs_list)
         ]
+
+        pt_cuts = list(zip(*per_var))
+
+        if centrality_sels:
+            cuts = [
+                (*pt_cut, cent_sel)
+                for pt_cut, cent_sel in product(pt_cuts, centrality_sels)
+            ]
+        else:
+            cuts = pt_cuts
 
     return cuts
 
