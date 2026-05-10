@@ -175,7 +175,7 @@ def draw_halo(graph, s=1., m=ROOT.kFullCircle, c=ROOT.kBlack):
     graph.SetLineWidth(1)
     graph.Draw("pz, same")
 
-def draw_alice_pbpb(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
+def draw_alice_pbpb(pt_min, pt_max, c=ROOT.kBlack, s=3, m=ROOT.kOpenDiamond):
     with ROOT.TFile.Open("/home/fchinu/Run3/Ds_Dp_ratio_PbPb/Ratios/ratio_w_syst.root") as infile:
         graph_stat_0_20 = infile.Get(f"g_stat_{pt_min*10:.0f}_{pt_max*10:.0f}")
         graph_syst_0_20 = infile.Get(f"g_syst_no_br_{pt_min*10:.0f}_{pt_max*10:.0f}")
@@ -235,7 +235,7 @@ def draw_alice_pbpb(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
     return graph_stat_0_20#, graph_stat_50_90
 
 
-def draw_alice_pp(pt_min, pt_max, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle):
+def draw_alice_pp(pt_min, pt_max, c=ROOT.kBlack, s=3, m=ROOT.kOpenDiamond):
     with ROOT.TFile.Open("/home/fchinu/Run3/Ds_pp_13TeV/Ratios/VsMult/w_syst/ratio_w_syst.root") as infile:
         graph_stat = infile.Get(f"g_stat_{pt_min*10:.0f}_{pt_max*10:.0f}")
         graph_syst = infile.Get(f"g_syst_no_br_{pt_min*10:.0f}_{pt_max*10:.0f}")
@@ -310,21 +310,49 @@ if __name__ == '__main__':
     br_unc_text.SetTextSize(40)
 
     c = ROOT.TCanvas("canvas", "canvas", 2400, 1600)
-    c.Divide(3, 2, 0.000, 0.000)
-    # Set margins
-    for i_pad in range(1, 4):
-        pad = c.cd(i_pad)
-        pad.SetTopMargin(0.02)
-    for i_pad in range(4, 7):
-        pad = c.cd(i_pad)
-        pad.SetBottomMargin(0.16)
 
-    c.cd(1)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    lm = 0.2
+    rm = 0.03
+    tm = 0.03
+    bm = 0.21
+    l = 1 / (1 / (1-lm) + 1 + 1/(1-rm))
+    h = 1 / (1 / (1-tm) + 1/(1-bm))
+
+    c = ROOT.TCanvas("canvas", "canvas", 2400, 1600)
+    pads = []
+    # c.Divide(3, 2, 0.000, 0.000)
+    # Set margins
+    pads.append(ROOT.TPad(f"pad0", f"pad0", 0, h / (1-bm), l/(1-lm), 1.))
+    pads.append(ROOT.TPad(f"pad1", f"pad1", l/(1-lm), h / (1-bm), l/(1-lm) + l, 1.))
+    pads.append(ROOT.TPad(f"pad2", f"pad2", l/(1-lm) + l, h / (1-bm), l/(1-lm) + l + l/(1-rm), 1.))
+    pads.append(ROOT.TPad(f"pad3", f"pad3", 0, 0, l/(1-lm), h / (1-bm)))
+    pads.append(ROOT.TPad(f"pad4", f"pad4", l/(1-lm), 0, l/(1-lm) + l, h / (1-bm)))
+    pads.append(ROOT.TPad(f"pad5", f"pad5", l/(1-lm) + l, 0, l/(1-lm) + l + l/(1-rm), h / (1-bm)))
+    for i_pad in range(3):
+        pads[i_pad].SetTopMargin(tm)
+        pads[i_pad].SetBottomMargin(0.)
+        pads[i_pad].Draw()
+    for i_pad in range(3):
+        pads[i_pad + 3].SetBottomMargin(bm)
+        pads[i_pad + 3].SetTopMargin(0.)
+        pads[i_pad + 3].Draw()
+
+    for i in (0, 3):
+        pads[i].SetRightMargin(0.)
+        pads[i].SetLeftMargin(lm)
+    for i in (1, 4):
+        pads[i].SetLeftMargin(0.)
+        pads[i].SetRightMargin(0.)
+    for i in (2, 5):
+        pads[i].SetLeftMargin(0.)
+        pads[i].SetRightMargin(rm)
+
+    pads[0].cd()
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT;#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
     h_frame.GetYaxis().ChangeLabel(1, 1, 0)
 
-    alice_pp = draw_alice_pp(1, 2, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
-    alice_pbpb = draw_alice_pbpb(1, 2, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+    alice_pp = draw_alice_pp(1, 2, c=ROOT.kBlack, s=3, m=ROOT.kOpenDiamond)
+    alice_pbpb = draw_alice_pbpb(1, 2, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
 
     x, y = to_pad_coordinates(0.05, 0.9)
     alice_text = ROOT.TLatex(x, y, 'ALICE Preliminary')
@@ -353,20 +381,20 @@ if __name__ == '__main__':
     legend_lhcb_b.SetFillStyle(0)
     legend_lhcb_b.SetTextFont(43)
     legend_lhcb_b.SetTextSize(35)
-    legend_lhcb_b.AddEntry(graph_stat_lhcb_2_4_b, '#splitline{Pb#font[122]{-}p, #kern[-0.3]{#font[122]{-}4.3} < #kern[-0.3]{#it{y}} < #kern[-0.3]{#font[122]{-}2.8}}{Mult. estim.: #kern[-0.3]{#font[122]{-}4.8} < #kern[-0.3]{#it{#eta}} < #kern[-0.3]{#font[122]{-}2.0}}', 'pl')
+    legend_lhcb_b.AddEntry(graph_stat_lhcb_2_4_b, '#splitline{Pb#font[122]{-}p, #kern[-0.3]{#font[122]{-}4.3} < #kern[-0.3]{#it{y}} < #kern[-0.3]{#font[122]{-}2.8}}{Mult. estim.: #kern[-0.3]{#font[122]{-}4.8} < #kern[-0.3]{#it{#eta}} < #kern[-0.3]{#font[122]{-}2.0}}', 'p')
     legend_lhcb_b.Draw()
 
     ROOT.gPad.RedrawAxis()
 
-    c.cd(2)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    pads[1].cd()
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT;#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
     graph_stat_lhcb_2_4_f, graph_syst_lhcb_2_4_f = get_graphs_2()
-    draw_graphs(graph_stat_lhcb_2_4_f, graph_syst_lhcb_2_4_f, c=colors[7], s=4., m=ROOT.kFullDiamond)
+    draw_graphs(graph_stat_lhcb_2_4_b, graph_syst_lhcb_2_4_b, c=colors[0], s=2., m=ROOT.kOpenCrossX)
+    draw_graphs(graph_stat_lhcb_2_4_f, graph_syst_lhcb_2_4_f, c=colors[7], s=2., m=ROOT.kFullCrossX)
     graph_stat_lhcb_2_4_f_halo = graph_stat_lhcb_2_4_f.Clone("graph_stat_lhcb_2_4_f_halo")
-    draw_halo(graph_stat_lhcb_2_4_f_halo, s=4.3, m=ROOT.kOpenDiamond, c=ROOT.kRed+2)
-    draw_graphs(graph_stat_lhcb_2_4_b, graph_syst_lhcb_2_4_b, c=colors[6], s=4., m=ROOT.kOpenDiamond)
-    draw_alice_pp(2, 4, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
-    draw_alice_pbpb(2, 4, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+    draw_halo(graph_stat_lhcb_2_4_f_halo, s=2.2, m=ROOT.kOpenCrossX, c=ROOT.kRed+2)
+    draw_alice_pp(2, 4, c=ROOT.kBlack, s=3, m=ROOT.kOpenDiamond)
+    draw_alice_pbpb(2, 4, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
     #y_text.Draw()
     x, y = to_pad_coordinates(0.05, 0.9)
@@ -386,7 +414,7 @@ if __name__ == '__main__':
     legend_lhcb_f.SetFillStyle(0)
     legend_lhcb_f.SetTextFont(43)
     legend_lhcb_f.SetTextSize(35)
-    legend_lhcb_f.AddEntry(graph_stat_lhcb_2_4_f, '#splitline{p#font[122]{-}Pb, 1.8 < #kern[-0.3]{#it{y}} < 3.3}{Mult. estim.: 2.0 < #kern[-0.4]{#it{#eta}} < 4.8}', 'pl')
+    legend_lhcb_f.AddEntry(graph_stat_lhcb_2_4_f, '#splitline{p#font[122]{-}Pb, 1.8 < #kern[-0.3]{#it{y}} < 3.3}{Mult. estim.: 2.0 < #kern[-0.4]{#it{#eta}} < 4.8}', 'p')
     legend_lhcb_f.Draw()
 
     legend_lhcb_f_halo = ROOT.TLegend(x_min, y_min, x_max, y_max)
@@ -394,43 +422,49 @@ if __name__ == '__main__':
     legend_lhcb_f_halo.SetFillStyle(0)
     legend_lhcb_f_halo.SetTextFont(43)
     legend_lhcb_f_halo.SetTextSize(35)
-    legend_lhcb_f_halo.AddEntry(graph_stat_lhcb_2_4_f_halo, '#splitline{p#font[122]{-}Pb, 1.8 < #kern[-0.3]{#it{y}} < 3.3}{Mult. estim.: 2.0 < #kern[-0.4]{#it{#eta}} < 4.8}', 'pl')
+    legend_lhcb_f_halo.AddEntry(graph_stat_lhcb_2_4_f_halo, '#splitline{p#font[122]{-}Pb, 1.8 < #kern[-0.3]{#it{y}} < 3.3}{Mult. estim.: 2.0 < #kern[-0.4]{#it{#eta}} < 4.8}', 'p')
     legend_lhcb_f_halo.Draw()
 
     ROOT.gPad.RedrawAxis()
 
-    c.cd(3)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
-    graph_stat_lhcb_4_6_f, graph_syst_lhcb_4_6_f = get_graphs_4()
-    draw_graphs(graph_stat_lhcb_4_6_f, graph_syst_lhcb_4_6_f, c=colors[7], s=4., m=ROOT.kFullDiamond)
-    graph_stat_lhcb_4_6_f_halo = graph_stat_lhcb_4_6_f.Clone("graph_stat_lhcb_4_6_f_halo")
-    draw_halo(graph_stat_lhcb_4_6_f_halo, s=4.3, m=ROOT.kOpenDiamond, c=ROOT.kRed+2)
+    pads[2].cd()
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT;#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
     graph_stat_lhcb_4_6_b, graph_syst_lhcb_4_6_b = get_graphs_3()
-    draw_graphs(graph_stat_lhcb_4_6_b, graph_syst_lhcb_4_6_b, c=colors[6], s=4., m=ROOT.kOpenDiamond)
-    draw_alice_pp(4, 6, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
-    draw_alice_pbpb(4, 6, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+    draw_graphs(graph_stat_lhcb_4_6_b, graph_syst_lhcb_4_6_b, c=colors[0], s=2., m=ROOT.kOpenCrossX)
+    graph_stat_lhcb_4_6_f, graph_syst_lhcb_4_6_f = get_graphs_4()
+    draw_graphs(graph_stat_lhcb_4_6_f, graph_syst_lhcb_4_6_f, c=colors[7], s=2., m=ROOT.kFullCrossX)
+    graph_stat_lhcb_4_6_f_halo = graph_stat_lhcb_4_6_f.Clone("graph_stat_lhcb_4_6_f_halo")
+    draw_halo(graph_stat_lhcb_4_6_f_halo, s=2.2, m=ROOT.kOpenCrossX, c=ROOT.kRed+2)
+    draw_alice_pp(4, 6, c=ROOT.kBlack, s=3, m=ROOT.kOpenDiamond)
+    draw_alice_pbpb(4, 6, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
 
     x, y = to_pad_coordinates(0.05, 0.9)
     pt_text.DrawLatexNDC(x, y, '4#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{6} GeV/#it{c}')
 
-    x, y = to_pad_coordinates(0.05, 0.1)
+    x, y = to_pad_coordinates(0.05, 0.145)
+    br_unc_text.DrawLatexNDC(x, y, 'ALICE: #kern[.08]{% BR uncertainty not shown}')
+
+    x, y = to_pad_coordinates(0.23, 0.145)
     br_unc_text.DrawLatexNDC(x, y, '#lower[-0.03]{^{+4.0}}')
     br_unc_text.DrawLatexNDC(x, y, '_{#minus3.8}')
-    br_unc_text.DrawLatexNDC(x, y, '#kern[.12]{% BR uncertainty not shown}')
+
+    x, y = to_pad_coordinates(0.05, 0.065)
+    br_unc_text.DrawLatexNDC(x, y, 'LHCb: 6.0% BR uncertainty not shown')
 
     ROOT.gPad.RedrawAxis()
 
-    c.cd(4)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    pads[3].cd()
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT;#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
     h_frame.GetYaxis().ChangeLabel(10, 1, 0)
-    graph_stat_lhcb_6_8_f, graph_syst_lhcb_6_8_f = get_graphs_6()
-    draw_graphs(graph_stat_lhcb_6_8_f, graph_syst_lhcb_6_8_f, c=colors[7], s=4., m=ROOT.kFullDiamond)
-    graph_stat_lhcb_6_8_f_halo = graph_stat_lhcb_6_8_f.Clone("graph_stat_lhcb_6_8_f_halo")
-    draw_halo(graph_stat_lhcb_6_8_f_halo, s=4.3, m=ROOT.kOpenDiamond, c=ROOT.kRed+2)
+    h_frame.GetXaxis().CenterTitle(True)
     graph_stat_lhcb_6_8_b, graph_syst_lhcb_6_8_b = get_graphs_5()
-    draw_graphs(graph_stat_lhcb_6_8_b, graph_syst_lhcb_6_8_b, c=colors[6], s=4., m=ROOT.kOpenDiamond)
-    draw_alice_pp(6, 8, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
-    draw_alice_pbpb(6, 8, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+    draw_graphs(graph_stat_lhcb_6_8_b, graph_syst_lhcb_6_8_b, c=colors[0], s=2., m=ROOT.kOpenCrossX)
+    graph_stat_lhcb_6_8_f, graph_syst_lhcb_6_8_f = get_graphs_6()
+    draw_graphs(graph_stat_lhcb_6_8_f, graph_syst_lhcb_6_8_f, c=colors[7], s=2., m=ROOT.kFullCrossX)
+    graph_stat_lhcb_6_8_f_halo = graph_stat_lhcb_6_8_f.Clone("graph_stat_lhcb_6_8_f_halo")
+    draw_halo(graph_stat_lhcb_6_8_f_halo, s=2.2, m=ROOT.kOpenCrossX, c=ROOT.kRed+2)
+    draw_alice_pp(6, 8, c=ROOT.kBlack, s=3, m=ROOT.kOpenDiamond)
+    draw_alice_pbpb(6, 8, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
     x, y = to_pad_coordinates(0.05, 0.9)
     pt_text.DrawLatexNDC(x, y, '6#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{8} GeV/#it{c}')
 
@@ -441,22 +475,23 @@ if __name__ == '__main__':
     legend_alice_pp.SetFillStyle(0)
     legend_alice_pp.SetTextFont(43)
     legend_alice_pp.SetTextSize(40)
-    legend_alice_pp.AddEntry(alice_pp, '#splitline{pp,#kern[0.2]{#sqrt{#it{s}}} = 13.6 TeV, |#it{y}| < 0.5}{FT0M multiplicity estimator}', 'pl')
+    legend_alice_pp.AddEntry(alice_pp, '#splitline{pp,#kern[0.2]{#sqrt{#it{s}}} = 13.6 TeV, |#it{y}| < 0.5}{FT0M multiplicity estimator}', 'p')
     legend_alice_pp.Draw()
 
     ROOT.gPad.RedrawAxis()
 
-    c.cd(5)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    pads[4].cd()
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT;#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
     h_frame.GetXaxis().ChangeLabel(1, 1, 0)
-    graph_stat_lhcb_8_12_f, graph_syst_lhcb_8_12_f = get_graphs_8()
-    draw_graphs(graph_stat_lhcb_8_12_f, graph_syst_lhcb_8_12_f, c=colors[7], s=4., m=ROOT.kFullDiamond)
-    graph_stat_lhcb_8_12_f_halo = graph_stat_lhcb_8_12_f.Clone("graph_stat_lhcb_8_12_f_halo")
-    draw_halo(graph_stat_lhcb_8_12_f_halo, s=4.3, m=ROOT.kOpenDiamond, c=ROOT.kRed+2)
+    h_frame.GetXaxis().CenterTitle(True)
     graph_stat_lhcb_8_12_b, graph_syst_lhcb_8_12_b = get_graphs_7()
-    draw_graphs(graph_stat_lhcb_8_12_b, graph_syst_lhcb_8_12_b, c=colors[6], s=4., m=ROOT.kOpenDiamond)
-    draw_alice_pp(8, 12, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
-    draw_alice_pbpb(8, 12, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+    draw_graphs(graph_stat_lhcb_8_12_b, graph_syst_lhcb_8_12_b, c=colors[0], s=2., m=ROOT.kOpenCrossX)
+    graph_stat_lhcb_8_12_f, graph_syst_lhcb_8_12_f = get_graphs_8()
+    draw_graphs(graph_stat_lhcb_8_12_f, graph_syst_lhcb_8_12_f, c=colors[7], s=2., m=ROOT.kFullCrossX)
+    graph_stat_lhcb_8_12_f_halo = graph_stat_lhcb_8_12_f.Clone("graph_stat_lhcb_8_12_f_halo")
+    draw_halo(graph_stat_lhcb_8_12_f_halo, s=2.2, m=ROOT.kOpenCrossX, c=ROOT.kRed+2)
+    draw_alice_pp(8, 12, c=ROOT.kBlack, s=3, m=ROOT.kOpenDiamond)
+    draw_alice_pbpb(8, 12, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
     #y_text.Draw()
     x, y = to_pad_coordinates(0.05, 0.9)
@@ -469,23 +504,25 @@ if __name__ == '__main__':
     legend_alice_pbpb.SetFillStyle(0)
     legend_alice_pbpb.SetTextFont(43)
     legend_alice_pbpb.SetTextSize(40)
-    legend_alice_pbpb.AddEntry(alice_pbpb, '#splitline{Pb#font[122]{-}Pb, #sqrt{#it{s}_{NN}} = 5.36 TeV, |#it{y}| < 0.5}{FT0C multiplicity estimator}', 'pl')
+    legend_alice_pbpb.AddEntry(alice_pbpb, '#splitline{Pb#font[122]{-}Pb, #sqrt{#it{s}_{NN}} = 5.36 TeV, |#it{y}| < 0.5}{FT0C multiplicity estimator}', 'p')
     legend_alice_pbpb.Draw()
 
     ROOT.gPad.RedrawAxis()
 
-    c.cd(6)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    pads[5].cd()
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT;#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
     h_frame.GetXaxis().ChangeLabel(1, 1, 0)
-    draw_alice_pp(12, 24, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
-    draw_alice_pbpb(12, 24, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+    h_frame.GetXaxis().CenterTitle(True)
+    draw_alice_pp(12, 24, c=ROOT.kBlack, s=3, m=ROOT.kOpenDiamond)
+    draw_alice_pbpb(12, 24, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
     #y_text.Draw()
     x, y = to_pad_coordinates(0.05, 0.9)
     pt_text.DrawLatexNDC(x, y, '12#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[.5]{24} GeV/#it{c}')
 
-    x, y = to_pad_coordinates(0.05, 0.1)
+    x, y = to_pad_coordinates(0.05, 0.145)
     pp_unc_text.DrawLatexNDC(x, y, 'pp uncertainty on #kern[-0.05]{#it{x}-axis scaled by 5}')
+
 
     ROOT.gPad.RedrawAxis()
 
