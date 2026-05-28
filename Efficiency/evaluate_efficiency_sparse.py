@@ -36,6 +36,7 @@ class EfficiencyCalculator:
         self.cuts_cfg = self._load_cuts_config()
         self.cent_info = self._extract_centrality_info()
         self.pt_info = self._extract_pt_info()
+        self.has_mult_dependent_cuts = False
         self.cuts, self.axes = self._extract_cuts_axes()
         self.axis_cent = self.cuts_cfg['cent']['axisnum']
         self.axis_cent_gen = self.cfg['inputs']['sparse']['axis_cent_gen']
@@ -81,11 +82,31 @@ class EfficiencyCalculator:
         var_names = list(self.cuts_cfg.keys())
         var_names.remove('mass')
         var_names.remove('pt')
+
+        cuts_list  = [self.cuts_cfg[v] for v in var_names]
+        mins_list  = [c['min'] for c in cuts_list]
+        maxs_list  = [c['max'] for c in cuts_list]
+
         if "cent" in var_names:
             var_names.remove('cent')
-
-        cuts = [list(zip(self.cuts_cfg[var]['min'],
-            self.cuts_cfg[var]['max'])) for var in var_names]
+            self.has_mult_dependent_cuts = any(isinstance(mins[0], list) for mins in mins_list)
+            if self.has_mult_dependent_cuts:
+                cuts = {}
+                for i_cent, (cent_min, cent_max) in enumerate(zip(self.cent_info.mins, self.cent_info.maxs)):
+                    cuts[(cent_min, cent_max)] = []
+                    for var in var_names:
+                        var_min = self.cuts_cfg[var]['min']
+                        var_max = self.cuts_cfg[var]['max']
+                        if isinstance(var_min[0], list):
+                            cuts[(cent_min, cent_max)].append(list(zip(var_min[i_cent], var_max[i_cent])))
+                        else:
+                            cuts[(cent_min, cent_max)].append(list(zip(var_min, var_max)))
+            else:
+                cuts = [list(zip(self.cuts_cfg[var]['min'],
+                    self.cuts_cfg[var]['max'])) for var in var_names]
+        else:
+            cuts = [list(zip(self.cuts_cfg[var]['min'],
+                self.cuts_cfg[var]['max'])) for var in var_names]
         axes = [self.cuts_cfg[var]['axisnum'] for var in var_names]
         return cuts, axes
 
@@ -286,13 +307,17 @@ class EfficiencyCalculator:
 
         return event_weights
 
-    def _get_reco_particles(self, h_sparse_reco_ds, i_pt, pt_min, pt_max, apply_bdt):
+    def _get_reco_particles(self, h_sparse_reco_ds, i_pt, pt_min, pt_max, cent_min, cent_max, apply_bdt):
         for i, axis in enumerate(self.axes):
             if not apply_bdt and axis in self.cfg['inputs']['sparse']['axes_bdt']:  # no cut on BDT score
                 continue
 
-            min_val = self.cuts[i][i_pt][0]
-            max_val = self.cuts[i][i_pt][1]
+            if self.has_mult_dependent_cuts:
+                min_val = self.cuts[(cent_min, cent_max)][i][i_pt][0]
+                max_val = self.cuts[(cent_min, cent_max)][i][i_pt][1]
+            else:
+                min_val = self.cuts[i][i_pt][0]
+                max_val = self.cuts[i][i_pt][1]
             h_sparse_reco_ds.GetAxis(axis).SetRangeUser(min_val, max_val)
 
         # WARNING: just like TH3::Project3D("yx") and TTree::Draw("y:x"), Projection(y,x)
@@ -470,8 +495,8 @@ class EfficiencyCalculator:
                 h_sparse_reco_ds_sel.GetAxis(self.axis_cent).SetRangeUser(cent_info[0], cent_info[1])
                 h_sparse_gen_sel.GetAxis(self.axis_cent_gen).SetRangeUser(cent_info[0], cent_info[1])
 
-            reco_parts = self._get_reco_particles(h_sparse_reco_ds_sel, i_pt, pt_min, pt_max, apply_bdt=False)
-            sel_parts = self._get_reco_particles(h_sparse_reco_ds_sel, i_pt, pt_min, pt_max, apply_bdt=True)
+            reco_parts = self._get_reco_particles(h_sparse_reco_ds_sel, i_pt, pt_min, pt_max, cent_info[0], cent_info[1], apply_bdt=False)
+            sel_parts = self._get_reco_particles(h_sparse_reco_ds_sel, i_pt, pt_min, pt_max, cent_info[0], cent_info[1], apply_bdt=True)
             gen_parts = self._get_gen_particles(h_sparse_gen_sel, pt_min, pt_max)
 
             gen_particles.append(gen_parts)
