@@ -166,22 +166,48 @@ if __name__ == '__main__':
     br_unc_text.SetTextFont(43)
     br_unc_text.SetTextSize(40)
 
-    c = ROOT.TCanvas("canvas", "canvas", 2400, 1600)
-    c.Divide(3, 2, 0.000, 0.000)
-    # Set margins
-    for i_pad in range(1, 4):
-        pad = c.cd(i_pad)
-        pad.SetTopMargin(0.02)
-    for i_pad in range(4, 7):
-        pad = c.cd(i_pad)
-        pad.SetBottomMargin(0.16)
+    lm = 0.2
+    rm = 0.03
+    tm = 0.03
+    bm = 0.21
+    l = 1 / (1 / (1-lm) + 1 + 1/(1-rm))
+    h = 1 / (1 / (1-tm) + 1/(1-bm))
 
-    c.cd(1)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    c = ROOT.TCanvas("canvas", "canvas", 2400, 1600)
+    pads = []
+    # c.Divide(3, 2, 0.000, 0.000)
+    # Set margins
+    pads.append(ROOT.TPad(f"pad0", f"pad0", 0, h / (1-bm), l/(1-lm), 1.))
+    pads.append(ROOT.TPad(f"pad1", f"pad1", l/(1-lm), h / (1-bm), l/(1-lm) + l, 1.))
+    pads.append(ROOT.TPad(f"pad2", f"pad2", l/(1-lm) + l, h / (1-bm), l/(1-lm) + l + l/(1-rm), 1.))
+    pads.append(ROOT.TPad(f"pad3", f"pad3", 0, 0, l/(1-lm), h / (1-bm)))
+    pads.append(ROOT.TPad(f"pad4", f"pad4", l/(1-lm), 0, l/(1-lm) + l, h / (1-bm)))
+    pads.append(ROOT.TPad(f"pad5", f"pad5", l/(1-lm) + l, 0, l/(1-lm) + l + l/(1-rm), h / (1-bm)))
+    for i_pad in range(3):
+        pads[i_pad].SetTopMargin(tm)
+        pads[i_pad].SetBottomMargin(0.)
+        pads[i_pad].Draw()
+    for i_pad in range(3):
+        pads[i_pad + 3].SetBottomMargin(bm)
+        pads[i_pad + 3].SetTopMargin(0.)
+        pads[i_pad + 3].Draw()
+
+    for i in (0, 3):
+        pads[i].SetRightMargin(0.)
+        pads[i].SetLeftMargin(lm)
+    for i in (1, 4):
+        pads[i].SetLeftMargin(0.)
+        pads[i].SetRightMargin(0.)
+    for i in (2, 5):
+        pads[i].SetLeftMargin(0.)
+        pads[i].SetRightMargin(rm)
+
+    pads[0].cd()
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";;#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
     h_frame.GetYaxis().ChangeLabel(1, 1, 0)
 
-    alice_pp = draw_alice_pp(1, 2, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
-    alice_pbpb = draw_alice_pbpb(1, 2, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+    alice_pp = draw_alice_pp(1, 2, c=ROOT.kBlack, s=3, m=ROOT.kOpenDiamond)
+    alice_pbpb = draw_alice_pbpb(1, 2, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
 
     x, y = to_pad_coordinates(0.05, 0.9)
     alice_text = ROOT.TLatex(x, y, 'ALICE Preliminary')
@@ -195,10 +221,10 @@ if __name__ == '__main__':
 
     ROOT.gPad.RedrawAxis()
 
-    c.cd(2)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
-    draw_alice_pp(2, 4, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
-    draw_alice_pbpb(2, 4, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+    pads[1].cd()
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";;#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
+    draw_alice_pp(2, 4, c=ROOT.kBlack, s=3, m=ROOT.kOpenDiamond)
+    draw_alice_pbpb(2, 4, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
     #y_text.Draw()
     x, y = to_pad_coordinates(0.05, 0.9)
@@ -206,26 +232,22 @@ if __name__ == '__main__':
 
     ROOT.gPad.RedrawAxis()
 
-    c.cd(3)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
-    draw_alice_pp(4, 6, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
-    draw_alice_pbpb(4, 6, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+    pads[2].cd()
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";;#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
+    draw_alice_pp(4, 6, c=ROOT.kBlack, s=3, m=ROOT.kOpenDiamond)
+    draw_alice_pbpb(4, 6, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
 
     x, y = to_pad_coordinates(0.05, 0.9)
     pt_text.DrawLatexNDC(x, y, '4#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{6} GeV/#it{c}')
 
-    x, y = to_pad_coordinates(0.05, 0.1)
-    br_unc_text.DrawLatexNDC(x, y, '#lower[-0.03]{^{+4.0}}')
-    br_unc_text.DrawLatexNDC(x, y, '_{#minus3.8}')
-    br_unc_text.DrawLatexNDC(x, y, '#kern[.12]{% BR uncertainty not shown}')
-
     ROOT.gPad.RedrawAxis()
 
-    c.cd(4)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    pads[3].cd()
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{#eta}| < 0.5};#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
     h_frame.GetYaxis().ChangeLabel(10, 1, 0)
-    draw_alice_pp(6, 8, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
-    draw_alice_pbpb(6, 8, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+    h_frame.GetXaxis().CenterTitle(True)
+    draw_alice_pp(6, 8, c=ROOT.kBlack, s=3, m=ROOT.kOpenDiamond)
+    draw_alice_pbpb(6, 8, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
     x, y = to_pad_coordinates(0.05, 0.9)
     pt_text.DrawLatexNDC(x, y, '6#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[1.]{8} GeV/#it{c}')
 
@@ -236,16 +258,17 @@ if __name__ == '__main__':
     legend_alice_pp.SetFillStyle(0)
     legend_alice_pp.SetTextFont(43)
     legend_alice_pp.SetTextSize(40)
-    legend_alice_pp.AddEntry(alice_pp, '#splitline{pp,#kern[0.2]{#sqrt{#it{s}}} = 13.6 TeV, |#it{y}| < 0.5}{FT0M multiplicity estimator}', 'pl')
+    legend_alice_pp.AddEntry(alice_pp, '#splitline{pp,#kern[0.2]{#sqrt{#it{s}}} = 13.6 TeV, |#it{y}| < 0.5}{FT0M multiplicity estimator}', 'p')
     legend_alice_pp.Draw()
 
     ROOT.gPad.RedrawAxis()
 
-    c.cd(5)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    pads[4].cd()
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{#eta}| < 0.5};#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
     h_frame.GetXaxis().ChangeLabel(1, 1, 0)
-    draw_alice_pp(8, 12, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
-    draw_alice_pbpb(8, 12, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+    h_frame.GetXaxis().CenterTitle(True)
+    draw_alice_pp(8, 12, c=ROOT.kBlack, s=3, m=ROOT.kOpenDiamond)
+    draw_alice_pbpb(8, 12, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
     #y_text.Draw()
     x, y = to_pad_coordinates(0.05, 0.9)
@@ -258,23 +281,29 @@ if __name__ == '__main__':
     legend_alice_pbpb.SetFillStyle(0)
     legend_alice_pbpb.SetTextFont(43)
     legend_alice_pbpb.SetTextSize(40)
-    legend_alice_pbpb.AddEntry(alice_pbpb, '#splitline{Pb#font[122]{-}Pb, #sqrt{#it{s}_{NN}} = 5.36 TeV, |#it{y}| < 0.5}{FT0C multiplicity estimator}', 'pl')
+    legend_alice_pbpb.AddEntry(alice_pbpb, '#splitline{Pb#font[122]{-}Pb, #sqrt{#it{s}_{NN}} = 5.36 TeV, |#it{y}| < 0.5}{FT0C multiplicity estimator}', 'p')
     legend_alice_pbpb.Draw()
 
     ROOT.gPad.RedrawAxis()
 
-    c.cd(6)
-    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{y}|<0.5} ;#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    pads[5].cd()
+    h_frame = ROOT.gPad.DrawFrame(1., 0., 5000., 0.9, ";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{#eta}| < 0.5};#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
     h_frame.GetXaxis().ChangeLabel(1, 1, 0)
-    draw_alice_pp(12, 24, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
-    draw_alice_pbpb(12, 24, c=ROOT.kBlack, s=2.5, m=ROOT.kOpenCircle)
+    h_frame.GetXaxis().CenterTitle(True)
+    draw_alice_pp(12, 24, c=ROOT.kBlack, s=3, m=ROOT.kOpenDiamond)
+    draw_alice_pbpb(12, 24, c=ROOT.kBlack, s=2.5, m=ROOT.kFullCircle)
     #alice_text.Draw()
     #y_text.Draw()
     x, y = to_pad_coordinates(0.05, 0.9)
     pt_text.DrawLatexNDC(x, y, '12#kern[1.]{<}#kern[.5]{#it{p}_{T}}#kern[.5]{<}#kern[.5]{24} GeV/#it{c}')
 
-    x, y = to_pad_coordinates(0.05, 0.1)
+    x, y = to_pad_coordinates(0.05, 0.145)
     pp_unc_text.DrawLatexNDC(x, y, 'pp uncertainty on #kern[-0.05]{#it{x}-axis scaled by 5}')
+
+    x, y = to_pad_coordinates(0.05, 0.065)
+    br_unc_text.DrawLatexNDC(x, y, '#lower[-0.03]{^{+4.0}}')
+    br_unc_text.DrawLatexNDC(x, y, '_{#minus3.8}')
+    br_unc_text.DrawLatexNDC(x, y, '#kern[.12]{% BR uncertainty not shown}')
 
     ROOT.gPad.RedrawAxis()
 

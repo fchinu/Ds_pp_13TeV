@@ -150,13 +150,13 @@ if __name__ == '__main__':
     br_unc_text.SetTextSize(20)
 
     c = ROOT.TCanvas("canvas", "canvas", 700, 600)
-    h_frame = c.DrawFrame(0., 0., 24., 1., ";#it{p}_{T} (GeV/#it{c});#it{#sigma}_{D_{s}^{+}}/#it{#sigma}_{D^{+}}")
+    h_frame = c.DrawFrame(0., 0., 24., 1., ";#it{p}_{T} (GeV/#it{c});#it{#sigma}(D_{s}^{+})/#it{#sigma}(D^{+})")
     h_frame.GetYaxis().ChangeLabel(1, 1, 0)
 
-    alice_pp = draw_alice_pp(70, 100, c=ROOT.kBlack, s=2., m=ROOT.kFullCircle)
-    alice_pbpb_10_20 = draw_alice_pbpb(0, 10, c=colors[1], s=2.5, m=ROOT.kFullDiamond)
-    alice_pbpb_40_50 = draw_alice_pbpb(40, 50, c=colors[2], s=2., m=ROOT.kFullSquare)
-    alice_pbpb_80_90 = draw_alice_pbpb(80, 90, c=colors[0], s=2., m=ROOT.kFullCrossX)
+    alice_pp = draw_alice_pp(70, 100, c=ROOT.kBlack, s=1.5, m=ROOT.kFullCircle)
+    alice_pbpb_10_20 = draw_alice_pbpb(0, 10, c=ROOT.kRed+1, s=2., m=ROOT.kFullDiamond)
+    alice_pbpb_40_50 = draw_alice_pbpb(40, 50, c=colors[1], s=1.3, m=ROOT.kFullSquare)
+    alice_pbpb_80_90 = draw_alice_pbpb(80, 90, c=colors[0], s=1.5, m=ROOT.kFullCrossX)
 
     x, y = to_pad_coordinates(0.05, 0.9)
     alice_text = ROOT.TLatex(x, y, 'ALICE Preliminary')
@@ -175,9 +175,10 @@ if __name__ == '__main__':
     legend.SetFillStyle(0)
     legend.SetTextFont(43)
     legend.SetTextSize(25)
-    legend.AddEntry(alice_pbpb_10_20, '0#minus10% FT0C', 'pl')
-    legend.AddEntry(alice_pbpb_40_50, '40#minus50% FT0C', 'pl')
-    legend.AddEntry(alice_pbpb_80_90, '80#minus90% FT0C', 'pl')
+    legend.SetMargin(0.15)
+    legend.AddEntry(alice_pbpb_10_20, '0#minus10% FT0C', 'p')
+    legend.AddEntry(alice_pbpb_40_50, '40#minus50% FT0C', 'p')
+    legend.AddEntry(alice_pbpb_80_90, '80#minus90% FT0C', 'p')
     legend.Draw()
 
     x, y = to_pad_coordinates(0.52, 0.82)
@@ -190,7 +191,8 @@ if __name__ == '__main__':
     legend_pp.SetFillStyle(0)
     legend_pp.SetTextFont(43)
     legend_pp.SetTextSize(25)
-    legend_pp.AddEntry(alice_pp, '70#minus100% FT0M', 'pl')
+    legend_pp.SetMargin(0.15)
+    legend_pp.AddEntry(alice_pp, '70#minus100% FT0M', 'p')
     legend_pp.Draw()
 
 
