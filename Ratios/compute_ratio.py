@@ -129,12 +129,14 @@ def get_prompt_fractions(config, cent_bin):
     if config['inputs']['files']['frac_ds'][cent_bin] is None or config['inputs']['files']['frac_dp'][cent_bin] is None:
         return None, None
 
+    cent_min, cent_max = config['centrality']['mins'][cent_bin], config['centrality']['maxs'][cent_bin]
+
     with ROOT.TFile.Open(config['inputs']['files']['frac_ds'][cent_bin]) as in_file_prompt_frac_ds:
-        h_prompt_frac_ds = in_file_prompt_frac_ds.Get("hRawFracPrompt")
+        h_prompt_frac_ds = in_file_prompt_frac_ds.Get(f"hRawFracPrompt_cent_{cent_min}_{cent_max}")
         h_prompt_frac_ds.SetDirectory(0)
 
     with ROOT.TFile.Open(config['inputs']['files']['frac_dp'][cent_bin]) as in_file_prompt_frac_dplus:
-        h_prompt_frac_dplus = in_file_prompt_frac_dplus.Get("hRawFracPrompt")
+        h_prompt_frac_dplus = in_file_prompt_frac_dplus.Get(f"hRawFracPrompt_cent_{cent_min}_{cent_max}")
         h_prompt_frac_dplus.SetDirectory(0)
 
     return h_prompt_frac_ds, h_prompt_frac_dplus
