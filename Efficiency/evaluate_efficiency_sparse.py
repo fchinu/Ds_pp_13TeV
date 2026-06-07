@@ -8,15 +8,16 @@ import itertools
 from pathlib import Path
 import os
 from dataclasses import dataclass
-from typing import Optional, Tuple, List, Dict
+from typing import Optional, Tuple, List
 import numpy as np
-from tqdm import tqdm
 import yaml
 import ROOT
 # pylint: disable=no-member
 import sys # pylint: disable=wrong-import-order
 sys.path.append(os.path.abspath(f"{__file__}/../../utils")) # pylint: disable=wrong-import-position
+sys.path.append(os.path.abspath(f"{__file__}/../../utils/sparse_reweighter")) # pylint: disable=wrong-import-position
 from utils import enforce_list, CentralityInfo, PtInfo, pt_folders_exist, get_root_files_in_directory
+from sparse_reweighter import SparseReweighter
 
 PARTICLE_CLASSES = [("Ds", "Prompt"), ("Ds", "NonPrompt"),
                     ("Dplus", "Prompt"), ("Dplus", "NonPrompt")] # Ds must be the first one
@@ -40,8 +41,11 @@ class EfficiencyCalculator:
         self.cuts, self.axes = self._extract_cuts_axes()
         self.axis_cent = self.cuts_cfg['cent']['axisnum']
         self.axis_cent_gen = self.cfg['inputs']['sparse']['axis_cent_gen']
-        self.histos_pv_weights = self._load_pv_weights() if self.cfg['weights']['npv']['apply'] else None
-        self.histos_pt_weights = self._load_pt_weights() if self.cfg['weights']['pt']['apply'] else None
+        # Reuse the shared SparseReweighter so the npv/pt weighting (including the
+        # per-candidate 10%-binned pt weights) stays consistent with preprocessing.
+        self.reweighter = self._build_reweighter()
+        self.histos_pv_weights = self.reweighter.histos_pv_weights if self.reweighter else None
+        self.histos_pt_weights = self.reweighter.histos_pt_weights if self.reweighter else None
         self.apply_cent_sel = self.cfg['inputs']['apply_cent_sel']
         self.is_preprocessed = self.cfg['inputs']['sparse']['is_preprocessed']
 
@@ -110,46 +114,22 @@ class EfficiencyCalculator:
         axes = [self.cuts_cfg[var]['axisnum'] for var in var_names]
         return cuts, axes
 
-    def _load_pv_weights(self) -> Dict[str, ROOT.TH1F]:
-        """
-        Get the weights from the input file.
-        """
+    def _build_reweighter(self) -> Optional[SparseReweighter]:
+        if not (self.cfg['weights']['npv']['apply'] or self.cfg['weights']['pt']['apply']):
+            return None
 
-        histos_pv_weights = {}
-
-        with ROOT.TFile.Open(self.cfg["weights"]["npv"]["file_name"]) as infile_weights:
-            for particle, origin in self.particle_origin:
-                for cent_min, cent_max in zip(self.cent_info.mins, self.cent_info.maxs):
-                    histos_pv_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"] = infile_weights.Get(
-                        f"centrality_{cent_min}_{cent_max}/{particle}_{origin}/hNPvContribCands_weights_{particle}_{origin}")
-                    histos_pv_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetName(
-                        f"NPvWeight{particle}{origin}Cands_{cent_min}_{cent_max}")
-                    histos_pv_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetTitle(
-                        f"NPvWeight{particle}{origin}Cands_{cent_min}_{cent_max}")
-        return histos_pv_weights
-
-    def _load_pt_weights(self) -> Dict[str, ROOT.TH1F]:
-        """
-        Get the weights from the input file.
-        """
-
-        histos_pt_weights = {}
-
-        with ROOT.TFile.Open(self.cfg["weights"]["pt"]["file_name"]) as infile_weights:
-            for particle, origin in self.particle_origin:
-                for cent_min, cent_max in zip(self.cent_info.mins, self.cent_info.maxs):
-                    histo_name = self.cfg["weights"]["pt"]["base_hist_name"][particle][origin].replace("*", f"{cent_min}_{cent_max}")
-                    histos_pt_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"] = infile_weights.Get(
-                        f"weights/{histo_name}"
-                    )
-                    if isinstance(histos_pt_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"], ROOT.TH1): # typically not present for 0-100%
-                        histos_pt_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetName(
-                            f"PtWeight{particle}{origin}Cands_{cent_min}_{cent_max}")
-                        histos_pt_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].SetTitle(
-                            f"PtWeight{particle}{origin}Cands_{cent_min}_{cent_max}")
-                    else:
-                        histos_pt_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"] = None
-        return histos_pt_weights
+        sparse_cfg = self.cfg['inputs']['sparse']
+        axes_cfg = {
+            "axis_pt_gen": sparse_cfg["axis_pt_gen"],
+            "axis_ptb_gen": sparse_cfg["axis_ptb_gen"],
+            "axis_npv_gen": sparse_cfg["axis_npv_gen"],
+            "axis_pt_reco": sparse_cfg["axis_pt_reco"],
+            "axis_ptb_reco": sparse_cfg["axis_ptb_reco"],
+            "axis_npv_reco": sparse_cfg["axis_npv_reco"],
+            "axis_cent_gen": sparse_cfg["axis_cent_gen"],
+            "axis_cent_reco": self.axis_cent,
+        }
+        return SparseReweighter(self.cfg['weights'], self.cent_info.edges, axes_cfg)
 
     def _create_histos(self):
         """
@@ -399,61 +379,6 @@ class EfficiencyCalculator:
             self.histos[idx].SetBinError(i_pt + 1, unc)
             self.histos_bdt[idx].SetBinContent(i_pt + 1, bdt_eff)
 
-    def _apply_weights(self, sparse, particle, origin, cent_min, cent_max, is_gen=True):
-
-        coord =  [0] * sparse.GetNdimensions()
-        coord = np.array(coord, dtype=np.int32)
-
-        pt_weight, multi_weight = 1., 1.
-        pt_axis, mult_axis = -1, -1
-        histo_pt_weight, histo_pv_weight = None, None
-        if self.histos_pt_weights is not None:
-            histo_pt_weight = self.histos_pt_weights[
-                f"{particle}{origin}_Cent_{cent_min}_{cent_max}"]
-            if origin == "Prompt":
-                if is_gen:
-                    pt_axis = self.cfg["inputs"]["sparse"]["axis_pt_gen"]
-                else:
-                    pt_axis = self.cfg["inputs"]["sparse"]["axis_pt_reco"]
-            else:
-                if is_gen:
-                    pt_axis = self.cfg["inputs"]["sparse"]["axis_ptb_gen"]
-                else:
-                    pt_axis = self.cfg["inputs"]["sparse"]["axis_ptb_reco"]
-        if self.histos_pv_weights is not None:
-            histo_pv_weight = self.histos_pv_weights[
-                f"{particle}{origin}_Cent_{cent_min}_{cent_max}"]
-            mult_axis = self.cfg["inputs"]["sparse"]["axis_npv_gen"] if is_gen else self.cfg["inputs"]["sparse"]["axis_npv_reco"]
-
-        for i in tqdm(range(1, sparse.GetNbins())):
-            content = sparse.GetBinContent(i, coord)
-            error = np.sqrt(sparse.GetBinError2(i))
-
-            if histo_pt_weight is not None:
-                pt_weight = histo_pt_weight.GetBinContent(int(coord[pt_axis]))
-
-            if histo_pv_weight is not None:
-                multi_weight = histo_pv_weight.GetBinContent(int(coord[mult_axis]))
-
-            weight = multi_weight * pt_weight
-            sparse.SetBinContent(i, content*weight)
-            sparse.SetBinError(i, error*weight)
-
-        # reweight bin 0 (crashes if at the beginning of the loop)
-        content = sparse.GetBinContent(0, coord)
-        error = np.sqrt(sparse.GetBinError2(0))
-
-        pt_weight, multi_weight = 1., 1.
-        if histo_pt_weight is not None:
-            pt_weight = histo_pt_weight.GetBinContent(int(coord[pt_axis]))
-        if histo_pv_weight is not None:
-            multi_weight = histo_pv_weight.GetBinContent(int(coord[mult_axis]))
-
-        weight = multi_weight * pt_weight
-        sparse.SetBinContent(0, content*weight)
-        sparse.SetBinError(0, error*weight)
-
-
     def get_eff(self, particle_class, h_sparses_gen_particles, h_sparses_reco_ds, pt_info, cent_info = (None, None), events_weights=None): # pylint: disable=redefined-outer-name
         """
         Calculate the efficiency of particle selection.
@@ -633,9 +558,9 @@ class EfficiencyCalculator:
                     output_file.mkdir("Weights")
                 output_file.cd("Weights")
                 for particle, origin in self.particle_origin:
-                    for i_cent, (cent_min, cent_max) in enumerate(zip(self.cent_info.mins, self.cent_info.maxs)):
-                        if self.histos_pt_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"] is not None:
-                            self.histos_pt_weights[f"{particle}{origin}_Cent_{cent_min}_{cent_max}"].Write()
+                    for _, _, histo in self.histos_pt_weights[f"{particle}{origin}"]:
+                        if histo is not None:
+                            histo.Write()
 
         use_cent = apply_cent_sel or self.cfg["weights"]["npv"]["apply"] or self.cfg["weights"]["pt"]["apply"]
         for idx, (particle, origin) in enumerate(self.particle_origin):
@@ -657,10 +582,10 @@ class EfficiencyCalculator:
                     h_sparses_reco_for_eff = [s.Clone() for s in h_sparses_reco] # After rewighting (if any)
 
                     # Apply weights if requested
-                    if self.histos_pv_weights is not None or self.histos_pt_weights is not None:
+                    if self.reweighter is not None:
                         for h_sparse_gen, h_sparse_reco in zip(h_sparses_gen_particles_for_eff, h_sparses_reco_for_eff):
-                            self._apply_weights(h_sparse_gen, particle, origin, cent_range[0], cent_range[1], is_gen=True)
-                            self._apply_weights(h_sparse_reco, particle, origin, cent_range[0], cent_range[1], is_gen=False)
+                            self.reweighter.apply_weights(h_sparse_gen, particle, origin, cent_range[0], cent_range[1], is_gen=True)
+                            self.reweighter.apply_weights(h_sparse_reco, particle, origin, cent_range[0], cent_range[1], is_gen=False)
 
                 for i_pt, (pt_min, pt_max) in enumerate(zip(self.pt_info.mins, self.pt_info.maxs)):
                     if self.cfg["verbose"]:

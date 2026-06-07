@@ -163,11 +163,16 @@ def process_sparse(i_file, infile, full_cfg, sparse_cfg, prep_out_dir, input_cfg
 
         sparse.GetAxis(axes.get('PtTrig', axes.get('Pt'))).SetRangeUser(pt_min, pt_max) # PtTrig for correlations, Pt for SP flow
         if axes.get('ScoreBkg') is not None: # Skip sparses for generated info
-            sparse.GetAxis(axes['ScoreBkg']).SetRangeUser(0, bkg_max)          
+            sparse.GetAxis(axes['ScoreBkg']).SetRangeUser(0, bkg_max)
+
+        ndim = sparse.GetNdimensions()
+        dims = np.array(list(range(ndim)), dtype=np.int32)
+        sparse_cut = sparse.Projection(ndim, dims)
+        sparse_cut.SetName(sparse_name)
 
         make_dir_root_file(sparse_dir, out_file)
         out_file.cd(sparse_dir)
-        sparse.Write(sparse_name, write_opt)
+        sparse_cut.Write(sparse_name, write_opt)
         h_ev.Write(h_ev.GetName().split('/')[-1], write_opt)
         h_coll.Write(h_coll.GetName(), write_opt)
         out_file.Delete(sparse_name + ";*")
@@ -176,15 +181,10 @@ def process_sparse(i_file, infile, full_cfg, sparse_cfg, prep_out_dir, input_cfg
 
         if is_mc and (full_cfg['preprocess']['weights']['npv']['apply'] or full_cfg['preprocess']['weights']['pt']['apply']):
             try: # fails if applied to the whole dataset
-                coord = [0] * sparse.GetNdimensions()
+                coord = [0] * sparse_cut.GetNdimensions()
                 coord = np.asarray(coord, dtype=np.int32)
-                for i in range(101, 111):
-                    print(f"sparse.GetBinContent({i}) before reweight:", sparse.GetBinContent(i, coord), coord)
-                r_sparse = sparse.Clone()
+                r_sparse = sparse_cut.Clone()
                 r_sparses = reweight(r_sparse, full_cfg, sparse_cfg, prep_out_dir)
-                for s in r_sparses.values():
-                    for i in range(101, 111):
-                        print(f"r_sparse.GetBinContent({i}) after reweight:", s.GetBinContent(i, coord), coord)
                 out_file.cd(sparse_dir)
                 for cent_range, r_sparse in r_sparses.items():
                     r_sparse.Write(sparse_name + f"_{cent_range}", write_opt)
@@ -193,6 +193,8 @@ def process_sparse(i_file, infile, full_cfg, sparse_cfg, prep_out_dir, input_cfg
                 out_file.Delete(sparse_name + ";*")
             except Exception as e:
                 raise e
+
+        del sparse_cut
 
         out_file.Close()
         logger(f'----> Finished processing pT bin {pt_min} - {pt_max} for {i_file}, sparse: {sparse_cfg["type"]}\n', "INFO")
