@@ -6,6 +6,7 @@ import argparse
 import sys
 import pandas as pd
 import ROOT
+sys.path.append(__file__.rsplit("/", 2)[0]) # to import utils
 from utils import read_tamu, read_lido, get_centrality_interpolation
 
 def get_interpolated_raa(model):
