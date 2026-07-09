@@ -62,15 +62,32 @@ def read_fonll(infile, hist_name, which="central"):
         hist.SetBinContent(ipt, xsec)
     return hist
 
+def read_langevin(infile, graph_name):
+    """
+    Function to read Langevin files and convert predictions to a graph
+    """
+
+    df = pd.read_csv(infile, sep="\s+", comment="#", names=["pt", "raa", "uknown_1", "uknown_2"])
+    graph = ROOT.TGraph(1)
+    graph.SetNameTitle(graph_name, ";#it{p}_{T} (GeV/#it{c}); #it{R}_{AA}")
+    for ipt, (pt, raa) in enumerate(zip(df["pt"].to_numpy(), df["raa"].to_numpy())):
+        graph.SetPoint(ipt, pt, raa)
+        if ipt == len(df)-1 and pt < 50.:
+            graph.SetPoint(ipt, 50., raa)
+    return graph
+
 def get_centrality_interpolation(graphs, base_name):
     """
     Function to compute centrality interpolation
     """
 
-    cents = [0 + 10 * icent for icent in range(10)] #0-10 to 80-90
+    cents = [f"{icent*10}_{icent*10+10}" for icent in range(9)] #0-10 to 80-90
+    # extend cents with missing centralities if needed
+    for key in graphs.keys():
+        if key not in cents:
+            cents.append(key)    
     model_exists = {}
-    for cent_min, cent_max in zip(cents[:-1], cents[1:]):
-        cent_key = f"{cent_min}_{cent_max}"
+    for cent_key in cents:
         model_exists[cent_key] = True
         if cent_key not in graphs:
             graphs[cent_key] = ROOT.TGraph(1)
