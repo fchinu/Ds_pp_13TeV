@@ -60,6 +60,8 @@ pars_tsallis_dplus = np.array(
     dtype=np.int32,
 )
 
+SYST_SOURCES = ["rawyield", "np_frac", "bdt_eff", "pt_shape"]
+
 class GlobalChi2(object):
     """
     Class for combined Chi2 in case of simultaneous Ds, D+ Tsallis fit
@@ -88,7 +90,7 @@ def compute_extrap_factor(yield_tot, yield_vis, unc_yield_tot, unc_yield_vis):
     if rho > 1:
         rho = 1./rho
 
-    unc_extrap_factor = np.sqrt(unc_yield_tot**2/yield_vis**2 + unc_yield_vis**2 * yield_tot**2/yield_vis**4 - 2*rho*unc_yield_tot*unc_yield_vis/yield_tot/yield_vis)
+    unc_extrap_factor = np.sqrt(unc_yield_tot**2/yield_vis**2 + unc_yield_vis**2 * yield_tot**2/yield_vis**4 - 2*rho*unc_yield_tot*unc_yield_vis*yield_tot/yield_vis**3)
 
     return extrap_factor, unc_extrap_factor
 
@@ -228,6 +230,19 @@ def extapolate(config_file_name):
     set_obj_style(gsyst_extrap_ds_over_dp_ptint, ROOT.kRed+1, 0, 1000, 0.3)
     set_obj_style(gsyst_tot_nobr_ds_over_dp_ptint, ROOT.kRed+1, 0, 0)
 
+    gsyst_source_ds_over_dp_vis, gsyst_source_ds_over_dp_ptint = ({} for _ in range(2))
+    for source in SYST_SOURCES:
+        gsyst_source_ds_over_dp_vis[source] = ROOT.TGraphAsymmErrors(1)
+        gsyst_source_ds_over_dp_vis[source].SetNameTitle(
+            f"gsyst_{source}_ds_over_dp_vis",
+            ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5};#sigma(D_{s}^{#plus})/#sigma(D^{#plus})")
+        set_obj_style(gsyst_source_ds_over_dp_vis[source], ROOT.kBlack, 0, 0)
+        gsyst_source_ds_over_dp_ptint[source] = ROOT.TGraphAsymmErrors(1)
+        gsyst_source_ds_over_dp_ptint[source].SetNameTitle(
+            f"gsyst_{source}_ds_over_dp_ptint",
+            ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5};#sigma(D_{s}^{#plus})/#sigma(D^{#plus})")
+        set_obj_style(gsyst_source_ds_over_dp_ptint[source], ROOT.kRed+1, 0, 0)
+
     max_mult = 1.
     for icent, cent in enumerate(config["inputs"]):
         cent_min = cent.split(sep="_")[1]
@@ -295,10 +310,10 @@ def extapolate(config_file_name):
         yield_vis_ds = func_powlaw_corry_ds[cent].Integral(1., 1000)
         yield_dp = func_powlaw_corry_dp[cent].Integral(0., 1000)
         yield_vis_dp = func_powlaw_corry_dp[cent].Integral(1., 1000)
-        unc_yield_ds = func_powlaw_corry_ds[cent].IntegralError(0., 1000, fitres_ds.GetParams(), cov_mat_ds.GetMatrixArray())**2
-        unc_yield_vis_ds = func_powlaw_corry_ds[cent].IntegralError(1., 1000, fitres_ds.GetParams(), cov_mat_ds.GetMatrixArray())**2
-        unc_yield_dp = func_powlaw_corry_dp[cent].IntegralError(0., 1000, fitres_dp.GetParams(), cov_mat_dp.GetMatrixArray())**2
-        unc_yield_vis_dp = func_powlaw_corry_dp[cent].IntegralError(1., 1000, fitres_dp.GetParams(), cov_mat_dp.GetMatrixArray())**2
+        unc_yield_ds = func_powlaw_corry_ds[cent].IntegralError(0., 1000, fitres_ds.GetParams(), cov_mat_ds.GetMatrixArray())
+        unc_yield_vis_ds = func_powlaw_corry_ds[cent].IntegralError(1., 1000, fitres_ds.GetParams(), cov_mat_ds.GetMatrixArray())
+        unc_yield_dp = func_powlaw_corry_dp[cent].IntegralError(0., 1000, fitres_dp.GetParams(), cov_mat_dp.GetMatrixArray())
+        unc_yield_vis_dp = func_powlaw_corry_dp[cent].IntegralError(1., 1000, fitres_dp.GetParams(), cov_mat_dp.GetMatrixArray())
         extrap_factor_powlaw_ds = compute_extrap_factor(yield_ds, yield_vis_ds, unc_yield_ds, unc_yield_vis_ds)
         extrap_factor_powlaw_dp = compute_extrap_factor(yield_dp, yield_vis_dp, unc_yield_dp, unc_yield_vis_dp)
 
@@ -313,15 +328,15 @@ def extapolate(config_file_name):
         fitres_dp = hist_corry_dp[cent].Fit(func_tsallis_corry_dp[cent], "IMEQ0S")
         # We need to retrieve the covariance matrices to compute the uncertainties on the integrals
         cov_mat_ds = fitres_ds.GetCovarianceMatrix()
-        cov_mat_dplus = fitres_dp.GetCovarianceMatrix()
+        cov_mat_dp = fitres_dp.GetCovarianceMatrix()
         yield_ds = func_tsallis_corry_ds[cent].Integral(0., 1000)
         yield_vis_ds = func_tsallis_corry_ds[cent].Integral(1., 1000)
         yield_dp = func_tsallis_corry_dp[cent].Integral(0., 1000)
         yield_vis_dp = func_tsallis_corry_dp[cent].Integral(1., 1000)
-        unc_yield_ds = func_tsallis_corry_ds[cent].IntegralError(0., 1000, fitres_ds.GetParams(), cov_mat_ds.GetMatrixArray())**2
-        unc_yield_vis_ds = func_tsallis_corry_ds[cent].IntegralError(1., 1000, fitres_ds.GetParams(), cov_mat_ds.GetMatrixArray())**2
-        unc_yield_dp = func_tsallis_corry_dp[cent].IntegralError(0., 1000, fitres_dp.GetParams(), cov_mat_dp.GetMatrixArray())**2
-        unc_yield_vis_dp = func_tsallis_corry_dp[cent].IntegralError(1., 1000, fitres_dp.GetParams(), cov_mat_dp.GetMatrixArray())**2
+        unc_yield_ds = func_tsallis_corry_ds[cent].IntegralError(0., 1000, fitres_ds.GetParams(), cov_mat_ds.GetMatrixArray())
+        unc_yield_vis_ds = func_tsallis_corry_ds[cent].IntegralError(1., 1000, fitres_ds.GetParams(), cov_mat_ds.GetMatrixArray())
+        unc_yield_dp = func_tsallis_corry_dp[cent].IntegralError(0., 1000, fitres_dp.GetParams(), cov_mat_dp.GetMatrixArray())
+        unc_yield_vis_dp = func_tsallis_corry_dp[cent].IntegralError(1., 1000, fitres_dp.GetParams(), cov_mat_dp.GetMatrixArray())
         extrap_factor_tsallis_ds = compute_extrap_factor(yield_ds, yield_vis_ds, unc_yield_ds, unc_yield_vis_ds)
         extrap_factor_tsallis_dp = compute_extrap_factor(yield_dp, yield_vis_dp, unc_yield_dp, unc_yield_vis_dp)
 
@@ -375,10 +390,10 @@ def extapolate(config_file_name):
         yield_vis_ds = func_tsallissim_corry_ds[cent].Integral(1., 1000)
         yield_dp = func_tsallissim_corry_dp[cent].Integral(0., 1000)
         yield_vis_dp = func_tsallissim_corry_dp[cent].Integral(1., 1000)
-        unc_yield_ds = func_tsallissim_corry_ds[cent].IntegralError(0., 1000, result_tsallis.GetParams(), cov_mat_sim.GetMatrixArray())**2
-        unc_yield_vis_ds = func_tsallissim_corry_ds[cent].IntegralError(1., 1000, result_tsallis.GetParams(), cov_mat_sim.GetMatrixArray())**2
-        unc_yield_dp = func_tsallis_corry_dp[cent].IntegralError(0., 1000, result_tsallis.GetParams(), cov_mat_sim.GetMatrixArray())**2
-        unc_yield_vis_dp = func_tsallis_corry_dp[cent].IntegralError(1., 1000, result_tsallis.GetParams(), cov_mat_sim.GetMatrixArray())**2
+        unc_yield_ds = func_tsallissim_corry_ds[cent].IntegralError(0., 1000, result_tsallis.GetParams(), cov_mat_sim.GetMatrixArray())
+        unc_yield_vis_ds = func_tsallissim_corry_ds[cent].IntegralError(1., 1000, result_tsallis.GetParams(), cov_mat_sim.GetMatrixArray())
+        unc_yield_dp = func_tsallissim_corry_dp[cent].IntegralError(0., 1000, result_tsallis.GetParams(), cov_mat_sim.GetMatrixArray())
+        unc_yield_vis_dp = func_tsallissim_corry_dp[cent].IntegralError(1., 1000, result_tsallis.GetParams(), cov_mat_sim.GetMatrixArray())
         extrap_factor_simfit_ds = compute_extrap_factor(yield_ds, yield_vis_ds, unc_yield_ds, unc_yield_vis_ds)
         extrap_factor_simfit_dp = compute_extrap_factor(yield_dp, yield_vis_dp, unc_yield_dp, unc_yield_vis_dp)
 
@@ -406,6 +421,9 @@ def extapolate(config_file_name):
 
         # compute pT-integrated ratio
         yield_meas_ds, yield_meas_dp, unc_yield_meas_ds, unc_yield_meas_dp, syst_yield_low_meas, syst_yield_high_meas = (0. for _ in range(6))
+        syst_yield_low_by_source_vis, syst_yield_low_by_source_extrap, syst_yield_high_by_source_vis, syst_yield_high_by_source_extrap = (
+            {"rawyield": 0., "np_frac": 0., "bdt_eff": 0., "pt_shape": 0.} for _ in range(4)
+        )
         sys_cent = db_sys["systematics"][f"cent_{cent_min}_{cent_max}"]
         for ipt in range(1, hist_corry_ds[cent].GetNbinsX()+1):
             yield_meas_ds += hist_corry_ds[cent].GetBinContent(ipt) * hist_corry_ds[cent].GetBinWidth(ipt)
@@ -416,6 +434,13 @@ def extapolate(config_file_name):
             rel_sys_tot_high = np.sqrt(sys_cent["rawyield"][ipt-1]**2 + sys_cent["np_frac"][ipt-1][1]**2 + sys_cent["bdt_eff"][ipt-1]**2 + sys_cent["pt_shape"][ipt-1]**2)
             syst_yield_low_meas += hist_corry_ds[cent].GetBinContent(ipt) * rel_sys_tot_low * hist_corry_ds[cent].GetBinWidth(ipt)
             syst_yield_high_meas += hist_corry_ds[cent].GetBinContent(ipt) * rel_sys_tot_high * hist_corry_ds[cent].GetBinWidth(ipt)
+            for source in syst_yield_low_by_source_vis:
+                if source == "np_frac":
+                    syst_yield_low_by_source_vis[source] += hist_corry_ds[cent].GetBinContent(ipt) * sys_cent[source][ipt-1][0] * hist_corry_ds[cent].GetBinWidth(ipt)
+                    syst_yield_high_by_source_vis[source] += hist_corry_ds[cent].GetBinContent(ipt) * sys_cent[source][ipt-1][1] * hist_corry_ds[cent].GetBinWidth(ipt)
+                else:
+                    syst_yield_low_by_source_vis[source] += hist_corry_ds[cent].GetBinContent(ipt) * sys_cent[source][ipt-1] * hist_corry_ds[cent].GetBinWidth(ipt)
+                    syst_yield_high_by_source_vis[source] += hist_corry_ds[cent].GetBinContent(ipt) * sys_cent[source][ipt-1] * hist_corry_ds[cent].GetBinWidth(ipt)
         unc_yield_meas_ds = np.sqrt(unc_yield_meas_ds)
         unc_yield_meas_dp = np.sqrt(unc_yield_meas_dp)
 
@@ -427,6 +452,9 @@ def extapolate(config_file_name):
         unc_ratio_ptint_extrap = main_extrap_factor * unc_ratio_ptint_vis
         sys_ratio_low_ptint_extrap = main_extrap_factor * sys_ratio_low_ptint_vis
         sys_ratio_high_ptint_extrap = main_extrap_factor * sys_ratio_high_ptint_vis
+        for source in syst_yield_low_by_source_vis:
+            syst_yield_low_by_source_extrap[source] += syst_yield_low_by_source_vis[source] * main_extrap_factor
+            syst_yield_high_by_source_extrap[source] += syst_yield_high_by_source_vis[source] * main_extrap_factor
 
         gstat_ds_over_dp_vis.SetPoint(icent, mult_cent, ratio_ptint_vis)
         gstat_ds_over_dp_vis.SetPointError(icent, 0., 0., unc_ratio_ptint_vis, unc_ratio_ptint_vis)
@@ -438,18 +466,31 @@ def extapolate(config_file_name):
         gsyst_ds_over_dp_ptint.SetPoint(icent, mult_cent, ratio_ptint_extrap)
         gsyst_ds_over_dp_ptint.SetPointError(icent, mult_unc_low, mult_unc_high, sys_ratio_low_ptint_extrap, sys_ratio_high_ptint_extrap)
 
+        # same as above, but keeping the sources separate
+        for source in SYST_SOURCES:
+            sys_ratio_low_source_vis = syst_yield_low_by_source_vis[source]/yield_meas_ds * ratio_ptint_vis
+            sys_ratio_high_source_vis = syst_yield_high_by_source_vis[source]/yield_meas_ds * ratio_ptint_vis
+            sys_ratio_low_source_extrap = syst_yield_low_by_source_extrap[source]/yield_meas_ds * ratio_ptint_vis
+            sys_ratio_high_source_extrap = syst_yield_high_by_source_extrap[source]/yield_meas_ds * ratio_ptint_vis
+            gsyst_source_ds_over_dp_vis[source].SetPoint(icent, mult_cent, ratio_ptint_vis)
+            gsyst_source_ds_over_dp_vis[source].SetPointError(icent, mult_unc_low, mult_unc_high,
+                                                             sys_ratio_low_source_vis, sys_ratio_high_source_vis)
+            gsyst_source_ds_over_dp_ptint[source].SetPoint(icent, mult_cent, ratio_ptint_extrap)
+            gsyst_source_ds_over_dp_ptint[source].SetPointError(icent, mult_unc_low, mult_unc_high,
+                                                               sys_ratio_low_source_extrap, sys_ratio_high_source_extrap)
+
         gsyst_extrap_ds_over_dp_ptint.SetPoint(icent, mult_cent, ratio_ptint_extrap)
         gsyst_extrap_ds_over_dp_ptint.SetPointError(icent, mult_unc_low*2, mult_unc_high*2, ratio_ptint_extrap * config["extrap"]["unc"][icent],
                                                     ratio_ptint_extrap * config["extrap"]["unc"][icent])
 
-        sys_tot_low = np.sqrt(sys_ratio_low_ptint_extrap**2 + ratio_ptint_extrap * config["extrap"]["unc"][icent]**2)
-        sys_tot_high = np.sqrt(sys_ratio_high_ptint_extrap**2 + ratio_ptint_extrap * config["extrap"]["unc"][icent]**2)
+        sys_tot_low = np.sqrt(sys_ratio_low_ptint_extrap**2 + ratio_ptint_extrap**2 * config["extrap"]["unc"][icent]**2)
+        sys_tot_high = np.sqrt(sys_ratio_high_ptint_extrap**2 + ratio_ptint_extrap**2 * config["extrap"]["unc"][icent]**2)
         gsyst_tot_nobr_ds_over_dp_ptint.SetPoint(icent, mult_cent, ratio_ptint_extrap)
         gsyst_tot_nobr_ds_over_dp_ptint.SetPointError(icent, mult_unc_low, mult_unc_high, sys_tot_low, sys_tot_high)
 
         # BR uncertainty overall normalisation, we put it separately
-        br_unc_low = np.sqrt(db_sys["systematics"]["br"]["ds"]["low"]**2 + db_sys["systematics"]["br"]["dplus"]["high"]**2)
-        br_unc_high = np.sqrt(db_sys["systematics"]["br"]["ds"]["high"]**2 + db_sys["systematics"]["br"]["dplus"]["low"]**2)
+        br_unc_low = np.sqrt(db_sys["systematics"]["br"]["ds"]["high"]**2 + db_sys["systematics"]["br"]["dplus"]["low"]**2)
+        br_unc_high = np.sqrt(db_sys["systematics"]["br"]["ds"]["low"]**2 + db_sys["systematics"]["br"]["dplus"]["high"]**2)
         gsyst_br_ds_over_dp_vis.SetPoint(icent, mult_cent, ratio_ptint_vis)
         gsyst_br_ds_over_dp_vis.SetPointError(icent, mult_unc_low, mult_unc_high, ratio_ptint_vis * br_unc_low, ratio_ptint_vis * br_unc_high)
         gsyst_br_ds_over_dp_ptint.SetPoint(icent, mult_cent, ratio_ptint_extrap)
@@ -569,6 +610,11 @@ def extapolate(config_file_name):
     gsyst_extrap_ds_over_dp_ptint.Write()
     gstat_ds_over_dp_ptint.Write()
     gsyst_tot_nobr_ds_over_dp_ptint.Write()
+    gsyst_br_ds_over_dp_vis.Write()
+    gsyst_br_ds_over_dp_ptint.Write()
+    for source in SYST_SOURCES:
+        gsyst_source_ds_over_dp_vis[source].Write()
+        gsyst_source_ds_over_dp_ptint[source].Write()
     outfile.Close()
 
 
