@@ -38,23 +38,78 @@ def power_law(pt, pars):
 
     return pars[0] * pt[0] / np.power((1 + np.power(pt[0] / pars[1], pars[3])), pars[2])
 
-# definition of shared parameters for Ds, D+ combined Tsallis fit
+def bw_integrand(r, pars):
+    """
+    Blast-wave integral function for pT extrapolation
+
+    Parameters:
+    - r (list): radius
+    - pars (list): list of parameters
+
+    Returns:
+    - double: BW integrand function evaluated for a given r
+
+    """
+    mt = pars[0]
+    pt = pars[1]
+    beta_max = pars[2]
+    temp_1 = 1./pars[3]
+    n = pars[4]
+
+    beta = beta_max * np.power(r[0], n)
+    if beta > 0.9999999999999999:
+        beta = 0.9999999999999999
+    rho = np.arctanh(beta)
+    arg_I0 = pt * np.sinh(rho) * temp_1
+    if arg_I0 > 700.:
+        arg_I0 = 700.
+    arg_K1 = mt * np.cosh(rho) * temp_1
+ 
+    return r[0] * mt * ROOT.TMath.BesselI0(arg_I0) * ROOT.TMath.BesselK1(arg_K1)
+
+# we need to have this global
+func_bw_integrand = ROOT.TF1("func_bw_integrand", bw_integrand, 0., 1., 5)
+
+def bw_func(pt, pars):
+    """
+    Blast-wave function for pT extrapolation
+
+    Parameters:
+    - r (list): radius
+    - pars (list): list of parameters
+
+    Returns:
+    - double: BW integrand function evaluated for a given r
+
+    """
+
+    norm = pars[0]
+    mass = pars[1]
+    mt = np.sqrt(pt[0]**2 + mass**2)
+    beta_max = pars[2]
+    t = pars[3]
+    n = pars[4]
+
+    func_bw_integrand.SetParameters(mt, pt[0], beta_max, t, n)
+
+    return norm * pt[0] * func_bw_integrand.Integral(0, 1) 
+
+# definition of shared parameters for Ds, D+ combined Tsallis and BW fits
 pars_tsallis_ds = np.array(
     [
         0, # integral Ds
         1, # n
         2, # T
-        3 # m(Ds)
+        3  # m(Ds)
     ],
     dtype=np.int32
-)  # exp amplitude in B histo and exp common parameter
-
+)
 
 pars_tsallis_dplus = np.array(
     [
-        4,  # integral D+
-        1,  # n
-        2,  # T
+        4, # integral D+
+        1, # n
+        2, # T
         5  # m(D+)
     ],
     dtype=np.int32,
@@ -62,7 +117,29 @@ pars_tsallis_dplus = np.array(
 
 SYST_SOURCES = ["rawyield", "np_frac", "bdt_eff", "pt_shape"]
 
-class GlobalChi2(object):
+pars_bw_ds = np.array(
+    [
+        0, # integral Ds
+        1, # m(Ds)
+        2, # beta_max
+        3, # T
+        4  # n
+    ],
+    dtype=np.int32
+)
+
+pars_bw_dplus = np.array(
+    [
+        5, # integral D+
+        6, # m(D+)
+        2, # beta_max
+        3, # T
+        4  # n
+    ],
+    dtype=np.int32
+)
+
+class GlobalChi2Tsallis(object):
     """
     Class for combined Chi2 in case of simultaneous Ds, D+ Tsallis fit
     """
@@ -79,6 +156,26 @@ class GlobalChi2(object):
 
         p1 = par_arr[pars_tsallis_ds]
         p2 = par_arr[pars_tsallis_dplus]
+
+        return self._f1(p1) + self._f2(p2)
+
+class GlobalChi2BW(object):
+    """
+    Class for combined Chi2 in case of simultaneous Ds, D+ Blast-wave fit
+    """
+    def __init__(self, f1, f2):
+        self._f1 = f1
+        self._f2 = f2
+
+    def __call__(self, par):
+        # parameter vector is first background (in common 1 and 2) and then is
+        # signal (only in 2)
+
+        # the zero-copy way to get a numpy array from a double *
+        par_arr = np.frombuffer(par, dtype=np.float64, count=7)
+
+        p1 = par_arr[pars_bw_ds]
+        p2 = par_arr[pars_bw_dplus]
 
         return self._f1(p1) + self._f2(p2)
 
@@ -153,28 +250,36 @@ def extapolate(config_file_name):
         db_sys = yaml.safe_load(file)
 
     hist_corry_ds, hist_corry_dp = {}, {}
-    func_tsallis_corry_ds, func_tsallis_corry_dp, func_tsallissim_corry_ds, func_tsallissim_corry_dp, func_powlaw_corry_ds, func_powlaw_corry_dp = ({} for _ in range(6))
-    graph_extrapfactor_ds, graph_extrapfactor_dp, graph_extrapfactor_ds_over_dp = (ROOT.TGraphErrors(1) for _ in range(3))
-    graph_extrapfactor_simfit_ds, graph_extrapfactor_simfit_dp, graph_extrapfactor_simfit_ds_over_dp = (ROOT.TGraphErrors(1) for _ in range(3))
+    func_tsallis_corry_ds, func_powlaw_corry_ds, func_tsallissim_corry_ds, func_bwsim_corry_ds = ({} for _ in range(4))
+    func_tsallis_corry_dp, func_powlaw_corry_dp, func_tsallissim_corry_dp, func_bwsim_corry_dp = ({} for _ in range(4))
+    graph_extrapfactor_tsallis_ds, graph_extrapfactor_tsallis_dp, graph_extrapfactor_tsallis_ds_over_dp = (ROOT.TGraphErrors(1) for _ in range(3))
     graph_extrapfactor_powlaw_ds, graph_extrapfactor_powlaw_dp, graph_extrapfactor_powlaw_ds_over_dp = (ROOT.TGraphErrors(1) for _ in range(3))
-    graph_extrapfactor_ds.SetNameTitle("graph_extrapfactor_ds", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D_{s}^{#plus}) = D_{s}^{#plus}(#it{p}_{T} integrated)/D_{s}^{#plus}(#it{p}_{T} > 1 GeV/#it{c})")
-    graph_extrapfactor_dp.SetNameTitle("graph_extrapfactor_dp", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D^{#plus}) = D^{#plus}(#it{p}_{T} integrated)/D^{#plus}(#it{p}_{T} > 1 GeV/#it{c})")
-    graph_extrapfactor_ds_over_dp.SetNameTitle("graph_extrapfactor_ds_over_dp", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D_{s}^{#plus})/#alpha(D^{#plus})")
-    graph_extrapfactor_simfit_ds.SetNameTitle("graph_extrapfactor_simfit_ds", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D_{s}^{#plus}) = D_{s}^{#plus}(#it{p}_{T} integrated)/D_{s}^{#plus}(#it{p}_{T} > 1 GeV/#it{c})")
-    graph_extrapfactor_simfit_dp.SetNameTitle("graph_extrapfactor_simfit_dp", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D^{#plus}) = D^{#plus}(#it{p}_{T} integrated)/D^{#plus}(#it{p}_{T} > 1 GeV/#it{c})")
-    graph_extrapfactor_simfit_ds_over_dp.SetNameTitle("graph_extrapfactor_simfit_ds_over_dp", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D_{s}^{#plus})/#alpha(D^{#plus})")
+    graph_extrapfactor_tsallissim_ds, graph_extrapfactor_tsallissim_dp, graph_extrapfactor_tsallissim_ds_over_dp = (ROOT.TGraphErrors(1) for _ in range(3))
+    graph_extrapfactor_bwsim_ds, graph_extrapfactor_bwsim_dp, graph_extrapfactor_bwsim_ds_over_dp = (ROOT.TGraphErrors(1) for _ in range(3))
+    graph_extrapfactor_tsallis_ds.SetNameTitle("graph_extrapfactor_tsallis_ds", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D_{s}^{#plus}) = D_{s}^{#plus}(#it{p}_{T} integrated)/D_{s}^{#plus}(#it{p}_{T} > 1 GeV/#it{c})")
+    graph_extrapfactor_tsallis_dp.SetNameTitle("graph_extrapfactor_tsallis_dp", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D^{#plus}) = D^{#plus}(#it{p}_{T} integrated)/D^{#plus}(#it{p}_{T} > 1 GeV/#it{c})")
+    graph_extrapfactor_tsallis_ds_over_dp.SetNameTitle("graph_extrapfactor_tsallis_ds_over_dp", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D_{s}^{#plus})/#alpha(D^{#plus})")
     graph_extrapfactor_powlaw_ds.SetNameTitle("graph_extrapfactor_powlaw_ds", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D_{s}^{#plus}) = D_{s}^{#plus}(#it{p}_{T} integrated)/D_{s}^{#plus}(#it{p}_{T} > 1 GeV/#it{c})")
     graph_extrapfactor_powlaw_dp.SetNameTitle("graph_extrapfactor_powlaw_dp", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D^{#plus}) = D^{#plus}(#it{p}_{T} integrated)/D^{#plus}(#it{p}_{T} > 1 GeV/#it{c})")
     graph_extrapfactor_powlaw_ds_over_dp.SetNameTitle("graph_extrapfactor_powlaw_ds_over_dp", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D_{s}^{#plus})/#alpha(D^{#plus})")
-    set_obj_style(graph_extrapfactor_ds, ROOT.kBlack)
-    set_obj_style(graph_extrapfactor_dp, ROOT.kBlack)
-    set_obj_style(graph_extrapfactor_ds_over_dp, ROOT.kBlack)
-    set_obj_style(graph_extrapfactor_simfit_ds, ROOT.kGray+2)
-    set_obj_style(graph_extrapfactor_simfit_dp, ROOT.kGray+2)
-    set_obj_style(graph_extrapfactor_simfit_ds_over_dp, ROOT.kGray+2)
+    graph_extrapfactor_tsallissim_ds.SetNameTitle("graph_extrapfactor_tsallissim_ds", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D_{s}^{#plus}) = D_{s}^{#plus}(#it{p}_{T} integrated)/D_{s}^{#plus}(#it{p}_{T} > 1 GeV/#it{c})")
+    graph_extrapfactor_tsallissim_dp.SetNameTitle("graph_extrapfactor_tsallissim_dp", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D^{#plus}) = D^{#plus}(#it{p}_{T} integrated)/D^{#plus}(#it{p}_{T} > 1 GeV/#it{c})")
+    graph_extrapfactor_tsallissim_ds_over_dp.SetNameTitle("graph_extrapfactor_tsallissim_ds_over_dp", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D_{s}^{#plus})/#alpha(D^{#plus})")
+    graph_extrapfactor_bwsim_ds.SetNameTitle("graph_extrapfactor_bwsim_ds", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D_{s}^{#plus}) = D_{s}^{#plus}(#it{p}_{T} integrated)/D_{s}^{#plus}(#it{p}_{T} > 1 GeV/#it{c})")
+    graph_extrapfactor_bwsim_dp.SetNameTitle("graph_extrapfactor_bwsim_dp", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D^{#plus}) = D^{#plus}(#it{p}_{T} integrated)/D^{#plus}(#it{p}_{T} > 1 GeV/#it{c})")
+    graph_extrapfactor_bwsim_ds_over_dp.SetNameTitle("graph_extrapfactor_bwsim_ds_over_dp", ";d#it{N}_{ch}/d#it{#eta}_{|#it{#eta}|<0.5}; #alpha(D_{s}^{#plus})/#alpha(D^{#plus})")
+    set_obj_style(graph_extrapfactor_tsallis_ds, ROOT.kBlack)
+    set_obj_style(graph_extrapfactor_tsallis_dp, ROOT.kBlack)
+    set_obj_style(graph_extrapfactor_tsallis_ds_over_dp, ROOT.kBlack)
     set_obj_style(graph_extrapfactor_powlaw_ds, ROOT.kGray+1)
     set_obj_style(graph_extrapfactor_powlaw_dp, ROOT.kGray+1)
     set_obj_style(graph_extrapfactor_powlaw_ds_over_dp, ROOT.kGray+1)
+    set_obj_style(graph_extrapfactor_tsallissim_ds, ROOT.kGray+2)
+    set_obj_style(graph_extrapfactor_tsallissim_dp, ROOT.kGray+2)
+    set_obj_style(graph_extrapfactor_tsallissim_ds_over_dp, ROOT.kGray+2)
+    set_obj_style(graph_extrapfactor_bwsim_ds, ROOT.kGray+3)
+    set_obj_style(graph_extrapfactor_bwsim_dp, ROOT.kGray+3)
+    set_obj_style(graph_extrapfactor_bwsim_ds_over_dp, ROOT.kGray+3)
 
     leg_cent = ROOT.TLegend(0.6, 0.6, 0.9, 0.9)
     leg_cent.SetTextSize(0.04)
@@ -182,13 +287,14 @@ def extapolate(config_file_name):
     leg_cent.SetFillStyle(0)
 
     # extrapolation factors from models
-    leg_model = ROOT.TLegend(0.2, 0.2, 0.5, 0.6)
+    leg_model = ROOT.TLegend(0.2, 0.2, 0.5, 0.65)
     leg_model.SetTextSize(0.04)
     leg_model.SetBorderSize(0)
     leg_model.SetFillStyle(0)
-    leg_model.AddEntry(graph_extrapfactor_ds, "Tsallis")
-    leg_model.AddEntry(graph_extrapfactor_simfit_ds, "Tsallis (sim fit)")
     leg_model.AddEntry(graph_extrapfactor_powlaw_ds, "Power law")
+    leg_model.AddEntry(graph_extrapfactor_tsallis_ds, "Tsallis")
+    leg_model.AddEntry(graph_extrapfactor_tsallissim_ds, "Tsallis (sim fit)")
+    leg_model.AddEntry(graph_extrapfactor_bwsim_ds, "BW (sim fit)")
     graph_model_ds, graph_model_dp, graph_model_ratio = ([] for _ in range(3))
     for imodel, input_model in enumerate(config["models"]["inputs"]):
         infile_model = ROOT.TFile.Open(input_model)
@@ -287,16 +393,18 @@ def extapolate(config_file_name):
 
         func_tsallis_corry_ds[cent] = ROOT.TF1(f"func_tsallis_corry_ds_{cent_min}_{cent_max}", tsallis, pt_min, pt_max_ds, 4)
         func_tsallis_corry_dp[cent] = ROOT.TF1(f"func_tsallis_corry_dp_{cent_min}_{cent_max}", tsallis, pt_min, pt_max_dplus, 4)
-        func_tsallissim_corry_ds[cent] = ROOT.TF1(f"func_tsallissim_corry_ds_{cent_min}_{cent_max}", tsallis, pt_min, pt_max_ds, 4)
-        func_tsallissim_corry_dp[cent] = ROOT.TF1(f"func_tsallissim_corry_dp_{cent_min}_{cent_max}", tsallis, pt_min, pt_max_dplus, 4)
         func_powlaw_corry_ds[cent] = ROOT.TF1(f"func_powlaw_corry_ds_{cent_min}_{cent_max}", power_law, pt_min, pt_max_ds, 4)
         func_powlaw_corry_dp[cent] = ROOT.TF1(f"func_powlaw_corry_dp_{cent_min}_{cent_max}", power_law, pt_min, pt_max_dplus, 4)
+        func_tsallissim_corry_ds[cent] = ROOT.TF1(f"func_tsallissim_corry_ds_{cent_min}_{cent_max}", tsallis, pt_min, pt_max_ds, 4)
+        func_tsallissim_corry_dp[cent] = ROOT.TF1(f"func_tsallissim_corry_dp_{cent_min}_{cent_max}", tsallis, pt_min, pt_max_dplus, 4)
+        func_bwsim_corry_ds[cent] = ROOT.TF1(f"func_bwsim_corry_ds_{cent_min}_{cent_max}", bw_func, pt_min, config["extrap"]["fit"]["pt_max_bw"], 5)
+        func_bwsim_corry_dp[cent] = ROOT.TF1(f"func_bwsim_corry_dp_{cent_min}_{cent_max}", bw_func, pt_min, config["extrap"]["fit"]["pt_max_bw"], 5)
         set_obj_style(func_tsallis_corry_ds[cent], colors[icent])
         set_obj_style(func_tsallis_corry_dp[cent], colors[icent])
-        set_obj_style(func_tsallissim_corry_ds[cent], colors[icent])
-        set_obj_style(func_tsallissim_corry_dp[cent], colors[icent])
         set_obj_style(func_powlaw_corry_ds[cent], colors[icent])
         set_obj_style(func_powlaw_corry_dp[cent], colors[icent])
+        set_obj_style(func_bwsim_corry_ds[cent], colors[icent])
+        set_obj_style(func_bwsim_corry_dp[cent], colors[icent])
 
         # indpendent fits with power law
         func_powlaw_corry_ds[cent].SetParameters(hist_corry_ds[cent].Integral(), 2.6, 2.8, 2.)
@@ -340,7 +448,7 @@ def extapolate(config_file_name):
         extrap_factor_tsallis_ds = compute_extrap_factor(yield_ds, yield_vis_ds, unc_yield_ds, unc_yield_vis_ds)
         extrap_factor_tsallis_dp = compute_extrap_factor(yield_dp, yield_vis_dp, unc_yield_dp, unc_yield_vis_dp)
 
-        # let's also do a simultaneous fit with Tsallis
+        # let's also do a simultaneous fit with Tsallis and BW
         wf_corrected_yields_ds = ROOT.Math.WrappedMultiTF1(func_tsallissim_corry_ds[cent], 1)
         wf_corrected_yields_dplus = ROOT.Math.WrappedMultiTF1(func_tsallissim_corry_dp[cent], 1)
 
@@ -356,7 +464,7 @@ def extapolate(config_file_name):
 
         chi2_ds = ROOT.Fit.Chi2Function(data_ds, wf_corrected_yields_ds)
         chi2_dplus = ROOT.Fit.Chi2Function(data_dplus, wf_corrected_yields_dplus)
-        global_chi2 = GlobalChi2(chi2_ds, chi2_dplus)
+        global_chi2 = GlobalChi2Tsallis(chi2_ds, chi2_dplus)
         fitter_tsallis = ROOT.Fit.Fitter()
 
         pars_all = np.array(
@@ -394,27 +502,102 @@ def extapolate(config_file_name):
         unc_yield_vis_ds = func_tsallissim_corry_ds[cent].IntegralError(1., 1000, result_tsallis.GetParams(), cov_mat_sim.GetMatrixArray())
         unc_yield_dp = func_tsallissim_corry_dp[cent].IntegralError(0., 1000, result_tsallis.GetParams(), cov_mat_sim.GetMatrixArray())
         unc_yield_vis_dp = func_tsallissim_corry_dp[cent].IntegralError(1., 1000, result_tsallis.GetParams(), cov_mat_sim.GetMatrixArray())
-        extrap_factor_simfit_ds = compute_extrap_factor(yield_ds, yield_vis_ds, unc_yield_ds, unc_yield_vis_ds)
-        extrap_factor_simfit_dp = compute_extrap_factor(yield_dp, yield_vis_dp, unc_yield_dp, unc_yield_vis_dp)
+        extrap_factor_tsallissim_ds = compute_extrap_factor(yield_ds, yield_vis_ds, unc_yield_ds, unc_yield_vis_ds)
+        extrap_factor_tsallissim_dp = compute_extrap_factor(yield_dp, yield_vis_dp, unc_yield_dp, unc_yield_vis_dp)
+
+        wf_bw_corrected_yields_ds = ROOT.Math.WrappedMultiTF1(func_bwsim_corry_ds[cent], 1)
+        wf_bw_corrected_yields_dplus = ROOT.Math.WrappedMultiTF1(func_bwsim_corry_dp[cent], 1)
+
+        opt = ROOT.Fit.DataOptions()
+        range_ds = ROOT.Fit.DataRange()
+        range_ds.SetRange(pt_min, config["extrap"]["fit"]["pt_max_bw"])
+        data_ds = ROOT.Fit.BinData(opt, range_ds)
+        ROOT.Fit.FillData(data_ds, hist_corry_ds[cent])
+        range_dplus = ROOT.Fit.DataRange()
+        range_dplus.SetRange(pt_min, config["extrap"]["fit"]["pt_max_bw"])
+        data_dplus = ROOT.Fit.BinData(opt, range_dplus)
+        ROOT.Fit.FillData(data_dplus, hist_corry_dp[cent])
+
+        chi2_ds = ROOT.Fit.Chi2Function(data_ds, wf_bw_corrected_yields_ds)
+        chi2_dplus = ROOT.Fit.Chi2Function(data_dplus, wf_bw_corrected_yields_dplus)
+        global_chi2 = GlobalChi2BW(chi2_ds, chi2_dplus)
+        fitter_bw = ROOT.Fit.Fitter()
+
+        pars_all_bw = np.array(
+            [func_powlaw_corry_ds[cent].Integral(0, 4)*1.e5, 1.968, config["extrap"]["fit"]["fix_bw_pars_from_lf"]["beta"][icent],
+            config["extrap"]["fit"]["fix_bw_pars_from_lf"]["T"][icent], config["extrap"]["fit"]["fix_bw_pars_from_lf"]["n"][icent],
+            func_powlaw_corry_dp[cent].Integral(0, 4)*1.e5, 1.870]
+        )
+        fitter_bw.Config().SetParamsSettings(7, pars_all_bw)
+        # set limits
+        fitter_bw.Config().ParSettings(0).SetLimits(0., func_powlaw_corry_ds[cent].Integral(0, 4)*1.e8)
+        fitter_bw.Config().ParSettings(2).SetLimits(0.3, 0.99)
+        fitter_bw.Config().ParSettings(3).SetLimits(0., 0.5)
+        fitter_bw.Config().ParSettings(4).SetLimits(0.1, 5.)
+        fitter_bw.Config().ParSettings(5).SetLimits(0., func_powlaw_corry_dp[cent].Integral(0, 4)*1.e8)
+        fitter_bw.Config().MinimizerOptions().SetPrintLevel(0)
+        fitter_bw.Config().SetMinimizer("Minuit2", "Migrad")
+        # fix parameters
+        fitter_bw.Config().ParSettings(1).Fix()
+        fitter_bw.Config().ParSettings(6).Fix()
+        if config["extrap"]["fit"]["fix_bw_pars_from_lf"]["enable"]:
+            fitter_bw.Config().ParSettings(2).Fix()
+            fitter_bw.Config().ParSettings(3).Fix()
+            fitter_bw.Config().ParSettings(4).Fix()
+
+        # we can't pass the Python object global_chi2 directly to FitFCN.
+        # It needs to be wrapped in a ROOT::Math::Functor.
+        global_chi2_functor = ROOT.Math.Functor(global_chi2, 7)
+
+        # fit FCN function
+        # (specify optionally data size and flag to indicate that is a chi2 fit)
+        fitter_bw.FitFCN(global_chi2_functor, 0, data_ds.Size() + data_dplus.Size(), 1)
+        result_bw = fitter_bw.Result()
+        result_bw.Print(ROOT.std.cout)
+        func_bwsim_corry_ds[cent].SetFitResult(result_bw, pars_bw_ds)
+        func_bwsim_corry_dp[cent].SetFitResult(result_bw, pars_bw_dplus)
+
+        # func_bwsim_corry_ds[cent].SetParameter(0, func_bwsim_corry_ds[cent].GetParameter(0) * hist_corry_ds[cent].Integral(1, 4) / func_bwsim_corry_ds[cent].Integral(1, 4))
+        # func_bwsim_corry_dp[cent].SetParameter(0, func_bwsim_corry_dp[cent].GetParameter(0) * hist_corry_dp[cent].Integral(1, 4) / func_bwsim_corry_dp[cent].Integral(1, 4))
+
+        # We need to retrieve the covariance matrices to compute the uncertainties on the integrals
+        cov_mat_sim = ROOT.TMatrixDSym(6)
+        result_bw.GetCovarianceMatrix(cov_mat_sim)
+        yield_ds = func_bwsim_corry_ds[cent].Integral(0., 1000)
+        yield_vis_ds = func_bwsim_corry_ds[cent].Integral(1., 1000)
+        yield_dp = func_bwsim_corry_dp[cent].Integral(0., 1000)
+        yield_vis_dp = func_bwsim_corry_dp[cent].Integral(1., 1000)
+        unc_yield_ds = func_bwsim_corry_ds[cent].IntegralError(0., 1000, result_bw.GetParams(), cov_mat_sim.GetMatrixArray())
+        unc_yield_vis_ds = func_bwsim_corry_ds[cent].IntegralError(1., 1000, result_bw.GetParams(), cov_mat_sim.GetMatrixArray())
+        unc_yield_dp = func_bwsim_corry_dp[cent].IntegralError(0., 1000, result_bw.GetParams(), cov_mat_sim.GetMatrixArray())
+        unc_yield_vis_dp = func_bwsim_corry_dp[cent].IntegralError(1., 1000, result_bw.GetParams(), cov_mat_sim.GetMatrixArray())
+        extrap_factor_bwsim_ds = compute_extrap_factor(yield_ds, yield_vis_ds, unc_yield_ds, unc_yield_vis_ds)
+        extrap_factor_bwsim_dp = compute_extrap_factor(yield_dp, yield_vis_dp, unc_yield_dp, unc_yield_vis_dp)
 
         # fill graphs of extrapolation factors
-        graph_extrapfactor_ds.SetPoint(icent, mult_cent, extrap_factor_tsallis_ds[0])
-        graph_extrapfactor_dp.SetPoint(icent, mult_cent, extrap_factor_tsallis_dp[0])
-        graph_extrapfactor_simfit_ds.SetPoint(icent, mult_cent, extrap_factor_simfit_ds[0])
-        graph_extrapfactor_simfit_dp.SetPoint(icent, mult_cent, extrap_factor_simfit_dp[0])
+        graph_extrapfactor_tsallis_ds.SetPoint(icent, mult_cent, extrap_factor_tsallis_ds[0])
+        graph_extrapfactor_tsallis_dp.SetPoint(icent, mult_cent, extrap_factor_tsallis_dp[0])
         graph_extrapfactor_powlaw_ds.SetPoint(icent, mult_cent, extrap_factor_powlaw_ds[0])
         graph_extrapfactor_powlaw_dp.SetPoint(icent, mult_cent, extrap_factor_powlaw_dp[0])
-        graph_extrapfactor_ds_over_dp.SetPoint(icent, mult_cent, extrap_factor_tsallis_ds[0]/extrap_factor_tsallis_dp[0])
-        graph_extrapfactor_simfit_ds_over_dp.SetPoint(icent, mult_cent, extrap_factor_simfit_ds[0]/extrap_factor_simfit_dp[0])
+        graph_extrapfactor_tsallissim_dp.SetPoint(icent, mult_cent, extrap_factor_tsallissim_dp[0])
+        graph_extrapfactor_tsallissim_ds.SetPoint(icent, mult_cent, extrap_factor_tsallissim_ds[0])
+        graph_extrapfactor_bwsim_dp.SetPoint(icent, mult_cent, extrap_factor_bwsim_dp[0])
+        graph_extrapfactor_bwsim_ds.SetPoint(icent, mult_cent, extrap_factor_bwsim_ds[0])
+
+        graph_extrapfactor_tsallis_ds_over_dp.SetPoint(icent, mult_cent, extrap_factor_tsallis_ds[0]/extrap_factor_tsallis_dp[0])
         graph_extrapfactor_powlaw_ds_over_dp.SetPoint(icent, mult_cent, extrap_factor_powlaw_ds[0]/extrap_factor_powlaw_dp[0])
+        graph_extrapfactor_tsallissim_ds_over_dp.SetPoint(icent, mult_cent, extrap_factor_tsallissim_ds[0]/extrap_factor_tsallissim_dp[0])
+        graph_extrapfactor_bwsim_ds_over_dp.SetPoint(icent, mult_cent, extrap_factor_bwsim_ds[0]/extrap_factor_bwsim_dp[0])
 
         main_extrap_factor = 1.
         if config["extrap"]["main"] == "tsallis":
             main_extrap_factor = extrap_factor_tsallis_ds[0]/extrap_factor_tsallis_dp[0]
         elif config["extrap"]["main"] == "tsallis_sim":
-            main_extrap_factor = extrap_factor_simfit_ds[0]/extrap_factor_simfit_dp[0]
+            main_extrap_factor = extrap_factor_tsallissim_ds[0]/extrap_factor_tsallissim_dp[0]
         elif config["extrap"]["main"] == "powlaw":
             main_extrap_factor = extrap_factor_powlaw_ds[0]/extrap_factor_powlaw_dp[0]
+        elif config["extrap"]["main"] == "bwsim":
+            main_extrap_factor = extrap_factor_bwsim_ds[0]/extrap_factor_bwsim_dp[0]
         elif "model" in config["extrap"]["main"]:
             model_idx = config["extrap"]["main"].split(sep="model")[0]
             main_extrap_factor = graph_model_ds[model_idx].Eval(mult_cent) / graph_model_dp[model_idx].Eval(mult_cent)
@@ -474,10 +657,10 @@ def extapolate(config_file_name):
             sys_ratio_high_source_extrap = syst_yield_high_by_source_extrap[source]/yield_meas_ds * ratio_ptint_vis
             gsyst_source_ds_over_dp_vis[source].SetPoint(icent, mult_cent, ratio_ptint_vis)
             gsyst_source_ds_over_dp_vis[source].SetPointError(icent, mult_unc_low, mult_unc_high,
-                                                             sys_ratio_low_source_vis, sys_ratio_high_source_vis)
+                                                              sys_ratio_low_source_vis, sys_ratio_high_source_vis)
             gsyst_source_ds_over_dp_ptint[source].SetPoint(icent, mult_cent, ratio_ptint_extrap)
             gsyst_source_ds_over_dp_ptint[source].SetPointError(icent, mult_unc_low, mult_unc_high,
-                                                               sys_ratio_low_source_extrap, sys_ratio_high_source_extrap)
+                                                                sys_ratio_low_source_extrap, sys_ratio_high_source_extrap)
 
         gsyst_extrap_ds_over_dp_ptint.SetPoint(icent, mult_cent, ratio_ptint_extrap)
         gsyst_extrap_ds_over_dp_ptint.SetPointError(icent, mult_unc_low*2, mult_unc_high*2, ratio_ptint_extrap * config["extrap"]["unc"][icent],
@@ -498,13 +681,13 @@ def extapolate(config_file_name):
 
     canv_corry = ROOT.TCanvas("canv_corry", "", 1500, 750)
     canv_corry.Divide(2, 1)
-    canv_corry.cd(1).DrawFrame(0., 1.e2, 24., 1.e9, ";#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T}(D_{s}^{#plus}) (#it{c} GeV^{#minus1})")
+    canv_corry.cd(1).DrawFrame(0., 1.e2, 24., 1.e10, ";#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T}(D_{s}^{#plus}) (#it{c} GeV^{#minus1})")
     canv_corry.cd(1).SetLogy()
     for cent in hist_corry_ds:
         hist_corry_ds[cent].Draw("same")
         func_tsallis_corry_ds[cent].Draw("same")
     leg_cent.Draw()
-    canv_corry.cd(2).DrawFrame(0., 1.e2, 24., 1.e9, ";#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T}(D^{#plus}) (#it{c} GeV^{#minus1})")
+    canv_corry.cd(2).DrawFrame(0., 1.e2, 24., 1.e10, ";#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T}(D^{#plus}) (#it{c} GeV^{#minus1})")
     canv_corry.cd(2).SetLogy()
     for cent in hist_corry_dp:
         hist_corry_dp[cent].Draw("same")
@@ -512,31 +695,15 @@ def extapolate(config_file_name):
     leg_cent.Draw()
     canv_corry.SaveAs(f"corr_yields{config['output']['suffix']}.pdf")
 
-    canv_corry_simfit = ROOT.TCanvas("canv_corry_simfit", "", 1500, 750)
-    canv_corry_simfit.Divide(2, 1)
-    canv_corry_simfit.cd(1).DrawFrame(0., 1., 24., 1.e10, ";#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T}(D_{s}^{#plus}) (#it{c} GeV^{#minus1})")
-    canv_corry_simfit.cd(1).SetLogy()
-    for cent in hist_corry_ds:
-        hist_corry_ds[cent].Draw("same")
-        func_tsallissim_corry_ds[cent].Draw("same")
-    leg_cent.Draw()
-    canv_corry_simfit.cd(2).DrawFrame(0., 1., 24., 1.e10, ";#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T}(D^{#plus}) (#it{c} GeV^{#minus1})")
-    canv_corry_simfit.cd(2).SetLogy()
-    for cent in hist_corry_dp:
-        hist_corry_dp[cent].Draw("same")
-        func_tsallissim_corry_dp[cent].Draw("same")
-    leg_cent.Draw()
-    canv_corry_simfit.SaveAs(f"corr_yields_simfit{config['output']['suffix']}.pdf")
-
     canv_corry_powlaw = ROOT.TCanvas("canv_corry_powlaw", "", 1500, 750)
     canv_corry_powlaw.Divide(2, 1)
-    canv_corry_powlaw.cd(1).DrawFrame(0., 1., 24., 1.e10, ";#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T}(D_{s}^{#plus}) (#it{c} GeV^{#minus1})")
+    canv_corry_powlaw.cd(1).DrawFrame(0., 1.e2, 24., 1.e10, ";#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T}(D_{s}^{#plus}) (#it{c} GeV^{#minus1})")
     canv_corry_powlaw.cd(1).SetLogy()
     for cent in hist_corry_ds:
         hist_corry_ds[cent].Draw("same")
         func_powlaw_corry_ds[cent].Draw("same")
     leg_cent.Draw()
-    canv_corry_powlaw.cd(2).DrawFrame(0., 1., 24., 1.e10, ";#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T}(D^{#plus}) (#it{c} GeV^{#minus1})")
+    canv_corry_powlaw.cd(2).DrawFrame(0., 1.e2, 24., 1.e10, ";#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T}(D^{#plus}) (#it{c} GeV^{#minus1})")
     canv_corry_powlaw.cd(2).SetLogy()
     for cent in hist_corry_dp:
         hist_corry_dp[cent].Draw("same")
@@ -544,33 +711,52 @@ def extapolate(config_file_name):
     leg_cent.Draw()
     canv_corry_powlaw.SaveAs(f"corr_yields_powlaw{config['output']['suffix']}.pdf")
 
+    canv_corry_bwsim = ROOT.TCanvas("canv_corry_bwsim", "", 1500, 750)
+    canv_corry_bwsim.Divide(2, 1)
+    canv_corry_bwsim.cd(1).DrawFrame(0., 1.e2, 24., 1.e10, ";#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T}(D_{s}^{#plus}) (#it{c} GeV^{#minus1})")
+    canv_corry_bwsim.cd(1).SetLogy()
+    for cent in hist_corry_ds:
+        hist_corry_ds[cent].Draw("same")
+        func_bwsim_corry_ds[cent].Draw("same")
+    leg_cent.Draw()
+    canv_corry_bwsim.cd(2).DrawFrame(0., 1.e2, 24., 1.e10, ";#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T}(D^{#plus}) (#it{c} GeV^{#minus1})")
+    canv_corry_bwsim.cd(2).SetLogy()
+    for cent in hist_corry_dp:
+        hist_corry_dp[cent].Draw("same")
+        func_bwsim_corry_dp[cent].Draw("same")
+    leg_cent.Draw()
+    canv_corry_bwsim.SaveAs(f"corr_yields_bwsim{config['output']['suffix']}.pdf")
+
     canv_extrap_fact = ROOT.TCanvas("canv_extrap_fact", "", 1500, 500)
     canv_extrap_fact.Divide(3, 1)
     canv_extrap_fact.cd(1)
-    graph_extrapfactor_ds.GetXaxis().SetNdivisions(505)
-    graph_extrapfactor_ds.GetYaxis().SetDecimals()
-    graph_extrapfactor_ds.GetYaxis().SetRangeUser(0., 2.)
-    graph_extrapfactor_ds.Draw("acpz")
-    graph_extrapfactor_simfit_ds.Draw("cpz")
+    graph_extrapfactor_tsallis_ds.GetXaxis().SetNdivisions(505)
+    graph_extrapfactor_tsallis_ds.GetYaxis().SetDecimals()
+    graph_extrapfactor_tsallis_ds.GetYaxis().SetRangeUser(0., 2.)
+    graph_extrapfactor_tsallis_ds.Draw("acpz")
+    graph_extrapfactor_tsallissim_ds.Draw("cpz")
+    graph_extrapfactor_bwsim_ds.Draw("cpz")
     graph_extrapfactor_powlaw_ds.Draw("cpz")
     for graph in graph_model_ds:
         graph.Draw("cpz")
     leg_model.Draw()
     canv_extrap_fact.cd(2)
-    graph_extrapfactor_dp.GetYaxis().SetRangeUser(0., 2.)
-    graph_extrapfactor_dp.GetYaxis().SetDecimals()
-    graph_extrapfactor_dp.GetXaxis().SetNdivisions(505)
-    graph_extrapfactor_dp.Draw("acpz")
-    graph_extrapfactor_simfit_dp.Draw("cpz")
+    graph_extrapfactor_tsallis_dp.GetYaxis().SetRangeUser(0., 2.)
+    graph_extrapfactor_tsallis_dp.GetYaxis().SetDecimals()
+    graph_extrapfactor_tsallis_dp.GetXaxis().SetNdivisions(505)
+    graph_extrapfactor_tsallis_dp.Draw("acpz")
+    graph_extrapfactor_tsallissim_dp.Draw("cpz")
+    graph_extrapfactor_bwsim_dp.Draw("cpz")
     graph_extrapfactor_powlaw_dp.Draw("cpz")
     for graph in graph_model_dp:
         graph.Draw("cpz")
     canv_extrap_fact.cd(3)
-    graph_extrapfactor_ds_over_dp.GetYaxis().SetRangeUser(0.8, 1.2)
-    graph_extrapfactor_ds_over_dp.GetYaxis().SetDecimals()
-    graph_extrapfactor_ds_over_dp.GetXaxis().SetNdivisions(505)
-    graph_extrapfactor_ds_over_dp.Draw("acpz")
-    graph_extrapfactor_simfit_ds_over_dp.Draw("cpz")
+    graph_extrapfactor_tsallis_ds_over_dp.GetYaxis().SetRangeUser(0.8, 1.2)
+    graph_extrapfactor_tsallis_ds_over_dp.GetYaxis().SetDecimals()
+    graph_extrapfactor_tsallis_ds_over_dp.GetXaxis().SetNdivisions(505)
+    graph_extrapfactor_tsallis_ds_over_dp.Draw("acpz")
+    graph_extrapfactor_tsallissim_ds_over_dp.Draw("cpz")
+    graph_extrapfactor_bwsim_ds_over_dp.Draw("cpz")
     graph_extrapfactor_powlaw_ds_over_dp.Draw("cpz")
     for graph in graph_model_ratio:
         graph.Draw("cpz")
