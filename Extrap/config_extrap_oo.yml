@@ -1,0 +1,36 @@
+inputs:
+  cent_0_20: 
+    file: ds_over_dplus_ratios_oo_norm.root
+    mult_bin: 0
+  cent_20_50:
+    file: ds_over_dplus_ratios_oo_norm.root
+    mult_bin: 1
+  cent_50_90: 
+    file: ds_over_dplus_ratios_oo_norm.root
+    mult_bin: 2
+
+br:
+  ds_to_phipi_to_kkpi: 0.0225
+  dplus_to_phipi_to_kkpi: 0.00269
+
+extrap:
+  fit:
+    pt_max_ds: 12.
+    pt_max_dplus: 12.
+    pt_max_bw: 6.
+    fix_bw_pars_from_lf:
+      enable: False
+      T: [0.090, 0.094, 0.097, 0.101, 0.108, 0.115, 0.129, 0.147, 0.161]
+      beta: [0.660, 0.655, 0.643, 0.622, 0.595, 0.557, 0.506, 0.435, 0.355]
+      n: [0.735, 0.739, 0.771, 0.828, 0.908, 1.052, 1.262, 1.678, 2.423]
+  main: tsallis_sim # tsallis, tsallis_sim, powlaw, or modelN where N should correspond to the index in the entry below
+
+  unc: [0.03, 0.03, 0.03]
+  sys_unc_db: ../Systematics/database_systematics_oo.yml
+
+models:
+  inputs: ["ds_dp_extrap_factors_epos4hq_OO.root"]
+  labels: ["EPOS4HQ"]
+
+output:
+  suffix: _oo
