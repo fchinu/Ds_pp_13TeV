@@ -401,6 +401,8 @@ def extapolate(config_file_name):
         func_bwsim_corry_dp[cent] = ROOT.TF1(f"func_bwsim_corry_dp_{cent_min}_{cent_max}", bw_func, pt_min, config["extrap"]["fit"]["pt_max_bw"], 5)
         set_obj_style(func_tsallis_corry_ds[cent], colors[icent])
         set_obj_style(func_tsallis_corry_dp[cent], colors[icent])
+        set_obj_style(func_tsallissim_corry_ds[cent], colors[icent])
+        set_obj_style(func_tsallissim_corry_dp[cent], colors[icent])
         set_obj_style(func_powlaw_corry_ds[cent], colors[icent])
         set_obj_style(func_powlaw_corry_dp[cent], colors[icent])
         set_obj_style(func_bwsim_corry_ds[cent], colors[icent])
@@ -693,7 +695,23 @@ def extapolate(config_file_name):
         hist_corry_dp[cent].Draw("same")
         func_tsallis_corry_dp[cent].Draw("same")
     leg_cent.Draw()
-    canv_corry.SaveAs(f"corr_yields{config['output']['suffix']}.pdf")
+    canv_corry.SaveAs(f"corr_yields_tsallis{config['output']['suffix']}.pdf")
+
+    canv_corry_tsallissim = ROOT.TCanvas("canv_corry_tsallissim", "", 1500, 750)
+    canv_corry_tsallissim.Divide(2, 1)
+    canv_corry_tsallissim.cd(1).DrawFrame(0., 1.e2, 24., 1.e10, ";#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T}(D_{s}^{#plus}) (#it{c} GeV^{#minus1})")
+    canv_corry_tsallissim.cd(1).SetLogy()
+    for cent in hist_corry_ds:
+        hist_corry_ds[cent].Draw("same")
+        func_tsallissim_corry_ds[cent].Draw("same")
+    leg_cent.Draw()
+    canv_corry_tsallissim.cd(2).DrawFrame(0., 1.e2, 24., 1.e10, ";#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T}(D^{#plus}) (#it{c} GeV^{#minus1})")
+    canv_corry_tsallissim.cd(2).SetLogy()
+    for cent in hist_corry_dp:
+        hist_corry_dp[cent].Draw("same")
+        func_tsallissim_corry_dp[cent].Draw("same")
+    leg_cent.Draw()
+    canv_corry_tsallissim.SaveAs(f"corr_yields_tsallissim{config['output']['suffix']}.pdf")
 
     canv_corry_powlaw = ROOT.TCanvas("canv_corry_powlaw", "", 1500, 750)
     canv_corry_powlaw.Divide(2, 1)
