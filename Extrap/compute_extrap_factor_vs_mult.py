@@ -18,7 +18,7 @@ def compute_extrap_factor(infile_name, outfile_name, model):
     Main function for extrapolation
     """
 
-    if model not in ["epos4hq", "pythia"]:
+    if model not in ["epos4hq", "epos4hq_oo", "pythia"]:
         print(f"Model {model} not supported. Exit")
         sys.exit()
 
@@ -28,6 +28,11 @@ def compute_extrap_factor(infile_name, outfile_name, model):
         df_ds_midy = df.query("abs(y) < 0.5 and abs(id) == 340")
         df_dp_midy = df.query("abs(y) < 0.5 and abs(id) == 240")
         multiplicity = [0, 75, 145, 265, 437, 681, 1037, 1369, 2047]
+    elif model == "epos4hq_oo":
+        df = uproot.open(infile_name)["tree_dmesons"].arrays(library="pd")
+        df_ds_midy = df.query("abs(y) < 0.5 and abs(id) == 340")
+        df_dp_midy = df.query("abs(y) < 0.5 and abs(id) == 240")
+        multiplicity = [0, 40, 80, 110, 150, 200]
     else:
         df = uproot.open(infile_name)["treeD"].arrays(library="pd")
         df_ds_midy = df.query("abs(yD) < 0.5 and abs(pdgD) == 431")
@@ -71,7 +76,7 @@ def compute_extrap_factor(infile_name, outfile_name, model):
         ratio = extrap_factor_ds/extrap_factor_dp
         unc_ratio = np.sqrt(unc_extrap_factor_ds**2/extrap_factor_ds**2 + unc_extrap_factor_dp**2/extrap_factor_dp**2) * ratio
 
-        if model == "epos4hq":
+        if "epos4hq" in model:
             mult_cent = (mult_max + mult_min) / 2
             mult_unc = (mult_max - mult_min) / 2
         else:
