@@ -3,45 +3,6 @@ import numpy as np
 import yaml
 import ROOT
 
-def get_unc_dn_deta_pbpb(centmin, centmax):
-    """"
-    mult_unc_low = [0.05, 0.07, np.sqrt(0.11**2 + 0.09**2)/2, np.sqrt((0.21/4)**2 + (0.15/4)**2 + (0.13/2)**2), np.sqrt(0.21**2 + 0.18**2)/2, 0.36]
-    mult_unc_high = [0.07, 0.10, np.sqrt(0.16**2 + 0.13**2)/2, np.sqrt((0.18/4)**2 + (0.19/4)**2 + (0.19/2)**2), np.sqrt(0.27**2 + 0.24**2)/2, 0.42]
-    for a in zip(mult_unc_low[::-1], mult_unc_high[::-1]):
-         print(a)
-    """
-    mapping = {
-        (0, 10): (34.2, 34.2),
-        (10, 20): (33, 33),
-        (20, 30): (25, 25),
-        (30, 40): (19, 19),
-        (40, 50): (14, 14),
-        (50, 60): (11, 11),
-        (60, 70): (8, 8),
-        (70, 80): (5, 5),
-        (80, 90): (2.8, 2.8)}
-    return mapping[(centmin, centmax)]
-
-def get_unc_dn_deta_pp(centmin, centmax):
-    """"
-    mult_unc_low = [0.05, 0.07, np.sqrt(0.11**2 + 0.09**2)/2, np.sqrt((0.21/4)**2 + (0.15/4)**2 + (0.13/2)**2), np.sqrt(0.21**2 + 0.18**2)/2, 0.36]
-    mult_unc_high = [0.07, 0.10, np.sqrt(0.16**2 + 0.13**2)/2, np.sqrt((0.18/4)**2 + (0.19/4)**2 + (0.19/2)**2), np.sqrt(0.27**2 + 0.24**2)/2, 0.42]
-    for a in zip(mult_unc_low[::-1], mult_unc_high[::-1]):
-         print(a)
-    """
-    mapping = {
-        (0, 1): (0.36, 0.42),
-        (1, 10): (0.1382931668593933, 0.18062391868188443),
-        (10, 30): (0.091583295420071, 0.11535271995059328),
-        (30, 50): (0.07106335201775947, 0.10307764064044152),
-        (50, 70): (0.07, 0.1),
-        (70, 100): (0.05, 0.07),
-        (0, 100): (0.09, 0.13)}
-    return mapping[(centmin, centmax)]
-
-mult_unc_low = [0.05, 0.07, np.sqrt(0.11**2 + 0.09**2)/2, np.sqrt((0.21/4)**2 + (0.15/4)**2 + (0.13/2)**2), np.sqrt(0.21**2 + 0.18**2)/2, 0.36]
-mult_unc_high = [0.07, 0.10, np.sqrt(0.16**2 + 0.13**2)/2, np.sqrt((0.18/4)**2 + (0.19/4)**2 + (0.19/2)**2), np.sqrt(0.27**2 + 0.24**2)/2, 0.42]
-
 def get_cross_sec_with_syst(config_file_name):
     with open(config_file_name, 'r') as f:
         config = yaml.safe_load(f)
@@ -76,12 +37,6 @@ def get_cross_sec_with_syst(config_file_name):
 
         with ROOT.TFile.Open(config['inputs']['ratio_file']) as f:
             g_ratio = f.Get(f'g_ratio_dndeta_{pt_min*10:.0f}_{pt_max*10:.0f}')
-
-        # set dN/deta uncertainties
-        for i_cent, (cent_min, cent_max) in enumerate(zip(cent_mins, cent_maxs)):
-            unc_dn_deta_low, unc_dn_deta_high = get_unc_dn_deta_pp(cent_min, cent_max) if config['is_pp'] else get_unc_dn_deta_pbpb(cent_min, cent_max)
-            g_ratio.SetPointEXlow(i_cent, unc_dn_deta_low)
-            g_ratio.SetPointEXhigh(i_cent, unc_dn_deta_high)
 
         # Get systematics graphs (pt dependent)
         g_systs_rel_lower = {}
