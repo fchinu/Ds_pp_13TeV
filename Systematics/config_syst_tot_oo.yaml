@@ -1,0 +1,18 @@
+inputs:
+  cutset: Projections_RawYields/configs/cutset.yml
+  ratio_file: /home/fchinu/Run3/Ds_OO_5TeV/Ratios/ds_over_dplus_ratios_oo_norm.root
+  syst_files:
+    rawy: /home/fchinu/Run3/Ds_OO_5TeV/Systematics/RawYields/vsMult/merge.root
+    bdt: /home/fchinu/Run3/Ds_OO_5TeV/Systematics/BDT/VsMult/output/output.root
+    prompt_frac: /home/fchinu/Run3/Ds_OO_5TeV/Systematics/FD_Fraction/VsMult/syst.root
+    pt_shape: /home/fchinu/Run3/Ds_OO_5TeV/Systematics/PtShape/VsMult/systematic.root
+
+br: # PDG2026
+  - value: 2.25e-2 # Ds -> phi pi+ -> K+ K- pi+
+    unc_high: 0.05e-2
+    unc_low: 0.05e-2
+  - value: 2.67e-3 # D+ -> phi pi+ -> K+ K- pi+
+    unc_high: 0.06e-3
+    unc_low: 0.08e-3
+
+output_name: Ratios/ratio_w_syst.root
